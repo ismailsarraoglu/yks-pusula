@@ -50,8 +50,8 @@ val DAY_NAMES = listOf("1" to "Pzt", "2" to "Sal", "3" to "Çar", "4" to "Per", 
 @Composable
 fun OnboardingScreen() {
     val r = repo()
-    val scope = rememberCoroutineScope()
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
+    val appScope = app.ykspusula.ui.app().scope
     var step by rememberSaveable { mutableIntStateOf(0) }
     var name by rememberSaveable { mutableStateOf("") }
     var grade by rememberSaveable { mutableStateOf("12") }
@@ -130,7 +130,8 @@ fun OnboardingScreen() {
                 when (step) { 0 -> "Başla"; last -> "Bitir"; else -> "Devam" }, Modifier.weight(1f),
                 enabled = step != 3 || (days.isNotBlank() && (minutes.toIntOrNull() ?: 0) > 0),
             ) {
-                if (step < last) step++ else scope.launch {
+                // Profil kaydı bu ekranı kapatır; plan üretimi yarıda kalmasın diye uygulama kapsamında çalışır.
+                if (step < last) step++ else appScope.launch {
                     r.user.saveProfile(
                         UserProfile(
                             name = name.trim(), grade = grade, examYear = year.toInt(), field = field,

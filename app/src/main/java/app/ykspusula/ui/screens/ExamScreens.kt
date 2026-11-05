@@ -37,8 +37,10 @@ import app.ykspusula.ui.longDate
 import app.ykspusula.ui.repo
 import app.ykspusula.ui.shortDate
 import app.ykspusula.ui.theme.Yks
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 @Composable
@@ -238,7 +240,9 @@ fun ExamRunScreen(id: String) {
         finishing = true
         scope.launch {
             r.finishExam(id)
-            nav.navigate("result/$id") { popUpTo("exam/{id}") { inclusive = true } }
+            withContext(Dispatchers.Main.immediate) {
+                nav.navigate("result/$id") { popUpTo("exam/{id}") { inclusive = true } }
+            }
         }
     }
     LaunchedEffect(exam) {
