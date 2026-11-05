@@ -179,6 +179,7 @@ fun TextScreen(title: String, text: String) {
 @Composable
 fun AboutScreen() {
     val nav = LocalNav.current
+    val context = LocalContext.current
     Screen("Uygulama hakkında", { nav.popBackStack() }) {
         ScrollColumn {
             Text("YKS Pusula", style = MaterialTheme.typography.headlineMedium, color = Yks.c.text)
@@ -188,8 +189,39 @@ fun AboutScreen() {
                 KeyValue("Çalışma biçimi", "Yerel, hesap gerekmez")
             }
             YCard { Text(PRIVACY_TEXT, style = MaterialTheme.typography.bodyMedium, color = Yks.c.text) }
+            SoftButton("Uygulamayı değerlendir", Modifier.fillMaxWidth(), icon = Icons.Rounded.StarBorder) {
+                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            }
             Muted("Bu uygulama ÖSYM, MEB veya YÖK ile bağlantılı değildir. Sınav bilgilerini resmî kaynaklardan doğrulamalısın.")
             Muted("Kullanılan açık kaynak bileşenler: AndroidX, Jetpack Compose, Kotlin, kotlinx (Apache 2.0).")
+        }
+    }
+}
+
+/** Ana ekran bileşenleri: destekleyen launcher'da tek dokunuşla eklenir. */
+@Composable
+fun WidgetsScreen() {
+    val nav = LocalNav.current
+    val context = LocalContext.current
+    val manager = android.appwidget.AppWidgetManager.getInstance(context)
+    val canPin = manager.isRequestPinAppWidgetSupported
+    Screen("Ana ekran bileşenleri", { nav.popBackStack() }) {
+        ScrollColumn {
+            Muted("Bileşenler verilerini cihazından alır, internet kullanmaz.")
+            GroupCard {
+                listOf(
+                    Triple("Sınava kalan gün", app.ykspusula.widget.CountdownWidget::class.java, Icons.Rounded.HourglassBottom),
+                    Triple("Günlük çalışma hedefi", app.ykspusula.widget.GoalWidget::class.java, Icons.Rounded.DonutLarge),
+                    Triple("Bugünkü görevler", app.ykspusula.widget.TasksWidget::class.java, Icons.Rounded.Checklist),
+                    Triple("Hızlı odaklanma", app.ykspusula.widget.FocusWidget::class.java, Icons.Rounded.Timer),
+                ).forEachIndexed { i, (t, cls, ic) ->
+                    if (i > 0) Line()
+                    NavRow(t, if (canPin) "Ana ekrana ekle" else "Ana ekrandan ekleyebilirsin", ic, onClick = {
+                        if (canPin) manager.requestPinAppWidget(android.content.ComponentName(context, cls), null, null)
+                    })
+                }
+            }
+            if (!canPin) Muted("Telefonunda ana ekrana uzun bas, Bileşenler bölümünden YKS Pusula'yı seç.")
         }
     }
 }

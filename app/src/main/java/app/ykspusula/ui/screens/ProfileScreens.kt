@@ -83,6 +83,7 @@ fun ProfileScreen() {
             NavRow("Uygulama ayarları", "Tema, yazı boyutu, hedefler", Icons.Rounded.Settings, onClick = { nav.navigate("settings") }); Line()
             NavRow("Plan ayarları", "Günlük süre, saatler, öncelikler", Icons.Rounded.Tune, onClick = { nav.navigate("planSettings") }); Line()
             NavRow("Bildirimler", "Hatırlatıcılar ve sıklık", Icons.Rounded.Notifications, onClick = { nav.navigate("reminders") }); Line()
+            NavRow("Ana ekran bileşenleri", "Geri sayım, hedef, görevler, odak", Icons.Rounded.Widgets, onClick = { nav.navigate("widgets") }); Line()
             NavRow("Sınav ayarları", "Tarih, süre, net kuralı", Icons.Rounded.EventNote, onClick = { nav.navigate("examSettings") })
         }
         Section("Veri ve gizlilik")

@@ -52,6 +52,12 @@ class MainActivity : ComponentActivity() {
         yks.scope.launch { yks.monetize.billing.queryPurchases() }
     }
 
+    /** Ana ekrana dönerken bileşenler son veriyi gösterir. */
+    override fun onStop() {
+        super.onStop()
+        app.ykspusula.widget.Widgets.updateAll(this)
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)

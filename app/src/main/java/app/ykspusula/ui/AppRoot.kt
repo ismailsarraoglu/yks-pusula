@@ -240,6 +240,7 @@ private fun Graph(nav: NavHostController, modifier: Modifier) {
         composable("privacy") { TextScreen("Gizlilik politikası", POLICY_TEXT) }
         composable("terms") { TextScreen("Satın alma koşulları", TERMS_TEXT) }
         composable("about") { AboutScreen() }
+        composable("widgets") { WidgetsScreen() }
         composable("info") { InfoScreen() }
         composable("profileEdit") { ProfileEditScreen() }
         composable("settings") { SettingsScreen() }
