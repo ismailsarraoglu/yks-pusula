@@ -1,28 +1,22 @@
 package app.ykspusula.data
 
 import android.content.Context
-import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.RawQuery
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
 import androidx.room.Upsert
-import androidx.sqlite.db.SimpleSQLiteQuery
-import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ContentDao {
     @Upsert suspend fun subjects(v: List<Subject>)
     @Upsert suspend fun topics(v: List<Topic>)
-    @Upsert suspend fun questions(v: List<Question>)
-    @Upsert suspend fun options(v: List<AnswerOption>)
     @Upsert suspend fun formulas(v: List<Formula>)
     @Upsert suspend fun flashcards(v: List<Flashcard>)
     @Upsert suspend fun pack(v: ImportedContentPack)
@@ -30,9 +24,9 @@ interface ContentDao {
 
     @Query("SELECT * FROM ImportedContentPack ORDER BY importedAt DESC") fun packs(): Flow<List<ImportedContentPack>>
     @Query("SELECT * FROM ImportedContentPack WHERE id = :id") suspend fun packById(id: String): ImportedContentPack?
-    @Query("SELECT COUNT(*) FROM Question") fun questionCount(): Flow<Int>
-    @Query("SELECT COUNT(*) FROM Question") suspend fun questionCountNow(): Int
-    @Query("SELECT id FROM Question WHERE contentHash = :hash LIMIT 1") suspend fun idForHash(hash: String): String?
+    @Query("SELECT COUNT(*) FROM Topic") suspend fun topicCountNow(): Int
+    @Query("SELECT COUNT(*) FROM Formula") suspend fun formulaCountNow(): Int
+    @Query("SELECT COUNT(*) FROM Flashcard WHERE isUser = 0") suspend fun cardCountNow(): Int
     @Query("SELECT id FROM Topic") suspend fun allTopicIds(): List<String>
     @Query("SELECT id FROM Subject") suspend fun allSubjectIds(): List<String>
 
@@ -40,21 +34,42 @@ interface ContentDao {
     @Query("SELECT * FROM Subject ORDER BY sortOrder") suspend fun subjectsNow(): List<Subject>
     @Query("SELECT * FROM Subject WHERE id = :id") suspend fun subject(id: String): Subject?
     @Query("SELECT * FROM Topic WHERE id = :id") fun topic(id: String): Flow<Topic?>
+    @Query("SELECT subjectId FROM Topic WHERE id = :id") suspend fun subjectOfTopic(id: String): String?
     @Query("SELECT * FROM Topic WHERE subjectId = :s ORDER BY sortOrder") suspend fun topicsOf(s: String): List<Topic>
     @Query("SELECT * FROM Topic ORDER BY sortOrder") suspend fun allTopics(): List<Topic>
-    @Query("SELECT * FROM Question") suspend fun allQuestions(): List<Question>
     @Query("SELECT * FROM Formula ORDER BY subjectName, category, title") fun formulas(): Flow<List<Formula>>
     @Query("SELECT * FROM Formula") suspend fun formulasNow(): List<Formula>
     @Query("SELECT * FROM Flashcard") suspend fun flashcardsNow(): List<Flashcard>
 
     @Query(
-        """SELECT t.id, t.subjectId, t.name, t.summary, t.scope, p.status, p.nextReviewAt, p.lastStudiedAt,
-        (SELECT COUNT(*) FROM Question q WHERE q.topicId = t.id) AS questionCount,
-        (SELECT COUNT(*) FROM QuestionAttempt a WHERE a.topicId = t.id AND a.selected IS NOT NULL) AS total,
-        (SELECT COUNT(*) FROM QuestionAttempt a WHERE a.topicId = t.id AND a.isCorrect = 1) AS `right`
+        """SELECT t.id, t.subjectId, t.name, t.summary, t.scope, p.status, p.nextReviewAt, p.lastStudiedAt, p.reviewCount, p.checks,
+        COALESCE((SELECT SUM(l.correct + l.wrong + l.blank) FROM PracticeLog l WHERE l.topicId = t.id), 0) AS total,
+        COALESCE((SELECT SUM(l.correct) FROM PracticeLog l WHERE l.topicId = t.id), 0) AS `right`,
+        (SELECT COUNT(*) FROM WrongEntry w WHERE w.topicId = t.id AND w.resolved = 0) AS wrongOpen,
+        COALESCE((SELECT SUM(x.minutes) FROM StudySession x WHERE x.topicId = t.id), 0) AS minutes
         FROM Topic t LEFT JOIN TopicProgress p ON p.topicId = t.id WHERE t.subjectId = :subjectId ORDER BY t.sortOrder"""
     )
     fun topicRows(subjectId: String): Flow<List<TopicRow>>
+
+    @Query(
+        """SELECT t.id, t.subjectId, t.name, t.summary, t.scope, p.status, p.nextReviewAt, p.lastStudiedAt, p.reviewCount, p.checks,
+        COALESCE((SELECT SUM(l.correct + l.wrong + l.blank) FROM PracticeLog l WHERE l.topicId = t.id), 0) AS total,
+        COALESCE((SELECT SUM(l.correct) FROM PracticeLog l WHERE l.topicId = t.id), 0) AS `right`,
+        (SELECT COUNT(*) FROM WrongEntry w WHERE w.topicId = t.id AND w.resolved = 0) AS wrongOpen,
+        COALESCE((SELECT SUM(x.minutes) FROM StudySession x WHERE x.topicId = t.id), 0) AS minutes
+        FROM Topic t LEFT JOIN TopicProgress p ON p.topicId = t.id ORDER BY t.sortOrder"""
+    )
+    fun allTopicRows(): Flow<List<TopicRow>>
+
+    @Query(
+        """SELECT t.id, t.subjectId, t.name, t.summary, t.scope, p.status, p.nextReviewAt, p.lastStudiedAt, p.reviewCount, p.checks,
+        COALESCE((SELECT SUM(l.correct + l.wrong + l.blank) FROM PracticeLog l WHERE l.topicId = t.id), 0) AS total,
+        COALESCE((SELECT SUM(l.correct) FROM PracticeLog l WHERE l.topicId = t.id), 0) AS `right`,
+        (SELECT COUNT(*) FROM WrongEntry w WHERE w.topicId = t.id AND w.resolved = 0) AS wrongOpen,
+        COALESCE((SELECT SUM(x.minutes) FROM StudySession x WHERE x.topicId = t.id), 0) AS minutes
+        FROM Topic t LEFT JOIN TopicProgress p ON p.topicId = t.id ORDER BY t.sortOrder"""
+    )
+    suspend fun allTopicRowsNow(): List<TopicRow>
 
     @Query(
         """SELECT t.subjectId AS subjectId, COUNT(*) AS total,
@@ -65,17 +80,6 @@ interface ContentDao {
     )
     fun subjectBoards(): Flow<List<SubjectBoard>>
 
-    @RawQuery(observedEntities = [Question::class, QuestionAttempt::class, WrongQuestion::class, Bookmark::class])
-    fun pageQuestions(q: SupportSQLiteQuery): PagingSource<Int, Question>
-
-    @RawQuery suspend fun questionIds(q: SupportSQLiteQuery): List<String>
-
-    @Transaction @Query("SELECT * FROM Question WHERE id = :id") suspend fun full(id: String): QuestionFull?
-    @Transaction @Query("SELECT * FROM Question WHERE id IN (:ids)") suspend fun fullList(ids: List<String>): List<QuestionFull>
-    @Query("SELECT id FROM Question WHERE subjectId = :subjectId") suspend fun idsOfSubject(subjectId: String): List<String>
-    @Query("SELECT id FROM Question WHERE topicId IN (:topicIds)") suspend fun idsOfTopics(topicIds: List<String>): List<String>
-    @Query("SELECT subjectId AS `key`, COUNT(*) AS total, 0 AS `right` FROM Question GROUP BY subjectId") suspend fun bankBySubject(): List<StatRow>
-    @Query("SELECT exam AS `key`, COUNT(*) AS total, 0 AS `right` FROM Question GROUP BY exam") fun bankByExam(): Flow<List<StatRow>>
     @Query("SELECT COUNT(*) FROM Topic WHERE lesson != ''") suspend fun topicsWithLesson(): Int
 }
 
@@ -92,46 +96,48 @@ interface UserDao {
     @Query("SELECT * FROM ExamConfiguration WHERE code = :code") suspend fun examConfig(code: String): ExamConfiguration?
     @Upsert suspend fun saveExamConfig(c: ExamConfiguration)
 
-    /* Soru denemeleri */
-    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun attempt(a: QuestionAttempt)
-    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun attempts(a: List<QuestionAttempt>)
-    @Query("SELECT * FROM QuestionAttempt") suspend fun attemptsNow(): List<QuestionAttempt>
-    @Query("SELECT DISTINCT questionId FROM QuestionAttempt WHERE source != 'MOCK'") fun solvedIds(): Flow<List<String>>
-    @Query("SELECT COUNT(*) FROM QuestionAttempt WHERE selected IS NOT NULL AND answeredAt >= :from AND answeredAt < :to")
-    fun solvedBetween(from: Long, to: Long): Flow<Int>
-    @Query("SELECT COUNT(*) FROM QuestionAttempt WHERE selected IS NOT NULL") fun solvedTotal(): Flow<Int>
-    @Query("SELECT COUNT(*) AS c FROM QuestionAttempt WHERE selected IS NOT NULL AND answeredAt >= :from AND answeredAt < :to")
-    suspend fun solvedBetweenNow(from: Long, to: Long): Int
-    @Query("SELECT COUNT(*) FROM QuestionAttempt WHERE isCorrect = 1 AND answeredAt >= :from AND answeredAt < :to")
-    suspend fun rightBetweenNow(from: Long, to: Long): Int
+    /* Soru performansı */
+    @Upsert suspend fun saveLog(l: PracticeLog)
+    @Upsert suspend fun saveLogs(l: List<PracticeLog>)
+    @Query("DELETE FROM PracticeLog WHERE id = :id") suspend fun deleteLog(id: String)
+    @Query("DELETE FROM PracticeLog WHERE sessionId = :id") suspend fun deleteLogsOfSession(id: String)
+    @Query("SELECT * FROM PracticeLog") suspend fun logsNow(): List<PracticeLog>
+    @Query("SELECT * FROM PracticeLog ORDER BY at DESC LIMIT :limit") fun recentLogs(limit: Int): Flow<List<PracticeLog>>
+    @Query("SELECT * FROM PracticeLog WHERE sourceId = :id ORDER BY at DESC") fun logsOfSource(id: String): Flow<List<PracticeLog>>
+    @Query("SELECT * FROM PracticeLog WHERE topicId = :id ORDER BY at DESC") fun logsOfTopic(id: String): Flow<List<PracticeLog>>
+    @Query("SELECT * FROM PracticeLog WHERE at >= :from AND at < :to") suspend fun logsBetween(from: Long, to: Long): List<PracticeLog>
+    @Query("SELECT COALESCE(SUM(correct + wrong + blank), 0) FROM PracticeLog WHERE at >= :from AND at < :to") fun solvedBetween(from: Long, to: Long): Flow<Int>
+    @Query("SELECT COALESCE(SUM(correct + wrong + blank), 0) FROM PracticeLog") fun solvedTotal(): Flow<Int>
+    @Query("SELECT COALESCE(SUM(correct + wrong + blank), 0) FROM PracticeLog WHERE at >= :from AND at < :to") suspend fun solvedBetweenNow(from: Long, to: Long): Int
+    @Query("SELECT COALESCE(SUM(correct), 0) FROM PracticeLog WHERE at >= :from AND at < :to") suspend fun rightBetweenNow(from: Long, to: Long): Int
 
     @Query(
-        """SELECT a.topicId AS topicId, t.name AS name, s.name AS subjectName, COUNT(*) AS total, SUM(a.isCorrect) AS `right`
-        FROM QuestionAttempt a JOIN Topic t ON t.id = a.topicId JOIN Subject s ON s.id = t.subjectId
-        WHERE a.selected IS NOT NULL GROUP BY a.topicId HAVING COUNT(*) >= :minCount
-        ORDER BY (CAST(SUM(a.isCorrect) AS REAL) / COUNT(*)) ASC, COUNT(*) DESC LIMIT :limit"""
+        """SELECT l.topicId AS topicId, t.name AS name, s.name AS subjectName, SUM(l.correct + l.wrong + l.blank) AS total, SUM(l.correct) AS `right`
+        FROM PracticeLog l JOIN Topic t ON t.id = l.topicId JOIN Subject s ON s.id = t.subjectId
+        GROUP BY l.topicId HAVING SUM(l.correct + l.wrong + l.blank) >= :minCount
+        ORDER BY (CAST(SUM(l.correct) AS REAL) / SUM(l.correct + l.wrong + l.blank)) ASC, total DESC LIMIT :limit"""
     )
     fun weakTopics(minCount: Int, limit: Int): Flow<List<WeakTopic>>
 
     @Query(
-        """SELECT s.name AS `key`, COUNT(*) AS total, SUM(a.isCorrect) AS `right`
-        FROM QuestionAttempt a JOIN Subject s ON s.id = a.subjectId WHERE a.selected IS NOT NULL
-        GROUP BY a.subjectId ORDER BY s.sortOrder"""
+        """SELECT s.name AS `key`, SUM(l.correct + l.wrong + l.blank) AS total, SUM(l.correct) AS `right`
+        FROM PracticeLog l JOIN Subject s ON s.id = l.subjectId WHERE l.origin != 'MOCK'
+        GROUP BY l.subjectId ORDER BY s.sortOrder"""
     )
     fun subjectStats(): Flow<List<StatRow>>
 
     @Query(
-        """SELECT a.subjectId AS `key`, COUNT(*) AS total, SUM(a.isCorrect) AS `right`
-        FROM QuestionAttempt a WHERE a.selected IS NOT NULL AND a.answeredAt >= :from GROUP BY a.subjectId"""
+        """SELECT l.subjectId AS `key`, SUM(l.correct + l.wrong + l.blank) AS total, SUM(l.correct) AS `right`
+        FROM PracticeLog l WHERE l.subjectId IS NOT NULL AND l.at >= :from GROUP BY l.subjectId"""
     )
     suspend fun subjectStatsSince(from: Long): List<StatRow>
 
-    @Query("SELECT topicId AS `key`, COUNT(*) AS total, SUM(isCorrect) AS `right` FROM QuestionAttempt WHERE selected IS NOT NULL GROUP BY topicId")
+    @Query("SELECT topicId AS `key`, SUM(correct + wrong + blank) AS total, SUM(correct) AS `right` FROM PracticeLog WHERE topicId IS NOT NULL GROUP BY topicId")
     suspend fun topicStatsNow(): List<StatRow>
 
     @Query(
-        """SELECT date(answeredAt / 1000, 'unixepoch', 'localtime') AS day, COUNT(*) AS value FROM QuestionAttempt
-        WHERE selected IS NOT NULL AND answeredAt >= :from GROUP BY day ORDER BY day"""
+        """SELECT date(at / 1000, 'unixepoch', 'localtime') AS day, SUM(correct + wrong + blank) AS value FROM PracticeLog
+        WHERE at >= :from GROUP BY day ORDER BY day"""
     )
     fun questionsPerDay(from: Long): Flow<List<DayCount>>
 
@@ -143,12 +149,30 @@ interface UserDao {
 
     @Query(
         """SELECT DISTINCT day FROM (
-           SELECT date(answeredAt / 1000, 'unixepoch', 'localtime') AS day FROM QuestionAttempt WHERE selected IS NOT NULL
+           SELECT date(at / 1000, 'unixepoch', 'localtime') AS day FROM PracticeLog
            UNION SELECT date(startedAt / 1000, 'unixepoch', 'localtime') AS day FROM StudySession
            UNION SELECT date(doneAt / 1000, 'unixepoch', 'localtime') AS day FROM StudyTask WHERE done = 1 AND doneAt IS NOT NULL
         ) ORDER BY day"""
     )
     fun activeDays(): Flow<List<String>>
+
+    /* Kaynaklar */
+    @Upsert suspend fun saveSource(s: StudySource)
+    @Query("SELECT * FROM StudySource WHERE id = :id") suspend fun source(id: String): StudySource?
+    @Query("SELECT * FROM StudySource") suspend fun sourcesNow(): List<StudySource>
+    @Query("DELETE FROM StudySource WHERE id = :id") suspend fun deleteSource(id: String)
+    @Query("SELECT * FROM StudySource WHERE archived = 0 ORDER BY favorite DESC, lastUsedAt DESC, name") fun sources(): Flow<List<StudySource>>
+    @Query(
+        """SELECT s.*,
+        COALESCE((SELECT SUM(l.correct + l.wrong + l.blank) FROM PracticeLog l WHERE l.sourceId = s.id), 0) AS solved,
+        COALESCE((SELECT SUM(l.correct) FROM PracticeLog l WHERE l.sourceId = s.id), 0) AS correct,
+        COALESCE((SELECT SUM(l.wrong) FROM PracticeLog l WHERE l.sourceId = s.id), 0) AS wrong,
+        COALESCE((SELECT SUM(x.minutes) FROM StudySession x WHERE x.sourceId = s.id), 0) AS minutes,
+        (SELECT MAX(x.startedAt) FROM StudySession x WHERE x.sourceId = s.id) AS lastAt
+        FROM StudySource s ORDER BY s.archived ASC, s.favorite DESC, s.lastUsedAt DESC, s.name"""
+    )
+    fun sourceRows(): Flow<List<SourceRow>>
+    @Query("SELECT * FROM StudySource WHERE archived = 0 AND lastUsedAt > 0 ORDER BY lastUsedAt DESC LIMIT 1") fun lastSource(): Flow<StudySource?>
 
     /* Görevler ve planlar */
     @Query("SELECT * FROM StudyTask WHERE date = :date ORDER BY time, title") fun tasksOn(date: String): Flow<List<StudyTask>>
@@ -161,9 +185,32 @@ interface UserDao {
     @Upsert suspend fun savePlan(p: StudyPlan)
     @Query("SELECT * FROM StudyPlan ORDER BY createdAt DESC") suspend fun plansNow(): List<StudyPlan>
     @Query("SELECT * FROM StudyTask") suspend fun allTasks(): List<StudyTask>
+    @Query("SELECT * FROM StudyTask WHERE date >= :from AND date <= :to ORDER BY date, time") suspend fun tasksBetweenNow(from: String, to: String): List<StudyTask>
+    @Query("SELECT * FROM StudyTask WHERE date < :before AND date >= :since AND done = 0 AND skipped = 0 ORDER BY date, time") fun missedTasks(since: String, before: String): Flow<List<StudyTask>>
+    @Query("SELECT * FROM StudyTask WHERE date < :before AND date >= :since AND done = 0 AND skipped = 0 ORDER BY date, time") suspend fun missedTasksNow(since: String, before: String): List<StudyTask>
+    @Query("SELECT * FROM StudyTask WHERE id = :id") suspend fun task(id: String): StudyTask?
+
+    /* Pusula Koç */
+    @Upsert suspend fun saveRoute(r: List<RouteItem>)
+    @Upsert suspend fun saveRouteItem(r: RouteItem)
+    @Query("SELECT * FROM RouteItem WHERE date = :date ORDER BY orderIndex") fun routeOn(date: String): Flow<List<RouteItem>>
+    @Query("SELECT * FROM RouteItem WHERE date = :date ORDER BY orderIndex") suspend fun routeOnNow(date: String): List<RouteItem>
+    @Query("SELECT * FROM RouteItem WHERE id = :id") suspend fun routeItem(id: String): RouteItem?
+    @Query("DELETE FROM RouteItem WHERE date = :date AND status = 'SUGGESTED'") suspend fun clearSuggested(date: String)
+    @Query("DELETE FROM RouteItem WHERE id = :id") suspend fun deleteRouteItem(id: String)
+    @Query("DELETE FROM RouteItem WHERE date < :before") suspend fun pruneRoute(before: String)
+    @Query("SELECT topicId FROM RouteItem WHERE status = 'REJECTED' AND topicId IS NOT NULL AND date >= :since") suspend fun rejectedTopics(since: String): List<String>
+    @Query("SELECT * FROM RouteItem") suspend fun routeNow(): List<RouteItem>
+    @Upsert suspend fun saveRevision(r: PlanRevision)
+    @Query("SELECT * FROM PlanRevision ORDER BY createdAt DESC") fun revisions(): Flow<List<PlanRevision>>
+    @Query("SELECT * FROM PlanRevision") suspend fun revisionsNow(): List<PlanRevision>
 
     /* Oturumlar */
     @Upsert suspend fun saveSession(s: StudySession)
+    @Query("SELECT * FROM StudySession WHERE sourceId = :id ORDER BY startedAt DESC") fun sessionsOfSource(id: String): Flow<List<StudySession>>
+    @Query("SELECT * FROM StudySession WHERE topicId = :id ORDER BY startedAt DESC") fun sessionsOfTopic(id: String): Flow<List<StudySession>>
+    @Query("SELECT * FROM StudySession WHERE startedAt >= :from AND startedAt < :to") suspend fun sessionsBetween(from: Long, to: Long): List<StudySession>
+    @Query("DELETE FROM StudySession WHERE id = :id") suspend fun deleteSession(id: String)
     @Query("SELECT * FROM StudySession ORDER BY startedAt DESC LIMIT :limit") fun recentSessions(limit: Int): Flow<List<StudySession>>
     @Query("SELECT * FROM StudySession") suspend fun sessionsNow(): List<StudySession>
     @Query("SELECT COALESCE(SUM(minutes), 0) FROM StudySession WHERE startedAt >= :from AND startedAt < :to") fun minutesBetween(from: Long, to: Long): Flow<Int>
@@ -180,39 +227,38 @@ interface UserDao {
     @Query("SELECT COUNT(*) FROM TopicProgress WHERE nextReviewAt IS NOT NULL AND nextReviewAt <= :now") fun topicsDue(now: Long): Flow<Int>
 
     /* Yanlışlar */
-    @Query("SELECT * FROM WrongQuestion WHERE questionId = :id") suspend fun wrongOf(id: String): WrongQuestion?
-    @Upsert suspend fun saveWrong(w: WrongQuestion)
-    @Query("DELETE FROM WrongQuestion WHERE questionId = :id") suspend fun deleteWrong(id: String)
-    @Query("SELECT * FROM WrongQuestion") suspend fun wrongsNow(): List<WrongQuestion>
+    @Query("SELECT * FROM WrongEntry WHERE id = :id") suspend fun wrong(id: String): WrongEntry?
+    @Upsert suspend fun saveWrong(w: WrongEntry)
+    @Query("DELETE FROM WrongEntry WHERE id = :id") suspend fun deleteWrong(id: String)
+    @Query("SELECT * FROM WrongEntry") suspend fun wrongsNow(): List<WrongEntry>
     @Query(
-        """SELECT w.*, q.stem AS stem, t.name AS topicName, s.name AS subjectName FROM WrongQuestion w
-        JOIN Question q ON q.id = w.questionId JOIN Topic t ON t.id = w.topicId JOIN Subject s ON s.id = w.subjectId
+        """SELECT w.*, t.name AS topicName, s.name AS subjectName FROM WrongEntry w
+        LEFT JOIN Topic t ON t.id = w.topicId LEFT JOIN Subject s ON s.id = w.subjectId
         ORDER BY w.resolved ASC, w.nextReviewAt ASC"""
     )
     fun wrongRows(): Flow<List<WrongRow>>
-    @Query("SELECT COUNT(*) FROM WrongQuestion WHERE resolved = 0 AND nextReviewAt <= :now") fun wrongDue(now: Long): Flow<Int>
-    @Query("SELECT COUNT(*) FROM WrongQuestion WHERE resolved = 0 AND nextReviewAt <= :now") suspend fun wrongDueNow(now: Long): Int
-    @Query("SELECT questionId FROM WrongQuestion WHERE resolved = 0 AND nextReviewAt <= :now ORDER BY wrongCount DESC, nextReviewAt ASC")
+    @Query("SELECT COUNT(*) FROM WrongEntry WHERE resolved = 0 AND nextReviewAt <= :now") fun wrongDue(now: Long): Flow<Int>
+    @Query("SELECT COUNT(*) FROM WrongEntry WHERE resolved = 0 AND nextReviewAt <= :now") suspend fun wrongDueNow(now: Long): Int
+    @Query("SELECT COUNT(*) FROM WrongEntry WHERE resolved = 0") fun wrongOpen(): Flow<Int>
+    @Query("SELECT id FROM WrongEntry WHERE resolved = 0 AND nextReviewAt <= :now ORDER BY wrongCount DESC, nextReviewAt ASC")
     suspend fun wrongDueIds(now: Long): List<String>
-    @Query("SELECT reason AS name, COUNT(*) AS value FROM WrongQuestion WHERE reason != '' GROUP BY reason ORDER BY value DESC") fun wrongReasons(): Flow<List<NamedCount>>
+    @Query("SELECT reason AS name, COUNT(*) AS value FROM WrongEntry WHERE reason != '' GROUP BY reason ORDER BY value DESC") fun wrongReasons(): Flow<List<NamedCount>>
+    @Upsert suspend fun saveWrongReview(r: WrongReview)
+    @Query("SELECT * FROM WrongReview WHERE wrongId = :id ORDER BY at DESC") fun reviewsOf(id: String): Flow<List<WrongReview>>
+    @Query("SELECT * FROM WrongReview") suspend fun wrongReviewsNow(): List<WrongReview>
+    @Query("SELECT COUNT(*) FROM WrongReview WHERE at >= :from AND at < :to") suspend fun wrongReviewsBetween(from: Long, to: Long): Int
 
     /* Denemeler */
     @Upsert suspend fun saveMock(m: MockExam)
-    @Upsert suspend fun saveRecords(r: List<AnswerRecord>)
-    @Upsert suspend fun saveRecord(r: AnswerRecord)
     @Upsert suspend fun saveResults(r: List<MockExamResult>)
     @Query("SELECT * FROM MockExam WHERE id = :id") suspend fun mock(id: String): MockExam?
-    @Query("SELECT * FROM MockExam WHERE status = 'RUNNING' ORDER BY createdAt DESC LIMIT 1") fun running(): Flow<MockExam?>
-    @Query("SELECT * FROM MockExam WHERE status = 'RUNNING'") suspend fun runningNow(): List<MockExam>
-    @Query("SELECT * FROM AnswerRecord WHERE mockExamId = :id ORDER BY orderIndex") suspend fun records(id: String): List<AnswerRecord>
+    @Query("SELECT * FROM MockExam WHERE status IN ('RUNNING', 'ENTRY') ORDER BY createdAt DESC LIMIT 1") fun running(): Flow<MockExam?>
     @Query("SELECT * FROM MockExamResult WHERE mockExamId = :id ORDER BY sortOrder") suspend fun results(id: String): List<MockExamResult>
     @Query("DELETE FROM MockExam WHERE id = :id") suspend fun deleteMock(id: String)
     @Query("DELETE FROM MockExamResult WHERE mockExamId = :id") suspend fun deleteResults(id: String)
-    @Query("DELETE FROM AnswerRecord WHERE mockExamId = :id") suspend fun deleteRecords(id: String)
-    @Query("DELETE FROM QuestionAttempt WHERE mockExamId = :id") suspend fun deleteMockAttempts(id: String)
+    @Query("DELETE FROM PracticeLog WHERE mockExamId = :id") suspend fun deleteMockLogs(id: String)
     @Query("SELECT * FROM MockExam") suspend fun mocksNow(): List<MockExam>
     @Query("SELECT * FROM MockExamResult") suspend fun resultsNow(): List<MockExamResult>
-    @Query("SELECT * FROM AnswerRecord") suspend fun recordsNow(): List<AnswerRecord>
     @Query(
         """SELECT m.id, m.title, m.exam, m.kind, m.createdAt, m.status, m.isExternal, m.publisher, m.examDate,
         COALESCE(SUM(r.correct),0) AS correct, COALESCE(SUM(r.wrong),0) AS wrong, COALESCE(SUM(r.blank),0) AS blank, COALESCE(SUM(r.net),0) AS net
@@ -253,6 +299,23 @@ interface UserDao {
     @Query("SELECT * FROM FlashcardProgress") suspend fun cardProgressNow(): List<FlashcardProgress>
     @Query("SELECT * FROM Flashcard WHERE isUser = 1") suspend fun userCardsNow(): List<Flashcard>
     @Query("SELECT COUNT(*) FROM FlashcardProgress WHERE learned = 1") fun learnedCards(): Flow<Int>
+    @Upsert suspend fun saveCardReview(r: CardReview)
+    @Query("SELECT * FROM CardReview") suspend fun cardReviewsNow(): List<CardReview>
+    @Query("SELECT COUNT(*) FROM CardReview WHERE cardId = :id") fun cardReviewCount(id: String): Flow<Int>
+
+    /* Kişisel içerik notları, net hedefleri, dinlenme günleri */
+    @Upsert suspend fun saveItemNote(n: ItemNote)
+    @Query("DELETE FROM ItemNote WHERE kind = :kind AND refId = :refId") suspend fun deleteItemNote(kind: String, refId: String)
+    @Query("SELECT * FROM ItemNote WHERE kind = :kind") fun itemNotes(kind: String): Flow<List<ItemNote>>
+    @Query("SELECT * FROM ItemNote") suspend fun itemNotesNow(): List<ItemNote>
+    @Upsert suspend fun saveNetGoal(g: NetGoal)
+    @Query("DELETE FROM NetGoal WHERE exam = :exam AND section = :section") suspend fun deleteNetGoal(exam: String, section: String)
+    @Query("SELECT * FROM NetGoal") fun netGoals(): Flow<List<NetGoal>>
+    @Query("SELECT * FROM NetGoal") suspend fun netGoalsNow(): List<NetGoal>
+    @Upsert suspend fun saveRestDay(d: RestDay)
+    @Query("DELETE FROM RestDay WHERE date = :date") suspend fun deleteRestDay(date: String)
+    @Query("SELECT date FROM RestDay") fun restDays(): Flow<List<String>>
+    @Query("SELECT * FROM RestDay") suspend fun restDaysNow(): List<RestDay>
 
     /* Notlar */
     @Query("SELECT * FROM UserNote ORDER BY favorite DESC, updatedAt DESC") fun notes(): Flow<List<UserNote>>
@@ -295,15 +358,22 @@ interface UserDao {
     @Query("DELETE FROM UniversityRecord WHERE packId = :packId") suspend fun deleteUniversityPack(packId: String)
 
     /* Toplu temizlik */
-    @Query("DELETE FROM QuestionAttempt") suspend fun clearAttempts()
-    @Query("DELETE FROM AnswerRecord") suspend fun clearRecords()
+    @Query("DELETE FROM PracticeLog") suspend fun clearLogs()
+    @Query("DELETE FROM WrongReview") suspend fun clearWrongReviews()
+    @Query("DELETE FROM StudySource") suspend fun clearSources()
+    @Query("DELETE FROM RouteItem") suspend fun clearRoute()
+    @Query("DELETE FROM PlanRevision") suspend fun clearRevisions()
+    @Query("DELETE FROM CardReview") suspend fun clearCardReviews()
+    @Query("DELETE FROM ItemNote") suspend fun clearItemNotes()
+    @Query("DELETE FROM NetGoal") suspend fun clearNetGoals()
+    @Query("DELETE FROM RestDay") suspend fun clearRestDays()
     @Query("DELETE FROM StudyPlan") suspend fun clearPlans()
     @Query("DELETE FROM StudyTask") suspend fun clearTasks()
     @Query("DELETE FROM StudySession") suspend fun clearSessions()
     @Query("DELETE FROM MockExam") suspend fun clearMocks()
     @Query("DELETE FROM MockExamResult") suspend fun clearResults()
     @Query("DELETE FROM TopicProgress") suspend fun clearProgress()
-    @Query("DELETE FROM WrongQuestion") suspend fun clearWrongs()
+    @Query("DELETE FROM WrongEntry") suspend fun clearWrongs()
     @Query("DELETE FROM FlashcardProgress") suspend fun clearCardProgress()
     @Query("DELETE FROM Flashcard WHERE isUser = 1") suspend fun clearUserCards()
     @Query("DELETE FROM UserNote") suspend fun clearNotes()
@@ -315,14 +385,22 @@ interface UserDao {
     @Query("DELETE FROM UniversityRecord") suspend fun clearUniversityRecords()
     @Query("DELETE FROM UserProfile") suspend fun clearProfile()
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeRecords(v: List<AnswerRecord>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergePlans(v: List<StudyPlan>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeTasks(v: List<StudyTask>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeSessions(v: List<StudySession>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeMocks(v: List<MockExam>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeResults(v: List<MockExamResult>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeProgress(v: List<TopicProgress>)
-    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeWrongs(v: List<WrongQuestion>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeWrongs(v: List<WrongEntry>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeLogs(v: List<PracticeLog>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeSources(v: List<StudySource>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeWrongReviews(v: List<WrongReview>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeRoute(v: List<RouteItem>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeRevisions(v: List<PlanRevision>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeCardReviews(v: List<CardReview>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeItemNotes(v: List<ItemNote>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeNetGoals(v: List<NetGoal>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeRestDays(v: List<RestDay>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeCardProgress(v: List<FlashcardProgress>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeCards(v: List<Flashcard>)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun mergeNotes(v: List<UserNote>)
@@ -336,13 +414,14 @@ interface UserDao {
 }
 
 @Database(
-    version = 1,
+    version = 2,
     exportSchema = true,
     entities = [
-        UserProfile::class, ExamConfiguration::class, Subject::class, Topic::class, Question::class, AnswerOption::class,
-        Formula::class, Flashcard::class, ImportedContentPack::class, QuestionAttempt::class, AnswerRecord::class,
+        UserProfile::class, ExamConfiguration::class, Subject::class, Topic::class,
+        Formula::class, Flashcard::class, ImportedContentPack::class, PracticeLog::class, StudySource::class,
         StudyPlan::class, StudyTask::class, StudySession::class, MockExam::class, MockExamResult::class, TopicProgress::class,
-        WrongQuestion::class, FlashcardProgress::class, UserNote::class, Bookmark::class, Reminder::class,
+        WrongEntry::class, WrongReview::class, RouteItem::class, PlanRevision::class, CardReview::class, ItemNote::class, NetGoal::class, RestDay::class,
+        FlashcardProgress::class, UserNote::class, Bookmark::class, Reminder::class,
         TargetUniversity::class, TargetDepartment::class, LibraryFile::class, UniversityRecord::class,
     ],
 )
@@ -351,10 +430,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun user(): UserDao
 
     companion object {
-        /** Yeni şema sürümlerinde buraya Migration eklenir; yıkıcı geçiş hiçbir zaman açılmaz. */
+        /** Şema değişiklikleri Migration ile yapılır; yıkıcı geçiş hiçbir zaman açılmaz. */
         fun build(context: Context): AppDatabase =
-            Room.databaseBuilder(context, AppDatabase::class.java, "yks_pusula.db").build()
+            Room.databaseBuilder(context, AppDatabase::class.java, "yks_pusula.db").addMigrations(MIGRATION_1_2).build()
     }
 }
-
-fun rawQuestionQuery(sql: String, args: List<Any>) = SimpleSQLiteQuery(sql, args.toTypedArray())

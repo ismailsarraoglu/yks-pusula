@@ -1,6 +1,8 @@
 package app.ykspusula.ui
 
 import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -13,6 +15,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -41,6 +44,7 @@ import androidx.navigation.navArgument
 import app.ykspusula.YksApp
 import app.ykspusula.data.Repository
 import app.ykspusula.data.UserProfile
+import app.ykspusula.ui.components.AppBackground
 import app.ykspusula.ui.components.Muted
 import app.ykspusula.ui.screens.*
 import app.ykspusula.ui.theme.Yks
@@ -66,7 +70,7 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 private val TABS = listOf(
     Tab("home", "Ana Sayfa", Icons.Rounded.Home),
-    Tab("study", "Çalış", Icons.Rounded.MenuBook),
+    Tab("study", "Çalış", Icons.AutoMirrored.Rounded.MenuBook),
     Tab("exams", "Denemeler", Icons.Rounded.Assignment),
     Tab("stats", "İstatistik", Icons.Rounded.BarChart),
     Tab("profile", "Profil", Icons.Rounded.Person),
@@ -77,7 +81,7 @@ fun AppRoot() {
     val a = app()
     val ready by a.ready.collectAsStateWithLifecycle()
     val error by a.startError.collectAsStateWithLifecycle()
-    Box(Modifier.fillMaxSize().background(Yks.c.bg)) {
+    AppBackground {
         when {
             error != null -> Column(Modifier.align(Alignment.Center).padding(24.dp)) {
                 Text("Uygulama başlatılamadı", style = MaterialTheme.typography.titleMedium, color = Yks.c.error)
@@ -100,45 +104,62 @@ private fun Gate() {
 
 private class Holder(val p: UserProfile?)
 
+/** Alt menü: aktif sekme mavi ve altında ince çizgi. Tam ekran odak ve deneme oturumlarında gizlenir. */
+@Composable
+private fun BottomNavigationBar(route: String?, onSelect: (String) -> Unit) {
+    val c = Yks.c
+    Column(Modifier.background(if (c.isDark) c.bg2 else c.card).navigationBarsPadding()) {
+        HorizontalDivider(thickness = 0.5.dp, color = c.line)
+        Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).selectableGroup()) {
+            TABS.forEach { t ->
+                val selected = route == t.route
+                val tint by animateColorAsState(if (selected) c.accentLight else c.muted, tween(180), label = "sekme")
+                val line by animateFloatAsState(if (selected) 1f else 0f, tween(200), label = "cizgi")
+                Column(
+                    Modifier.weight(1f).selectable(selected, role = Role.Tab) { onSelect(t.route) }.padding(top = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(t.icon, null, tint = tint, modifier = Modifier.size(26.dp))
+                    Spacer(Modifier.height(2.dp))
+                    Text(t.label, color = tint, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(4.dp))
+                    Box(Modifier.width(44.dp * line).height(3.dp).clip(CircleShape).background(c.accent))
+                    Spacer(Modifier.height(4.dp))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun MainNav() {
     val nav = rememberNavController()
+    val a = app()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val showBar = TABS.any { it.route == route }
+    val pending by a.pendingRoute.collectAsStateWithLifecycle()
     DisposableEffect(nav) { DebugNav.nav = nav; onDispose { DebugNav.nav = null } }
+    LaunchedEffect(pending, route) {
+        val target = pending
+        if (target != null && route != null) {
+            a.pendingRoute.value = null
+            runCatching {
+                if (TABS.any { it.route == target }) nav.navigate(target) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
+                else nav.navigate(target)
+            }
+        }
+    }
     CompositionLocalProvider(LocalNav provides nav) {
         Scaffold(
-            containerColor = Yks.c.bg,
+            containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (showBar) {
-                    Column(Modifier.background(Yks.c.card).navigationBarsPadding()) {
-                        HorizontalDivider(thickness = 0.5.dp, color = Yks.c.line)
-                        Row(Modifier.fillMaxWidth().height(62.dp).selectableGroup()) {
-                            TABS.forEach { t ->
-                                val selected = route == t.route
-                                val tint = if (selected) Yks.c.accent else Yks.c.muted
-                                Column(
-                                    Modifier.weight(1f).fillMaxHeight().selectable(selected, role = Role.Tab) {
-                                        nav.navigate(t.route) {
-                                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                ) {
-                                    Box(
-                                        Modifier.size(width = 52.dp, height = 28.dp).clip(CircleShape).background(if (selected) Yks.c.soft else Color.Transparent),
-                                        contentAlignment = Alignment.Center,
-                                    ) { Icon(t.icon, null, tint = tint, modifier = Modifier.size(22.dp)) }
-                                    Spacer(Modifier.height(2.dp))
-                                    Text(t.label, color = tint, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
-                        }
+                if (showBar) BottomNavigationBar(route) { r ->
+                    nav.navigate(r) {
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
             },
@@ -167,25 +188,18 @@ private fun Graph(nav: NavHostController, modifier: Modifier) {
 
         composable("subject/{id}") { SubjectScreen(it.s("id")) }
         composable("topic/{id}") { TopicScreen(it.s("id")) }
-        composable("tracker") { TrackerScreen() }
-        composable("bank") { BankScreen() }
-        composable(
-            "solve?mode={mode}&exam={exam}&subject={subject}&topic={topic}&diff={diff}&state={state}&seed={seed}&limit={limit}&mix={mix}",
-            listOf(
-                sArg("mode", "BANK"), sArg("exam"), sArg("subject"), sArg("topic"),
-                navArgument("diff") { type = NavType.IntType; defaultValue = 0 }, sArg("state", "ALL"),
-                navArgument("seed") { type = NavType.LongType; defaultValue = 0L },
-                navArgument("limit") { type = NavType.IntType; defaultValue = 0 },
-                navArgument("mix") { type = NavType.BoolType; defaultValue = false },
-            ),
-        ) { e ->
-            SolveScreen(
-                e.s("mode"), e.s("exam"), e.s("subject"), e.s("topic"), e.arguments?.getInt("diff") ?: 0, e.s("state"),
-                e.arguments?.getLong("seed") ?: 0L, e.arguments?.getInt("limit") ?: 0, e.arguments?.getBoolean("mix") ?: false,
-            )
+        composable("mastery") { MasteryScreen() }
+        composable("log?source={source}&topic={topic}&subject={subject}&task={task}&route={route}", listOf(sArg("source"), sArg("topic"), sArg("subject"), sArg("task"), sArg("route"))) {
+            StudyLogScreen(it.s("source"), it.s("topic"), it.s("subject"), it.s("task"), it.s("route"))
         }
+        composable("sources") { SourcesScreen() }
+        composable("source/{id}") { SourceDetailScreen(it.s("id")) }
+        composable("sourceEdit/{id}") { SourceEditScreen(it.s("id")) }
+        composable("sourceCompare") { SourceCompareScreen() }
         composable("wrongs") { WrongsScreen() }
         composable("wrong/{id}") { WrongDetailScreen(it.s("id")) }
+        composable("wrongEdit/{id}?topic={topic}&subject={subject}&source={source}", listOf(sArg("topic"), sArg("subject"), sArg("source"))) { WrongEditScreen(it.s("id"), it.s("topic"), it.s("subject"), it.s("source")) }
+        composable("wrongReview") { WrongReviewScreen() }
         composable("cards") { CardsScreen() }
         composable("deck/{deck}") { DeckScreen(it.s("deck")) }
         composable("review/{deck}") { CardReviewScreen(it.s("deck")) }
@@ -195,18 +209,38 @@ private fun Graph(nav: NavHostController, modifier: Modifier) {
         composable("note/{id}") { NoteEditScreen(it.s("id")) }
         composable("library") { LibraryScreen() }
         composable("pdf/{id}") { PdfScreen(it.s("id")) }
-        composable("pomodoro") { PomodoroScreen() }
+        composable(
+            "pomodoro?subject={subject}&topic={topic}&source={source}&minutes={minutes}&label={label}&routeId={routeId}",
+            listOf(sArg("subject"), sArg("topic"), sArg("source"), navArgument("minutes") { type = NavType.IntType; defaultValue = 0 }, sArg("label"), sArg("routeId")),
+        ) { PomodoroScreen(it.s("subject"), it.s("topic"), it.s("source"), it.arguments?.getInt("minutes") ?: 0, it.s("label"), it.s("routeId")) }
         composable("plan") { PlanScreen() }
+        composable("planSettings") { PlanSettingsScreen() }
+        composable("planHistory") { PlanHistoryScreen() }
         composable("taskEdit/{date}") { TaskEditScreen(it.s("date")) }
+        composable("coach") { CoachScreen() }
+        composable("replan") { ReplanScreen() }
 
-        composable("examNew/{kind}") { ExamNewScreen(it.s("kind")) }
-        composable("exam/{id}") { ExamRunScreen(it.s("id")) }
+        composable("examStart/{kind}") { ExamStartScreen(it.s("kind")) }
+        composable("examRun/{id}") { ExamRunScreen(it.s("id")) }
+        composable("examEntry/{id}") { ExamEntryScreen(it.s("id")) }
         composable("result/{id}") { ResultScreen(it.s("id")) }
-        composable("examReview/{id}") { ExamReviewScreen(it.s("id")) }
-        composable("external") { ExternalExamScreen() }
+        composable("examHistory") { ExamHistoryScreen() }
+        composable("examCompare/{a}/{b}") { ExamCompareScreen(it.s("a"), it.s("b")) }
+        composable("examAnalysis") { ExamAnalysisScreen() }
+        composable("netGoals") { NetGoalsScreen() }
+        composable("external?kind={kind}&exam={exam}&subject={subject}&title={title}", listOf(sArg("kind"), sArg("exam"), sArg("subject"), sArg("title"))) {
+            ExternalExamScreen(it.s("kind"), it.s("exam"), it.s("subject"), it.s("title"))
+        }
         composable("examSettings") { ExamSettingsScreen() }
         composable("obp") { ObpScreen() }
 
+        composable("reports") { ReportsScreen() }
+        composable("motivation") { MotivationScreen() }
+        composable("removeAds") { RemoveAdsScreen() }
+        composable("privacy") { TextScreen("Gizlilik politikası", POLICY_TEXT) }
+        composable("terms") { TextScreen("Satın alma koşulları", TERMS_TEXT) }
+        composable("about") { AboutScreen() }
+        composable("info") { InfoScreen() }
         composable("profileEdit") { ProfileEditScreen() }
         composable("settings") { SettingsScreen() }
         composable("reminders") { RemindersScreen() }
@@ -219,11 +253,6 @@ private fun Graph(nav: NavHostController, modifier: Modifier) {
 
 private fun sArg(name: String, def: String = "") = navArgument(name) { type = NavType.StringType; defaultValue = def }
 private fun NavBackStackEntry.s(k: String): String = arguments?.getString(k).orEmpty()
-
-fun NavController.solve(
-    mode: String = "BANK", exam: String = "", subject: String = "", topic: String = "", diff: Int = 0, state: String = "ALL",
-    seed: Long = 0L, limit: Int = 0, mix: Boolean = false,
-) = navigate("solve?mode=$mode&exam=$exam&subject=$subject&topic=$topic&diff=$diff&state=$state&seed=$seed&limit=$limit&mix=$mix")
 
 /** Yerel tarih: 5 Kasım 2026 */
 fun longDate(d: java.time.LocalDate): String = d.format(java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy", java.util.Locale("tr", "TR")))

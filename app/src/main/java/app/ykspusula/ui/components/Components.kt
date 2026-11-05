@@ -7,6 +7,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -19,14 +21,19 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -38,18 +45,46 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import app.ykspusula.ui.theme.Gradients
+import app.ykspusula.ui.theme.NumberStyle
 import app.ykspusula.ui.theme.Yks
 
 object Space { val xs = 4.dp; val s = 8.dp; val m = 12.dp; val l = 16.dp; val xl = 24.dp; val xxl = 32.dp }
 
+/** Dokununca hafifçe küçülür; düşük donanımda da akıcıdır. */
+fun Modifier.press(source: MutableInteractionSource): Modifier = composed {
+    val pressed by source.collectIsPressedAsState()
+    val s by animateFloatAsState(if (pressed) 0.975f else 1f, tween(110), label = "bas")
+    graphicsLayer { scaleX = s; scaleY = s }
+}
+
+/** Bütün sayfaların ortak arka planı: derin lacivert ve hafif mavi ışık. */
+@Composable
+fun AppBackground(content: @Composable BoxScope.() -> Unit) {
+    val c = Yks.c
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(c.bg, c.bg2, c.bg)))) {
+        if (c.isDark) Canvas(Modifier.fillMaxWidth().height(320.dp)) {
+            drawCircle(
+                Brush.radialGradient(listOf(Color(0x2A318BFF), Color.Transparent), center = Offset(size.width * 0.95f, size.height * 0.28f), radius = size.width * 0.75f),
+                radius = size.width * 0.75f, center = Offset(size.width * 0.95f, size.height * 0.28f),
+            )
+        }
+        content()
+    }
+}
+
 @Composable
 fun YCard(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, padding: Dp = Space.l, content: @Composable ColumnScope.() -> Unit) {
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(22.dp)
+    val c = Yks.c
+    val source = remember { MutableInteractionSource() }
     val base = modifier.fillMaxWidth()
-        .then(if (Yks.c.isDark) Modifier else Modifier.shadow(1.dp, shape, ambientColor = Color(0x14000000), spotColor = Color(0x14000000)))
-        .clip(shape).background(Yks.c.card)
-        .then(if (Yks.c.isDark) Modifier.border(BorderStroke(0.5.dp, Yks.c.line), shape) else Modifier)
-        .then(if (onClick != null) Modifier.clickable(onClick = onClick, role = Role.Button) else Modifier)
+        .then(if (onClick != null) Modifier.press(source) else Modifier)
+        .then(if (c.isDark) Modifier else Modifier.shadow(2.dp, shape, ambientColor = Color(0x18131A2B), spotColor = Color(0x18131A2B)))
+        .clip(shape)
+        .background(if (c.isDark) Brush.linearGradient(listOf(c.card2, c.card)) else Brush.linearGradient(listOf(c.card, c.card)))
+        .border(BorderStroke(1.dp, c.line.copy(alpha = if (c.isDark) 0.7f else 1f)), shape)
+        .then(if (onClick != null) Modifier.clickable(source, ripple(), onClick = onClick, role = Role.Button) else Modifier)
         .padding(padding)
     Column(base, content = content)
 }
@@ -58,17 +93,17 @@ fun YCard(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, padding:
 @Composable
 fun Screen(title: String, onBack: (() -> Unit)? = null, actions: @Composable RowScope.() -> Unit = {}, content: @Composable ColumnScope.() -> Unit) {
     Scaffold(
-        containerColor = Yks.c.bg,
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.semantics { heading() }) },
                 navigationIcon = { if (onBack != null) IconButton(onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Geri") } },
                 actions = actions,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Yks.c.bg, titleContentColor = Yks.c.text, navigationIconContentColor = Yks.c.text, actionIconContentColor = Yks.c.text),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent, scrolledContainerColor = Color.Transparent, titleContentColor = Yks.c.text, navigationIconContentColor = Yks.c.text, actionIconContentColor = Yks.c.text),
             )
         },
     ) { inner ->
-        Column(Modifier.padding(inner).fillMaxSize(), content = content)
+        Column(Modifier.padding(inner).fillMaxSize().imePadding(), content = content)
     }
 }
 
@@ -88,7 +123,7 @@ fun ScrollColumn(modifier: Modifier = Modifier, content: @Composable ColumnScope
 @Composable
 fun Section(title: String, modifier: Modifier = Modifier, trailing: @Composable (() -> Unit)? = null) {
     Row(modifier.fillMaxWidth().padding(top = Space.s), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, style = MaterialTheme.typography.titleMedium, color = Yks.c.text, modifier = Modifier.weight(1f).semantics { heading() })
+        Text(title, style = MaterialTheme.typography.titleLarge, color = Yks.c.text, modifier = Modifier.weight(1f).semantics { heading() })
         trailing?.invoke()
     }
 }
@@ -101,8 +136,8 @@ fun Muted(text: String, modifier: Modifier = Modifier, maxLines: Int = Int.MAX_V
 @Composable
 fun ProgressBar(fraction: Float, modifier: Modifier = Modifier, color: Color = Yks.c.accent, height: Dp = 8.dp) {
     val f by animateFloatAsState(fraction.coerceIn(0f, 1f), tween(450), label = "bar")
-    Box(modifier.fillMaxWidth().height(height).clip(CircleShape).background(Yks.c.line)) {
-        Box(Modifier.fillMaxWidth(f).fillMaxHeight().clip(CircleShape).background(color))
+    Box(modifier.fillMaxWidth().height(height).clip(CircleShape).background(Yks.c.line.copy(alpha = 0.7f))) {
+        Box(Modifier.fillMaxWidth(f).fillMaxHeight().clip(CircleShape).then(if (color == Yks.c.accent) Modifier.background(Gradients.bar) else Modifier.background(color)))
     }
 }
 
@@ -110,15 +145,18 @@ fun ProgressBar(fraction: Float, modifier: Modifier = Modifier, color: Color = Y
 fun Ring(fraction: Float, label: String, modifier: Modifier = Modifier, size: Dp = 84.dp, color: Color = Yks.c.accent, description: String = label) {
     val f by animateFloatAsState(fraction.coerceIn(0f, 1f), tween(500), label = "ring")
     val track = Yks.c.line
+    val gradient = color == Yks.c.accent
+    val c1 = Yks.c.accent
+    val c2 = Yks.c.purpleLight
     Box(modifier.size(size).semantics(mergeDescendants = true) { contentDescription = description }, contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val w = 9.dp.toPx()
             val s = Size(this.size.width - w, this.size.height - w)
             val o = Offset(w / 2, w / 2)
             drawArc(track, 0f, 360f, false, o, s, style = Stroke(w))
-            drawArc(color, -90f, 360f * f, false, o, s, style = Stroke(w, cap = StrokeCap.Round))
+            drawArc(if (gradient) Brush.sweepGradient(listOf(c1, c2, c1)) else SolidColor(color), -90f, 360f * f, false, o, s, style = Stroke(w, cap = StrokeCap.Round))
         }
-        Text(label, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+        Text(label, style = MaterialTheme.typography.titleMedium.merge(NumberStyle), color = Yks.c.text)
     }
 }
 
@@ -126,14 +164,14 @@ fun Ring(fraction: Float, label: String, modifier: Modifier = Modifier, size: Dp
 fun Pill(text: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
         modifier.defaultMinSize(minHeight = 44.dp).clip(CircleShape)
-            .background(if (selected) Yks.c.accent else Yks.c.card)
+            .then(if (selected) Modifier.background(Gradients.button) else Modifier.background(Yks.c.card))
             .then(if (selected) Modifier else Modifier.border(1.dp, Yks.c.line, CircleShape))
             .clickable(role = Role.RadioButton, onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (selected) Icon(Icons.Rounded.Check, null, tint = if (Yks.c.isDark) Color(0xFF0B1A33) else Color.White, modifier = Modifier.size(16.dp))
-            Text(text, style = MaterialTheme.typography.labelLarge, color = if (selected) (if (Yks.c.isDark) Color(0xFF0B1A33) else Color.White) else Yks.c.text)
+            if (selected) Icon(Icons.Rounded.Check, null, tint = Color.White, modifier = Modifier.size(16.dp))
+            Text(text, style = MaterialTheme.typography.labelLarge, color = if (selected) Color.White else Yks.c.text)
         }
     }
 }
@@ -157,7 +195,7 @@ fun MultiPills(options: List<Pair<String, String>>, selected: Set<String>, onTog
 @Composable
 fun Tile(value: String, label: String, modifier: Modifier = Modifier, tint: Color = Yks.c.text) {
     YCard(modifier, padding = Space.m) {
-        Text(value, style = MaterialTheme.typography.titleLarge, color = tint, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(value, style = MaterialTheme.typography.titleLarge.merge(NumberStyle), color = tint, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(label, style = MaterialTheme.typography.labelMedium, color = Yks.c.muted, maxLines = 2)
     }
 }
@@ -176,7 +214,7 @@ fun NavRow(title: String, subtitle: String? = null, icon: ImageVector? = null, t
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(tint.copy(alpha = 0.13f)), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(40.dp).clip(CircleShape).background(tint.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(Space.m))
@@ -185,7 +223,7 @@ fun NavRow(title: String, subtitle: String? = null, icon: ImageVector? = null, t
             Text(title, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
             if (subtitle != null) Muted(subtitle, maxLines = 2)
         }
-        if (trailing != null) trailing() else Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = Yks.c.muted)
+        if (trailing != null) trailing() else Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = Yks.c.muted, modifier = Modifier)
     }
 }
 
@@ -193,12 +231,16 @@ fun NavRow(title: String, subtitle: String? = null, icon: ImageVector? = null, t
 fun GroupCard(content: @Composable ColumnScope.() -> Unit) = YCard(padding = 0.dp, content = content)
 
 @Composable
-fun Line() = HorizontalDivider(thickness = 0.5.dp, color = Yks.c.line)
+fun Line() = HorizontalDivider(thickness = 0.5.dp, color = Yks.c.line.copy(alpha = 0.8f))
+
+/** Veri yokken gösterilen boş durum: uydurma veri yerine ne yapılacağını söyler. */
+@Composable
+fun Empty(icon: ImageVector, title: String, detail: String, action: String? = null, onAction: (() -> Unit)? = null) = EmptyStateView(icon, title, detail, action, onAction)
 
 @Composable
-fun Empty(icon: ImageVector, title: String, detail: String, action: String? = null, onAction: (() -> Unit)? = null) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 40.dp, horizontal = Space.l), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(64.dp).clip(CircleShape).background(Yks.c.soft), contentAlignment = Alignment.Center) { Icon(icon, null, tint = Yks.c.accent, modifier = Modifier.size(30.dp)) }
+fun EmptyStateView(icon: ImageVector, title: String, detail: String, action: String? = null, onAction: (() -> Unit)? = null) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 36.dp, horizontal = Space.l), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(72.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Yks.c.soft, Yks.c.purple.copy(alpha = 0.25f)))), contentAlignment = Alignment.Center) { Icon(icon, null, tint = Yks.c.accentLight, modifier = Modifier.size(32.dp)) }
         Spacer(Modifier.height(Space.m))
         Text(title, style = MaterialTheme.typography.titleMedium, color = Yks.c.text, textAlign = TextAlign.Center)
         Spacer(Modifier.height(Space.xs))
@@ -209,15 +251,23 @@ fun Empty(icon: ImageVector, title: String, detail: String, action: String? = nu
 
 @Composable
 fun MainButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, icon: ImageVector? = null, onClick: () -> Unit) {
-    Button(onClick, modifier.defaultMinSize(minHeight = 50.dp), enabled = enabled, shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)) {
-        if (icon != null) { Icon(icon, null, Modifier.size(20.dp)); Spacer(Modifier.width(Space.s)) }
-        Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+    val shape = RoundedCornerShape(16.dp)
+    val source = remember { MutableInteractionSource() }
+    Row(
+        modifier.defaultMinSize(minHeight = 52.dp).press(source).clip(shape)
+            .then(if (enabled) Modifier.background(Gradients.button) else Modifier.background(Yks.c.line))
+            .clickable(source, ripple(), enabled = enabled, role = Role.Button, onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
+    ) {
+        val tint = if (enabled) Color.White else Yks.c.muted
+        if (icon != null) { Icon(icon, null, Modifier.size(20.dp), tint = tint); Spacer(Modifier.width(Space.s)) }
+        Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = tint)
     }
 }
 
 @Composable
 fun SoftButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, icon: ImageVector? = null, color: Color = Yks.c.accent, onClick: () -> Unit) {
-    OutlinedButton(onClick, modifier.defaultMinSize(minHeight = 48.dp), enabled = enabled, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Yks.c.line), colors = ButtonDefaults.outlinedButtonColors(contentColor = color)) {
+    OutlinedButton(onClick, modifier.defaultMinSize(minHeight = 48.dp), enabled = enabled, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Yks.c.line), colors = ButtonDefaults.outlinedButtonColors(contentColor = color, containerColor = Yks.c.card.copy(alpha = 0.5f))) {
         if (icon != null) { Icon(icon, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)) }
         Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
@@ -225,7 +275,7 @@ fun SoftButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = t
 
 @Composable
 fun Field(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, singleLine: Boolean = true, minLines: Int = 1, keyboard: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default) {
-    OutlinedTextField(value, onChange, modifier.fillMaxWidth(), label = { Text(label) }, singleLine = singleLine, minLines = minLines, keyboardOptions = keyboard, shape = RoundedCornerShape(14.dp))
+    OutlinedTextField(value, onChange, modifier.fillMaxWidth(), label = { Text(label) }, singleLine = singleLine, minLines = minLines, keyboardOptions = keyboard, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Yks.c.card.copy(alpha = 0.6f), unfocusedContainerColor = Yks.c.card.copy(alpha = 0.6f), unfocusedBorderColor = Yks.c.line))
 }
 
 @Composable

@@ -5,18 +5,32 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val localProps = java.util.Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun prop(name: String, default: String): String = localProps.getProperty(name) ?: default
+
 android {
     namespace = "app.ykspusula"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "app.ykspusula"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+
+        // Varsayılanlar Google'ın test kimlikleridir. Üretim değerleri keystore.properties dosyasından gelir.
+        val testAppId = "ca-app-pub-3940256099942544~3347511713"
+        manifestPlaceholders["admobAppId"] = prop("ADMOB_APP_ID", testAppId)
+        buildConfigField("String", "ADMOB_APP_ID", "\"${prop("ADMOB_APP_ID", testAppId)}\"")
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"${prop("ADMOB_BANNER_ID", "ca-app-pub-3940256099942544/9214589741")}\"")
+        buildConfigField("String", "ADMOB_NATIVE_ID", "\"${prop("ADMOB_NATIVE_ID", "ca-app-pub-3940256099942544/2247696110")}\"")
+        buildConfigField("String", "PLAY_PUBLIC_KEY", "\"${prop("PLAY_PUBLIC_KEY", "")}\"")
     }
 
     signingConfigs {
@@ -27,6 +41,15 @@ android {
             keyAlias = "ykspusula"
             keyPassword = "KALDIRILDI"
         }
+        // Google Play yükleme anahtarı keystore.properties ile verilir; depoya konmaz.
+        if (localProps.getProperty("UPLOAD_STORE_FILE") != null) {
+            create("upload") {
+                storeFile = rootProject.file(localProps.getProperty("UPLOAD_STORE_FILE"))
+                storePassword = localProps.getProperty("UPLOAD_STORE_PASSWORD")
+                keyAlias = localProps.getProperty("UPLOAD_KEY_ALIAS")
+                keyPassword = localProps.getProperty("UPLOAD_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -34,7 +57,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("sideload")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("sideload")
         }
     }
 
@@ -72,9 +95,11 @@ dependencies {
 
     implementation("androidx.room:room-runtime:2.8.5")
     implementation("androidx.room:room-ktx:2.8.5")
-    implementation("androidx.room:room-paging:2.8.5")
     ksp("androidx.room:room-compiler:2.8.5")
-    implementation("androidx.paging:paging-compose:3.4.0")
+
+    implementation("com.android.billingclient:billing:9.1.0")
+    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.6.0")
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
     implementation("androidx.datastore:datastore-preferences:1.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")

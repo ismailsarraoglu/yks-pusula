@@ -7,7 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -30,55 +32,71 @@ import app.ykspusula.ui.LocalNav
 import app.ykspusula.ui.app
 import app.ykspusula.ui.components.*
 import app.ykspusula.ui.repo
+import app.ykspusula.ui.rememberUiScope
 import app.ykspusula.ui.shortDate
 import app.ykspusula.ui.theme.Yks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-const val PRIVACY_TEXT = "Tüm kişisel verilerin bu cihazda saklanır. Uygulama hesabı veya sunucusu bulunmamaktadır."
+const val PRIVACY_TEXT = "Çalışma verilerin bu cihazda saklanır. Uygulamada hesap veya sunucu yoktur. Reklam ve satın alma için Google hizmetleri kullanılır."
 
 @Composable
 fun ProfileScreen() {
-    val r = repo()
+    val a = app()
+    val r = a.repo
     val nav = LocalNav.current
+    val context = LocalContext.current
+    val c = Yks.c
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
+    val adsFree by a.monetize.entitlement.hasAdsFreeEntitlement.collectAsStateWithLifecycle()
+    val privacy by a.monetize.ads.privacyOptionsRequired.collectAsStateWithLifecycle()
     val p = profile ?: return
     ScrollColumn(Modifier.statusBarsPadding()) {
-        Text("Profil", style = MaterialTheme.typography.headlineMedium, color = Yks.c.text)
+        PageHeader("Profil", "Hedeflerin, ayarların ve verilerin.")
         YCard(onClick = { nav.navigate("profileEdit") }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(56.dp).clip(CircleShape).background(Yks.c.soft), contentAlignment = Alignment.Center) {
-                    Text(p.name.take(1).uppercase().ifEmpty { "Ö" }, style = MaterialTheme.typography.titleLarge, color = Yks.c.accent)
+                Box(Modifier.size(56.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(c.accent, c.purple))), contentAlignment = Alignment.Center) {
+                    Text(p.name.take(1).uppercase().ifEmpty { "Ö" }, style = MaterialTheme.typography.titleLarge, color = androidx.compose.ui.graphics.Color.White)
                 }
                 Spacer(Modifier.width(Space.m))
                 Column(Modifier.weight(1f)) {
-                    Text(p.name.ifBlank { "Öğrenci" }, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                    Text(p.name.ifBlank { "Öğrenci" }, style = MaterialTheme.typography.titleMedium, color = c.text)
                     Muted("${GRADES.firstOrNull { it.first == p.grade }?.second} • ${p.examYear} • ${FIELD_LABELS.firstOrNull { it.first == p.field }?.second}")
                     if (p.targetDepartment.isNotBlank()) Muted("Hedef: ${p.targetDepartment}", maxLines = 1)
+                    Muted("Günlük hedef: ${p.dailyMinutes} dk")
                 }
-                Icon(Icons.Rounded.Edit, "Profili düzenle", tint = Yks.c.muted)
+                Icon(Icons.Rounded.Edit, "Profili düzenle", tint = c.muted)
             }
         }
+        if (!adsFree) PrimaryGradientCard("Reklamları kaldır", "Tek seferlik ödeme, ömür boyu reklamsız.", Icons.Rounded.WorkspacePremium, brush = app.ykspusula.ui.theme.Gradients.purple) { nav.navigate("removeAds") }
         Section("Gelişim")
         GroupCard {
-            NavRow("Rozetler ve hedefler", "Çalışma alışkanlığın", Icons.Rounded.EmojiEvents, Yks.c.warning, { nav.navigate("badges") }); Line()
-            NavRow("Üniversite ve bölüm hedefleri", "Birden fazla hedef kaydet", Icons.Rounded.School, onClick = { nav.navigate("targets") })
+            NavRow("Üniversite ve bölüm hedefleri", "Hedeflerini karşılaştır", Icons.Rounded.School, onClick = { nav.navigate("targets") }); Line()
+            NavRow("Net hedeflerim", "Testlere göre hedef", Icons.Rounded.Flag, c.success, { nav.navigate("netGoals") }); Line()
+            NavRow("Raporlar", "Haftalık ve aylık gelişim", Icons.Rounded.Summarize, onClick = { nav.navigate("reports") }); Line()
+            NavRow("Rozetler ve seriler", "Çalışma alışkanlığın", Icons.Rounded.EmojiEvents, c.warning, { nav.navigate("badges") }); Line()
+            NavRow("Motivasyon sözleri", "Günün sözü ve favoriler", Icons.Rounded.FormatQuote, c.purpleLight, { nav.navigate("motivation") })
         }
         Section("Ayarlar")
         GroupCard {
             NavRow("Uygulama ayarları", "Tema, yazı boyutu, hedefler", Icons.Rounded.Settings, onClick = { nav.navigate("settings") }); Line()
-            NavRow("Bildirimler", "Yerel hatırlatıcılar", Icons.Rounded.Notifications, onClick = { nav.navigate("reminders") }); Line()
-            NavRow("Sınav ayarları", "Tarih, süre, net kuralı", Icons.Rounded.Tune, onClick = { nav.navigate("examSettings") }); Line()
-            NavRow("Yedekleme ve geri yükleme", "Verilerini dosyaya aktar", Icons.Rounded.Backup, onClick = { nav.navigate("backup") }); Line()
-            NavRow("İçerik paketleri", "Sürüm, kapsam ve içe aktarma", Icons.Rounded.Inventory2, onClick = { nav.navigate("packs") })
+            NavRow("Plan ayarları", "Günlük süre, saatler, öncelikler", Icons.Rounded.Tune, onClick = { nav.navigate("planSettings") }); Line()
+            NavRow("Bildirimler", "Hatırlatıcılar ve sıklık", Icons.Rounded.Notifications, onClick = { nav.navigate("reminders") }); Line()
+            NavRow("Sınav ayarları", "Tarih, süre, net kuralı", Icons.Rounded.EventNote, onClick = { nav.navigate("examSettings") })
         }
-        YCard {
-            Row {
-                Icon(Icons.Rounded.Lock, null, tint = Yks.c.success, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(Space.s))
-                Text(PRIVACY_TEXT, style = MaterialTheme.typography.bodyMedium, color = Yks.c.text)
+        Section("Veri ve gizlilik")
+        GroupCard {
+            NavRow("Veri yedekleme", "Yedek oluştur ve geri yükle", Icons.Rounded.Backup, onClick = { nav.navigate("backup") }); Line()
+            NavRow("İçerik paketleri", "Sürüm ve kapsam", Icons.Rounded.Inventory2, onClick = { nav.navigate("packs") }); Line()
+            if (privacy) {
+                NavRow("Gizlilik seçenekleri", "Reklam rızanı yönet", Icons.Rounded.PrivacyTip, onClick = {
+                    (context as? android.app.Activity)?.let { act -> a.monetize.ads.showPrivacyOptions(act) { } }
+                }); Line()
             }
+            NavRow("Gizlilik politikası", "Verilerin nasıl işlendiği", Icons.Rounded.Policy, onClick = { nav.navigate("privacy") }); Line()
+            NavRow(if (adsFree) "Satın alma durumu" else "Satın almaları geri yükle", if (adsFree) "Reklamlar kaldırıldı" else "Aynı Google hesabıyla", Icons.Rounded.Restore, onClick = { nav.navigate("removeAds") }); Line()
+            NavRow("Uygulama hakkında", "Sürüm ve lisanslar", Icons.Rounded.Info, onClick = { nav.navigate("about") })
         }
         Muted("YKS Pusula ${BuildConfig.VERSION_NAME}")
     }
@@ -88,7 +106,7 @@ fun ProfileScreen() {
 fun ProfileEditScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     var p by remember { mutableStateOf<UserProfile?>(null) }
     LaunchedEffect(Unit) { p = r.user.profileNow() }
@@ -110,7 +128,7 @@ fun ProfileEditScreen() {
             Field(u.targetDepartment, { v -> p = u.copy(targetDepartment = v) }, "Hedef bölüm")
             Field(u.dailyMinutes.toString(), { v -> p = u.copy(dailyMinutes = v.filter(Char::isDigit).take(3).toIntOrNull() ?: 0) }, "Günlük çalışma (dakika)", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
             Field(u.dailyQuestions.toString(), { v -> p = u.copy(dailyQuestions = v.filter(Char::isDigit).take(3).toIntOrNull() ?: 0) }, "Günlük soru hedefi", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
-            Field(u.startHour.toString(), { v -> p = u.copy(startHour = (v.filter(Char::isDigit).take(2).toIntOrNull() ?: 0).coerceIn(0, 23)) }, "Çalışma başlangıç saati", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
+            TimeField(u.startHour, 0, "Çalışma başlangıç saati") { h, _ -> p = u.copy(startHour = h) }
             Muted("Çalışma günleri"); MultiPills(DAY_NAMES, u.studyDays.split(',').toSet()) { p = u.copy(studyDays = toggle(u.studyDays, it)) }
             Muted("Güçlü dersler"); MultiPills(tyt, u.strongSubjects.split(',').toSet()) { p = u.copy(strongSubjects = toggle(u.strongSubjects, it)) }
             Muted("Zorlandığın dersler"); MultiPills(tyt, u.weakSubjects.split(',').toSet()) { p = u.copy(weakSubjects = toggle(u.weakSubjects, it)) }
@@ -125,14 +143,14 @@ fun ProfileEditScreen() {
 fun SettingsScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val s by r.settings.collectAsStateWithLifecycle(AppSettings())
     var askReset by remember { mutableStateOf(false) }
     var askReset2 by remember { mutableStateOf(false) }
     Screen("Ayarlar", { nav.popBackStack() }) {
         ScrollColumn {
             Section("Görünüm")
-            PillGroup(listOf("SYSTEM" to "Sistem", "LIGHT" to "Açık", "DARK" to "Koyu"), s.theme) { v -> scope.launch { r.updateSettings { it[Keys.theme] = v } } }
+            PillGroup(listOf("DARK" to "Premium Koyu", "LIGHT" to "Açık", "SYSTEM" to "Sistem"), s.theme) { v -> scope.launch { r.updateSettings { it[Keys.theme] = v } } }
             Muted("Yazı büyüklüğü")
             PillGroup(listOf("0.9" to "Küçük", "1.0" to "Normal", "1.15" to "Büyük", "1.3" to "Çok büyük"), "%.2f".format(java.util.Locale.US, s.fontScale).trimEnd('0').let { if (it.endsWith(".")) it + "0" else it }) { v -> scope.launch { r.updateSettings { it[Keys.font] = v.toFloat() } } }
             Section("Pomodoro varsayılanı")
@@ -168,7 +186,7 @@ fun RemindersScreen() {
     val r = repo()
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val rows by r.user.reminders().collectAsStateWithLifecycle(emptyList())
     var pendingEnable by remember { mutableStateOf<Reminder?>(null) }
     var denied by remember { mutableStateOf(false) }
@@ -197,11 +215,11 @@ fun RemindersScreen() {
                     }
                     if (cur.enabled) {
                         Spacer(Modifier.height(Space.s))
-                        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                            Field(cur.hour.toString(), { v -> v.filter(Char::isDigit).take(2).toIntOrNull()?.takeIf { it in 0..23 }?.let { apply(cur.copy(hour = it)) } }, "Saat", Modifier.weight(1f), keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
-                            Field(cur.minute.toString(), { v -> v.filter(Char::isDigit).take(2).toIntOrNull()?.takeIf { it in 0..59 }?.let { apply(cur.copy(minute = it)) } }, "Dakika", Modifier.weight(1f), keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
-                        }
-                        if (t.weekly) { Spacer(Modifier.height(Space.s)); PillGroup(DAY_NAMES, cur.dayOfWeek.toString()) { apply(cur.copy(dayOfWeek = it.toInt())) } }
+                        TimeField(cur.hour, cur.minute, "Saat") { h, m -> apply(cur.copy(hour = h, minute = m)) }
+                        val freq = cur.frequency.ifBlank { if (t.weekly) "WEEKLY" else "DAILY" }
+                        Spacer(Modifier.height(Space.s))
+                        PillGroup(listOf("DAILY" to "Her gün", "WEEKDAYS" to "Hafta içi", "WEEKLY" to "Haftada bir"), freq) { apply(cur.copy(frequency = it)) }
+                        if (freq == "WEEKLY") { Spacer(Modifier.height(Space.s)); PillGroup(DAY_NAMES, cur.dayOfWeek.toString()) { apply(cur.copy(dayOfWeek = it.toInt())) } }
                     }
                 }
             }
@@ -215,17 +233,19 @@ fun BackupScreen() {
     val r = a.repo
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     var status by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
-    var pending by remember { mutableStateOf<BackupFile?>(null) }
+    var pending by remember { mutableStateOf<LoadedBackup?>(null) }
     var replaceAsk by remember { mutableStateOf(false) }
+    var includePdf by remember { mutableStateOf(false) }
+    val last by r.lastBackupAt.collectAsStateWithLifecycle(0L)
+    var safety by remember { mutableStateOf(a.backup.safetyCopies()) }
 
-    val create = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+    val create = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         if (uri != null) scope.launch {
             try {
-                val text = a.backup.export(BuildConfig.VERSION_NAME)
-                withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(text.toByteArray()) } }
+                withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri, "wt")!!.use { a.backup.exportZip(it, BuildConfig.VERSION_NAME, includePdf) } }
                 isError = false; status = "Yedek kaydedildi."
             } catch (e: Exception) { isError = true; status = "Yedek yazılamadı." }
         }
@@ -233,30 +253,36 @@ fun BackupScreen() {
     val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             try {
-                val text = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)!!.bufferedReader().use { it.readText() } }
-                when (val c = BackupCodec.decode(text)) {
+                val loaded = a.backup.load(context.contentResolver.openInputStream(uri)!!)
+                when (val c = loaded.check) {
                     is BackupCheck.Bad -> { isError = true; status = c.message }
-                    is BackupCheck.Ok -> { pending = c.file; status = "" }
+                    is BackupCheck.Ok -> { pending = loaded; status = "" }
                 }
             } catch (e: Exception) { isError = true; status = "Dosya okunamadı." }
         }
     }
     fun restore(replace: Boolean) {
-        val f = pending ?: return
+        val l = pending ?: return
+        val f = (l.check as? BackupCheck.Ok)?.file ?: return
         scope.launch {
             try {
-                a.backup.restore(f.data, replace, BuildConfig.VERSION_NAME)
+                a.backup.restore(f.data, replace, BuildConfig.VERSION_NAME, l.attachments)
                 Notifier.rescheduleAll(context)
                 isError = false; status = if (replace) "Yedek geri yüklendi. Önceki verilerin cihazda güvenlik kopyası olarak saklandı." else "Yedek mevcut verilerle birleştirildi."
-                pending = null
+                pending = null; safety = a.backup.safetyCopies()
             } catch (e: Exception) { isError = true; status = "Geri yükleme başarısız. Verilerin değiştirilmedi." }
         }
     }
-    Screen("Yedekleme", { nav.popBackStack() }) {
+    Screen("Veri yedekleme", { nav.popBackStack() }) {
         ScrollColumn {
-            Muted("Yedek dosyası profilini, çalışma geçmişini, denemelerini, konu ilerlemeni, yanlışlarını, notlarını, kartlarını, hedeflerini ve ayarlarını içerir. Dosya yalnızca senin seçtiğin yere kaydedilir. PDF kaynakları dahil değildir.")
-            MainButton("Dışa aktar", Modifier.fillMaxWidth(), icon = Icons.Rounded.Upload) { create.launch("yks-pusula-yedek-${today()}.json") }
-            SoftButton("Yedekten geri yükle", Modifier.fillMaxWidth(), icon = Icons.Rounded.Download) { open.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
+            Muted("Yedek dosyası profilini, kaynaklarını, çalışma ve deneme geçmişini, konu ilerlemeni, yanlışlarını, fotoğraflarını, notlarını, kartlarını ve ayarlarını içerir. Dosya yalnızca seçtiğin yere kaydedilir; şifresizdir, güvenli bir yerde sakla.")
+            if (last > 0) Muted("Son yedek: ${shortDate(last)}")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("PDF dosyalarını da dahil et", color = Yks.c.text, modifier = Modifier.weight(1f))
+                Switch(includePdf, { includePdf = it })
+            }
+            MainButton("Yedek oluştur", Modifier.fillMaxWidth(), icon = Icons.Rounded.Upload) { create.launch("yks-pusula-yedek-${today()}.zip") }
+            SoftButton("Yedekten geri yükle", Modifier.fillMaxWidth(), icon = Icons.Rounded.Download) { open.launch(arrayOf("application/zip", "application/json", "text/plain", "application/octet-stream")) }
             if (status.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(if (isError) Icons.Rounded.ErrorOutline else Icons.Rounded.CheckCircle, null, tint = if (isError) Yks.c.error else Yks.c.success, modifier = Modifier.size(20.dp))
@@ -264,15 +290,30 @@ fun BackupScreen() {
                     Text(status, style = MaterialTheme.typography.bodyMedium, color = Yks.c.text)
                 }
             }
-            pending?.let { f ->
+            (pending?.check as? BackupCheck.Ok)?.file?.let { f ->
                 YCard {
                     Text("Yedek doğrulandı", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
                     Muted("Tarih: ${shortDate(f.createdAt)} • Sürüm ${f.appVersion}")
-                    Muted("${f.data.attempts.size} cevap, ${f.data.mocks.size} deneme, ${f.data.notes.size} not, ${f.data.wrongs.size} yanlış")
+                    Muted("${f.data.logs.size} çalışma kaydı, ${f.data.mocks.size} deneme, ${f.data.notes.size} not, ${f.data.wrongs.size} yanlış, ${f.data.sources.size} kaynak")
                     Spacer(Modifier.height(Space.s))
                     MainButton("Mevcut verilerle birleştir", Modifier.fillMaxWidth()) { restore(false) }
                     Spacer(Modifier.height(Space.s))
                     SoftButton("Mevcut verilerin yerine geç", Modifier.fillMaxWidth(), color = Yks.c.error) { replaceAsk = true }
+                }
+            }
+            if (safety.isNotEmpty()) {
+                Section("Eski yedeğe dön")
+                Muted("Geri yüklemeden önce otomatik alınan kopyalar. Cihazda saklanır.")
+                GroupCard {
+                    safety.forEachIndexed { i, f ->
+                        if (i > 0) Line()
+                        NavRow(shortDate(f.lastModified()), "${f.length() / 1024} KB", Icons.Rounded.History, onClick = {
+                            scope.launch {
+                                val l = a.backup.load(f.inputStream())
+                                if (l.check is BackupCheck.Ok) { pending = l; status = "" } else { isError = true; status = (l.check as BackupCheck.Bad).message }
+                            }
+                        })
+                    }
                 }
             }
         }
@@ -285,12 +326,16 @@ fun TargetsScreen() {
     val r = repo()
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val unis by r.user.universities().collectAsStateWithLifecycle(emptyList())
     val depts by r.user.departments().collectAsStateWithLifecycle(emptyList())
     val records by r.user.universityRecords().collectAsStateWithLifecycle(emptyList())
+    val mocks by r.user.mockSummaries().collectAsStateWithLifecycle(emptyList())
+    val lastTyt = mocks.lastOrNull { it.exam == "TYT" }?.net
+    val lastAyt = mocks.lastOrNull { it.exam == "AYT" }?.net
     var addUni by remember { mutableStateOf(false) }
     var addDeptFor by remember { mutableStateOf<TargetUniversity?>(null) }
+    var editDept by remember { mutableStateOf<TargetDepartment?>(null) }
     var message by remember { mutableStateOf("") }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
@@ -331,8 +376,12 @@ fun TargetsScreen() {
                             Column(Modifier.weight(1f)) {
                                 Text(d.name, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
                                 Muted(listOfNotNull(d.scoreType.ifBlank { null }, d.targetRank?.let { "Hedef sıra: $it" }, d.targetScore?.let { "Hedef puan: $it" }).joinToString(" • "))
+                                d.targetTytNet?.let { t -> Muted("TYT hedefi ${Scoring.formatNet(t)}" + (lastTyt?.let { " • Son net ${Scoring.formatNet(it)} • Fark ${Scoring.formatNet(t - it)}" } ?: "")) }
+                                d.targetAytNet?.let { t -> Muted("AYT hedefi ${Scoring.formatNet(t)}" + (lastAyt?.let { " • Son net ${Scoring.formatNet(it)} • Fark ${Scoring.formatNet(t - it)}" } ?: "")) }
+                                if (d.dataSource.isNotBlank()) Muted("Kaynak: ${d.dataSource}" + (d.dataYear?.let { " ($it)" } ?: ""))
                                 if (d.note.isNotBlank()) Muted(d.note)
                             }
+                            IconButton({ editDept = d }) { Icon(Icons.Rounded.Edit, "Bölümü düzenle", tint = Yks.c.muted) }
                             IconButton({ scope.launch { r.user.saveDepartment(d.copy(favorite = !d.favorite)) } }) { Icon(if (d.favorite) Icons.Rounded.Star else Icons.Rounded.StarBorder, "Favori bölüm", tint = if (d.favorite) Yks.c.warning else Yks.c.muted) }
                             IconButton({ scope.launch { r.user.deleteDepartment(d) } }) { Icon(Icons.Rounded.DeleteOutline, "Bölümü sil", tint = Yks.c.muted) }
                         }
@@ -365,30 +414,48 @@ fun TargetsScreen() {
             dismissButton = { TextButton({ addUni = false }) { Text("Vazgeç") } },
         )
     }
-    addDeptFor?.let { u ->
-        var name by remember { mutableStateOf("") }
-        var type by remember { mutableStateOf("SAY") }
-        var rank by remember { mutableStateOf("") }
-        var score by remember { mutableStateOf("") }
-        var note by remember { mutableStateOf("") }
+    if (addDeptFor != null || editDept != null) {
+        val base = editDept
+        val u = addDeptFor
+        fun close() { addDeptFor = null; editDept = null }
+        var name by remember { mutableStateOf(base?.name.orEmpty()) }
+        var type by remember { mutableStateOf(base?.scoreType ?: "SAY") }
+        var rank by remember { mutableStateOf(base?.targetRank?.toString().orEmpty()) }
+        var score by remember { mutableStateOf(base?.targetScore?.toString().orEmpty()) }
+        var tyt by remember { mutableStateOf(base?.targetTytNet?.toString().orEmpty()) }
+        var ayt by remember { mutableStateOf(base?.targetAytNet?.toString().orEmpty()) }
+        var source by remember { mutableStateOf(base?.dataSource.orEmpty()) }
+        var year by remember { mutableStateOf(base?.dataYear?.toString().orEmpty()) }
+        var note by remember { mutableStateOf(base?.note.orEmpty()) }
         AlertDialog(
-            onDismissRequest = { addDeptFor = null }, containerColor = Yks.c.card, title = { Text("Bölüm ekle") },
+            onDismissRequest = { close() }, containerColor = Yks.c.card, title = { Text(if (base == null) "Bölüm ekle" else "Bölümü düzenle") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     Field(name, { name = it }, "Bölüm adı")
                     PillGroup(listOf("SAY" to "SAY", "EA" to "EA", "SÖZ" to "SÖZ", "DİL" to "DİL", "TYT" to "TYT"), type) { type = it }
                     Field(rank, { rank = it.filter(Char::isDigit).take(7) }, "Hedef sıralama", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
                     Field(score, { score = it.take(7) }, "Hedef puan", keyboard = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                        Field(tyt, { tyt = it.take(6) }, "TYT net", Modifier.weight(1f), keyboard = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                        Field(ayt, { ayt = it.take(6) }, "AYT net", Modifier.weight(1f), keyboard = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    }
+                    Field(source, { source = it }, "Veri kaynağı (ör. YÖK Atlas)")
+                    NumberField(year, { year = it }, "Veri yılı", max = 4)
                     Field(note, { note = it }, "Notlar")
                 }
             },
             confirmButton = {
                 TextButton({
-                    scope.launch { r.user.saveDepartment(TargetDepartment(universityId = u.id, name = name.trim(), scoreType = type, targetRank = rank.toIntOrNull(), targetScore = score.replace(',', '.').toDoubleOrNull(), note = note.trim())) }
-                    addDeptFor = null
-                }, enabled = name.isNotBlank()) { Text("Ekle") }
+                    fun d(x: String) = x.replace(',', '.').toDoubleOrNull()
+                    val now = System.currentTimeMillis()
+                    scope.launch {
+                        val b = base ?: TargetDepartment(universityId = u!!.id, name = "")
+                        r.user.saveDepartment(b.copy(name = name.trim(), scoreType = type, targetRank = rank.toIntOrNull(), targetScore = d(score), targetTytNet = d(tyt), targetAytNet = d(ayt), dataSource = source.trim(), dataYear = year.toIntOrNull(), note = note.trim(), updatedAt = now))
+                    }
+                    close()
+                }, enabled = name.isNotBlank()) { Text("Kaydet") }
             },
-            dismissButton = { TextButton({ addDeptFor = null }) { Text("Vazgeç") } },
+            dismissButton = { TextButton({ close() }) { Text("Vazgeç") } },
         )
     }
 }
@@ -398,9 +465,8 @@ fun PacksScreen() {
     val r = repo()
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val packs by r.content.packs().collectAsStateWithLifecycle(emptyList())
-    val byExam by r.content.bankByExam().collectAsStateWithLifecycle(emptyList())
     var result by remember { mutableStateOf<List<String>>(emptyList()) }
     var ok by remember { mutableStateOf(true) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -412,15 +478,13 @@ fun PacksScreen() {
     }
     Screen("İçerik paketleri", { nav.popBackStack() }) {
         ScrollColumn {
-            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                byExam.sortedBy { it.key }.forEach { Tile("${it.total}", "${it.key} sorusu", Modifier.weight(1f)) }
-            }
+            Muted("İçerik paketleri konu listesi, formüller, bilgi kartları ve sınav yılı bilgilerini güncellemek içindir. Uygulama soru içermez.")
             GroupCard {
                 packs.forEachIndexed { i, p ->
                     if (i > 0) Line()
                     Column(Modifier.padding(Space.l)) {
                         Text(p.title, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-                        Muted("Sürüm ${p.version} • ${p.questionCount} soru • ${shortDate(p.importedAt)}")
+                        Muted("Sürüm ${p.version} • ${shortDate(p.importedAt)}")
                         if (p.source.isNotBlank()) Muted("Kaynak: ${p.source}")
                         if (p.license.isNotBlank()) Muted("Lisans: ${p.license}")
                     }
@@ -428,7 +492,7 @@ fun PacksScreen() {
             }
             SoftButton("JSON içerik paketi içe aktar", Modifier.fillMaxWidth(), icon = Icons.Rounded.UploadFile) { picker.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
             result.forEach { Text(it, style = MaterialTheme.typography.bodyMedium, color = if (ok) Yks.c.success else Yks.c.error) }
-            Muted("Paketteki her soru doğrulanır: tek doğru cevap, açıklama, kaynak, lisans ve yinelenme denetimi. Hatalı paket reddedilir ve hiçbir içerik eklenmez.")
+            Muted("Paket içeriği doğrulanır: kaynak, sürüm, ders bağlantıları ve tarih denetimi yapılır. Hatalı paket reddedilir ve hiçbir içerik eklenmez.")
         }
     }
 }
@@ -450,10 +514,11 @@ fun BadgesScreen() {
     val month = remember { date.withDayOfMonth(1) }
     val weekMin by r.user.minutesBetween(startOf(week), startOf(date.plusDays(1))).collectAsStateWithLifecycle(0)
     val monthQ by r.user.solvedBetween(startOf(month), startOf(date.plusDays(1))).collectAsStateWithLifecycle(0)
+    val rest by r.user.restDays().collectAsStateWithLifecycle(emptyList())
     val badges = Badges.all(HabitStats(solved, minutes, mocks.size, completed, Streaks.longest(active), tasks, cards))
     Screen("Rozetler ve hedefler", { nav.popBackStack() }) {
         ScrollColumn {
-            Row2({ Tile("${Streaks.current(active, date)} gün", "Çalışma serisi", it) }, { Tile("$tasks", "Tamamlanan görev", it) })
+            Row2({ Tile("${Streaks.current(active, date, rest)} gün", "Çalışma serisi", it) }, { Tile("$tasks", "Tamamlanan görev", it) })
             YCard {
                 Text("Haftalık hedef", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
                 if (s.weeklyGoalMinutes > 0) { Muted("$weekMin / ${s.weeklyGoalMinutes} dakika • %${Scoring.percent(weekMin, s.weeklyGoalMinutes)}"); Spacer(Modifier.height(6.dp)); ProgressBar(weekMin.toFloat() / s.weeklyGoalMinutes) }

@@ -1,346 +1,403 @@
 package app.ykspusula.ui.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.TrendingDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ykspusula.data.*
+import app.ykspusula.domain.ExamAnalysis
 import app.ykspusula.domain.Scoring
 import app.ykspusula.domain.Timers
+import app.ykspusula.monetize.AdPlacement
 import app.ykspusula.ui.LocalNav
 import app.ykspusula.ui.components.*
 import app.ykspusula.ui.longDate
 import app.ykspusula.ui.repo
+import app.ykspusula.ui.rememberUiScope
 import app.ykspusula.ui.shortDate
+import app.ykspusula.ui.theme.Gradients
+import app.ykspusula.ui.theme.NumberStyle
 import app.ykspusula.ui.theme.Yks
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
+private data class Shortcut(val title: String, val subtitle: String, val icon: ImageVector, val kind: String)
+
+/** Denemeler: yalnızca dışarıda çözülen gerçek denemeleri yönetir, uygulama soru üretmez. */
 @Composable
 fun ExamsScreen() {
     val r = repo()
     val nav = LocalNav.current
+    val c = Yks.c
     val mocks by r.user.mockSummaries().collectAsStateWithLifecycle(emptyList())
     val running by r.user.running().collectAsStateWithLifecycle(null)
+    val minutesOf = remember { mutableStateMapOf<String, Int>() }
+    LaunchedEffect(mocks) { mocks.takeLast(3).forEach { m -> minutesOf[m.id] = r.user.mock(m.id)?.spentMinutes ?: 0 } }
     ScrollColumn(Modifier.statusBarsPadding()) {
-        Text("Denemeler", style = MaterialTheme.typography.headlineMedium, color = Yks.c.text)
+        PageHeader("Denemeler", "Kendini test et, gelişimini gör.", Icons.Rounded.History, "Deneme geçmişi") { nav.navigate("examHistory") }
         running?.let { m ->
-            YCard(onClick = { nav.navigate("exam/${m.id}") }) {
-                Text("Devam eden deneme", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-                Muted("${m.title} • Kalan: ${Timers.clock(Timers.remainingSec(m.endsAt, System.currentTimeMillis()))}")
+            InfoRow(if (m.status == "ENTRY") "Sonuç girişi bekliyor" else "Devam eden deneme", m.title, Icons.Rounded.Timer) {
+                nav.navigate(if (m.status == "ENTRY") "examEntry/${m.id}" else "examRun/${m.id}")
             }
         }
-        Section("Yeni deneme")
-        GroupCard {
-            NavRow("TYT genel deneme", "Uygulamadaki sorulardan oluşturulur", Icons.Rounded.Assignment, onClick = { nav.navigate("examNew/TYT") }); Line()
-            NavRow("AYT genel deneme", "Testleri alanına göre seçebilirsin", Icons.Rounded.Assignment, onClick = { nav.navigate("examNew/AYT") }); Line()
-            NavRow("YDT genel deneme", "Seçili yabancı dilde", Icons.Rounded.Translate, onClick = { nav.navigate("examNew/YDT") }); Line()
-            NavRow("Branş denemesi", "Tek bir dersten", Icons.Rounded.School, onClick = { nav.navigate("examNew/BRANCH") }); Line()
-            NavRow("Konu denemesi", "Seçtiğin konudan", Icons.Rounded.Topic, onClick = { nav.navigate("examNew/TOPIC") }); Line()
-            NavRow("Kişiselleştirilmiş deneme", "En zayıf konularından", Icons.Rounded.AutoAwesome, onClick = { nav.navigate("examNew/CUSTOM") })
+        PrimaryGradientCard("Hemen deneme oluştur!", "Hedefine uygun bir sınav seç ve başla.", Icons.Rounded.TrackChanges) { nav.navigate("examStart/ALL") }
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val cards: List<@Composable (Modifier) -> Unit> = listOf(
+                { m -> ExamTypeCard("TYT", "Genel Sınav", Icons.AutoMirrored.Rounded.MenuBook, Gradients.blue, m) { nav.navigate("examStart/TYT") } },
+                { m -> ExamTypeCard("AYT", "Alan Sınavı", Icons.Rounded.TrackChanges, Gradients.purple, m) { nav.navigate("examStart/AYT") } },
+                { m -> ExamTypeCard("YDT", "Yabancı Dil", Icons.Rounded.Language, Gradients.navy, m) { nav.navigate("examStart/YDT") } },
+            )
+            if (rememberCompact(maxWidth, 300.dp)) Column(verticalArrangement = Arrangement.spacedBy(Space.s + 2.dp)) { cards.forEach { it(Modifier.fillMaxWidth()) } }
+            else Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Space.s + 2.dp)) { cards.forEach { it(Modifier.weight(1f).fillMaxHeight()) } }
         }
-        GroupCard {
-            NavRow("Dışarıda çözdüğüm denemeyi kaydet", "Kitapçık veya yayınevi denemeleri", Icons.Rounded.PostAdd, app.ykspusula.ui.theme.Yks.c.success, { nav.navigate("external") }); Line()
-            NavRow("Sınav ayarları", "Tarih, süre, soru sayısı ve net kuralı", Icons.Rounded.Tune, Yks.c.muted, { nav.navigate("examSettings") }); Line()
-            NavRow("OBP hesaplama", "Diploma notunun katkısı", Icons.Rounded.Calculate, Yks.c.muted, { nav.navigate("obp") })
+        SectionHeader("Diğer Denemeler", "Tümünü Gör") { nav.navigate("examStart/ALL") }
+        val list = listOf(
+            Shortcut("Branş Denemesi", "Tek ders seç", Icons.Rounded.School, "BRANCH"),
+            Shortcut("Konu Denemesi", "Konuya göre kaydet", Icons.Rounded.Folder, "TOPIC"),
+            Shortcut("Kişisel Deneme", "Eksiklerini takip et", Icons.Rounded.AutoAwesome, "PERSONAL"),
+            Shortcut("Özel Deneme", "Kendi düzenini kur", Icons.Rounded.Tune, "CUSTOM"),
+        )
+        TwoColumn(list) { s, m ->
+            val tint = if (s.kind == "TOPIC" || s.kind == "PERSONAL") c.purpleLight else c.accentLight
+            FeatureShortcutCard(s.title, s.subtitle, s.icon, tint, m) { nav.navigate("examStart/${s.kind}") }
         }
-        Section("Geçmiş")
-        if (mocks.isEmpty()) YCard { Muted("Henüz deneme yok. Çözdüğün denemeler burada listelenir.") }
-        mocks.reversed().forEach { m ->
-            YCard(onClick = { nav.navigate("result/${m.id}") }, padding = Space.m) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(m.title, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-                        Muted("${shortDate(m.createdAt)} • ${m.correct} D, ${m.wrong} Y, ${m.blank} B")
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(Scoring.formatNet(m.net), style = MaterialTheme.typography.titleLarge, color = Yks.c.accent)
-                        Muted("net")
-                    }
-                }
-            }
+        ExpandableToolsCard("Deneme Araçları", Icons.Rounded.HomeRepairService) {
+            NavRow("Dışarıda çözdüğüm denemeyi kaydet", "Kitapçık sonuçlarını ekle", Icons.Rounded.EditNote, c.purpleLight, { nav.navigate("external") }); Line()
+            NavRow("Deneme analizi", "Ders netleri ve gelişim", Icons.Rounded.Insights, c.accentLight, { nav.navigate("examAnalysis") }); Line()
+            NavRow("Net hedeflerim", "Hedefe kalan fark", Icons.Rounded.Flag, c.success, { nav.navigate("netGoals") }); Line()
+            NavRow("Sınav Ayarları", "Süre, tarih ve net kuralı", Icons.Rounded.Settings, c.accentLight, { nav.navigate("examSettings") }); Line()
+            NavRow("OBP Hesaplama", "Diploma notunun katkısı", Icons.Rounded.Calculate, c.accentLight, { nav.navigate("obp") })
+        }
+        AdSlot(AdPlacement.EXAMS)
+        SectionHeader("Son Denemelerin", "Tüm Geçmiş") { nav.navigate("examHistory") }
+        if (mocks.isEmpty()) {
+            YCard { EmptyStateView(Icons.Rounded.Assignment, "Henüz deneme kaydın yok", "Çözdüğün ilk denemeyi eklediğinde sonuçların ve gelişimin burada görünür.", "Deneme ekle") { nav.navigate("external") } }
+        } else mocks.takeLast(3).reversed().forEach { m ->
+            RecentExamCard(m.title, shortDate(m.createdAt), minutesOf[m.id] ?: 0, Scoring.formatNet(m.net)) { nav.navigate("result/${m.id}") }
         }
     }
 }
 
 @Composable
-fun ExamNewScreen(kind: String) {
+fun InfoRow(title: String, detail: String, icon: ImageVector, onClick: () -> Unit) {
+    YCard(onClick = onClick, padding = Space.m) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = Yks.c.warning)
+            Spacer(Modifier.width(Space.m))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                Muted(detail, maxLines = 1)
+            }
+            Text("Devam et", color = Yks.c.accentLight, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+val KIND_LABELS = mapOf("TYT" to "TYT denemesi", "AYT" to "AYT denemesi", "YDT" to "YDT denemesi", "BRANCH" to "Branş denemesi", "TOPIC" to "Konu denemesi", "PERSONAL" to "Kişisel deneme", "CUSTOM" to "Özel deneme")
+
+/** Deneme başlatma. Sorular öğrencinin kendi kitapçığındadır; uygulama süreyi ve sonucu tutar. */
+@Composable
+fun ExamStartScreen(kind: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
+    if (kind == "ALL") {
+        Screen("Deneme seç", { nav.popBackStack() }) {
+            ScrollColumn {
+                Muted("Denemeyi kendi kitapçığından veya PDF'inden çözersin. Burada süreni tutar, sonuçlarını kaydeder ve analiz edersin.")
+                GroupCard {
+                    KIND_LABELS.entries.forEachIndexed { i, (k, v) ->
+                        if (i > 0) Line()
+                        NavRow(v, when (k) { "TYT", "AYT", "YDT" -> "Genel deneme"; "BRANCH" -> "Tek ders"; "TOPIC" -> "Tek konu"; "PERSONAL" -> "Eksiklerini takip etmek için"; else -> "Kendi test düzenin" }, Icons.Rounded.Assignment, onClick = { nav.navigate("examStart/$k") })
+                    }
+                }
+            }
+        }
+        return
+    }
     val isGeneral = kind in listOf("TYT", "AYT", "YDT")
     val cfg = configs.firstOrNull { it.code == kind }
-    var chosen by remember { mutableStateOf<Set<String>>(emptySet()) }
     var subject by rememberSaveable { mutableStateOf("") }
     var topic by rememberSaveable { mutableStateOf("") }
-    var count by rememberSaveable { mutableStateOf("20") }
-    var minutes by rememberSaveable { mutableStateOf("30") }
-    var draft by remember { mutableStateOf<Repository.ExamDraft?>(null) }
-    var message by remember { mutableStateOf("") }
+    var minutes by rememberSaveable(cfg?.durationMin) { mutableStateOf((cfg?.durationMin ?: 40).toString()) }
+    var title by rememberSaveable { mutableStateOf("") }
     val p = profile
-    LaunchedEffect(cfg?.code, p?.field) {
-        if (kind == "AYT" && cfg != null && p != null) {
-            chosen = when (p.field) {
-                "SAY" -> setOf("Matematik", "Fen Bilimleri")
-                "EA" -> setOf("Matematik", "Türk Dili ve Edebiyatı-Sosyal Bilimler-1")
-                "SOZ" -> setOf("Türk Dili ve Edebiyatı-Sosyal Bilimler-1", "Sosyal Bilimler-2")
-                else -> r.sectionsOf(cfg).map { it.name }.toSet()
-            }
-        }
-    }
     val rows by remember(subject) { if (subject.isEmpty()) kotlinx.coroutines.flow.flowOf(emptyList()) else r.content.topicRows(subject) }.collectAsStateWithLifecycle(emptyList())
-    val title = when (kind) { "BRANCH" -> "Branş denemesi"; "TOPIC" -> "Konu denemesi"; "CUSTOM" -> "Kişiselleştirilmiş deneme"; else -> "$kind genel denemesi" }
-
-    fun prepare() {
-        scope.launch {
-            message = ""
-            val c = count.toIntOrNull() ?: 20
-            val m = minutes.toIntOrNull() ?: 30
-            val d = when (kind) {
-                "TYT", "AYT", "YDT" -> {
-                    val ydt = if (kind == "YDT") subjects.firstOrNull { it.exam == "YDT" && it.language == p?.ydtLanguage && it.groupName == "Genel" }?.id else null
-                    r.draftGeneral(kind, chosen, ydt)
-                }
-                "BRANCH" -> r.draftBranch(r.content.subject(subject) ?: return@launch, c, m)
-                "TOPIC" -> r.draftTopics(rows.firstOrNull { it.id == topic }?.name.orEmpty() + " denemesi", "TOPIC", r.content.subject(subject)?.exam ?: "TYT", listOf(topic), c, m)
-                else -> {
-                    val weak = r.weakTopicIds(8)
-                    if (weak.isEmpty()) { message = "Kişiselleştirilmiş deneme için önce en az 3 soru çözülmüş konu gerekir."; return@launch }
-                    r.draftTopics("Kişiselleştirilmiş deneme", "CUSTOM", "TYT", weak, c, m)
-                }
-            }
-            if (d.sections.sumOf { it.questionIds.size } == 0) { message = "Bu seçim için soru bankasında soru yok."; return@launch }
-            draft = d
+    val chosen = subjects.firstOrNull { it.id == subject }
+    val ok = when (kind) { "BRANCH" -> subject.isNotEmpty(); "TOPIC" -> topic.isNotEmpty(); else -> true }
+    fun name(): String = title.trim().ifBlank {
+        when (kind) {
+            "BRANCH" -> "${chosen?.name.orEmpty()} denemesi"
+            "TOPIC" -> "${rows.firstOrNull { it.id == topic }?.name.orEmpty()} denemesi"
+            else -> KIND_LABELS[kind].orEmpty()
         }
     }
-
-    Screen(title, { nav.popBackStack() }) {
+    val exam = if (isGeneral) kind else chosen?.exam ?: "TYT"
+    Screen(KIND_LABELS[kind].orEmpty(), { nav.popBackStack() }) {
         ScrollColumn {
-            val d = draft
-            if (d == null) {
-                if (isGeneral && cfg != null) {
-                    YCard {
-                        Text(cfg.title, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-                        Muted("${cfg.questionCount} soru • ${cfg.durationMin} dakika")
-                    }
-                    if (kind == "AYT") {
-                        Section("Testler")
-                        val names = r.sectionsOf(cfg).map { it.name }
-                        Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                            names.forEach { n ->
-                                Pill(n, n in chosen) { chosen = if (n in chosen) chosen - n else chosen + n }
-                            }
-                        }
-                    }
+            Muted("Soruları kendi kitapçığından veya PDF'inden çöz. İstersen burada süre tut; bitince sonuçlarını gir.")
+            if (isGeneral && cfg != null) YCard {
+                Text(cfg.title, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                Muted("${cfg.questionCount} soru • ${cfg.durationMin} dakika")
+            }
+            if (kind == "BRANCH" || kind == "TOPIC") {
+                Muted("Ders")
+                Dropdown(relevant(subjects, p).map { it.id to "${it.exam} ${it.name}" }, subject, "Ders seç") { subject = it; topic = "" }
+            }
+            if (kind == "TOPIC" && subject.isNotEmpty()) {
+                Muted("Konu")
+                Dropdown(rows.map { it.id to it.name }, topic, "Konu seç") { topic = it }
+            }
+            Field(title, { title = it }, "Deneme adı (isteğe bağlı)")
+            NumberField(minutes, { minutes = it }, "Hedef süre (dakika)", max = 3)
+            MainButton("Süreyi başlat", Modifier.fillMaxWidth(), enabled = ok && (minutes.toIntOrNull() ?: 0) > 0, icon = Icons.Rounded.PlayArrow) {
+                scope.launch {
+                    val id = r.startExamSession(name(), if (isGeneral) "GENERAL" else kind, exam, minutes.toInt(), subject.ifEmpty { null })
+                    nav.navigate("examRun/$id") { popUpTo("exams") }
                 }
-                if (kind == "BRANCH" || kind == "TOPIC") {
-                    Muted("Ders")
-                    Dropdown(relevant(subjects, p).map { it.id to "${it.exam} ${it.name}" }, subject, "Ders seç") { subject = it; topic = "" }
-                }
-                if (kind == "TOPIC" && subject.isNotEmpty()) {
-                    Muted("Konu")
-                    Dropdown(rows.filter { it.questionCount > 0 }.map { it.id to "${it.name} (${it.questionCount})" }, topic, "Konu seç") { topic = it }
-                }
-                if (!isGeneral) {
-                    Field(count, { count = it.filter(Char::isDigit).take(3) }, "Soru sayısı", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
-                    Field(minutes, { minutes = it.filter(Char::isDigit).take(3) }, "Süre (dakika)", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
-                }
-                if (message.isNotEmpty()) Text(message, color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
-                val ok = when (kind) {
-                    "BRANCH" -> subject.isNotEmpty(); "TOPIC" -> topic.isNotEmpty()
-                    "AYT" -> chosen.isNotEmpty(); else -> true
-                }
-                MainButton("Devam", Modifier.fillMaxWidth(), enabled = ok) { prepare() }
-            } else {
-                val actual = d.sections.sumOf { it.questionIds.size }
-                val requested = d.sections.sumOf { it.requested }
-                YCard {
-                    Text(d.title, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-                    Muted("$actual soru • ${d.minutes} dakika")
-                    Spacer(Modifier.height(Space.s))
-                    d.sections.forEach { s -> Muted("${s.name}: ${s.questionIds.size} / ${s.requested}") }
-                }
-                if (actual < requested) {
-                    YCard {
-                        Row {
-                            Icon(Icons.Rounded.WarningAmber, null, tint = Yks.c.warning, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(Space.s))
-                            Text("Soru bankasında bu deneme için yeterli soru yok. Deneme $actual soruyla oluşturuldu ve süre orantılı olarak ${d.minutes} dakikaya kısaltıldı.", style = MaterialTheme.typography.bodyMedium, color = Yks.c.text)
-                        }
-                    }
-                }
-                Muted("Süre başladıktan sonra uygulamadan çıksan da sayaç işlemeye devam eder; cevapların otomatik kaydedilir.")
-                MainButton("Denemeyi başlat", Modifier.fillMaxWidth(), icon = Icons.Rounded.PlayArrow) {
-                    scope.launch {
-                        val id = r.startExam(d)
-                        nav.navigate("exam/$id") { popUpTo("exams") }
-                    }
-                }
-                SoftButton("Geri dön", Modifier.fillMaxWidth()) { draft = null }
+            }
+            SoftButton("Süre tutmadan sonuçları gir", Modifier.fillMaxWidth(), enabled = ok, icon = Icons.Rounded.EditNote) {
+                nav.navigate("external?kind=$kind&exam=$exam&subject=$subject&title=${android.net.Uri.encode(name())}")
             }
         }
     }
 }
 
+/** Kronometre: uygulama kapansa da zaman damgasıyla doğru kalır. */
 @Composable
 fun ExamRunScreen(id: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     var exam by remember { mutableStateOf<MockExam?>(null) }
-    val records = remember { mutableStateListOf<AnswerRecord>() }
-    var questions by remember { mutableStateOf<Map<String, QuestionFull>>(emptyMap()) }
-    var index by rememberSaveable { mutableIntStateOf(0) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var gridOpen by remember { mutableStateOf(false) }
-    var ask by remember { mutableStateOf(false) }
     var leave by remember { mutableStateOf(false) }
-    var finishing by remember { mutableStateOf(false) }
-
+    var finish by remember { mutableStateOf(false) }
     LaunchedEffect(id) {
         val m = r.user.mock(id)
         exam = m
-        if (m == null || m.status != "RUNNING") { nav.navigate("result/$id") { popUpTo("exam/{id}") { inclusive = true } }; return@LaunchedEffect }
-        val rec = r.user.records(id)
-        records.clear(); records.addAll(rec)
-        questions = rec.map { it.questionId }.chunked(400).flatMap { r.content.fullList(it) }.associateBy { it.q.id }
-    }
-    fun finish() {
-        if (finishing) return
-        finishing = true
-        scope.launch {
-            r.finishExam(id)
-            withContext(Dispatchers.Main.immediate) {
-                nav.navigate("result/$id") { popUpTo("exam/{id}") { inclusive = true } }
-            }
-        }
-    }
-    LaunchedEffect(exam) {
-        val m = exam ?: return@LaunchedEffect
-        while (true) {
-            now = System.currentTimeMillis()
-            if (now >= m.endsAt) { finish(); break }
-            delay(1000)
-        }
+        if (m == null || m.status == "DONE") { nav.navigate("result/$id") { popUpTo("examRun/{id}") { inclusive = true } }; return@LaunchedEffect }
+        if (m.status == "ENTRY") { nav.navigate("examEntry/$id") { popUpTo("examRun/{id}") { inclusive = true } }; return@LaunchedEffect }
+        while (true) { now = System.currentTimeMillis(); delay(500) }
     }
     BackHandler { leave = true }
-
-    val m = exam
-    val rec = records.getOrNull(index)
-    val q = rec?.let { questions[it.questionId] }
-    val left = m?.let { Timers.remainingSec(it.endsAt, now) } ?: 0
-    fun update(i: Int, v: AnswerRecord) {
-        records[i] = v
-        scope.launch { r.user.saveRecord(v) }
-    }
-
-    Scaffold(
-        containerColor = Yks.c.bg,
-        topBar = {
-            Row(Modifier.statusBarsPadding().fillMaxWidth().padding(horizontal = Space.s, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton({ leave = true }) { Icon(Icons.Rounded.Close, "Denemeden çık") }
-                Column(Modifier.weight(1f)) {
-                    Text(Timers.clock(left), style = MaterialTheme.typography.titleLarge, color = if (left < 300) Yks.c.error else Yks.c.text, modifier = Modifier.semantics { contentDescription = "Kalan süre ${left / 60} dakika" })
-                    Muted(rec?.sectionName.orEmpty(), maxLines = 1)
-                }
-                TextButton({ ask = true }) { Text("Sınavı bitir") }
+    Screen("Deneme oturumu", { leave = true }) {
+        val m = exam ?: return@Screen
+        val elapsed = r.elapsedSec(m, now)
+        val limit = m.durationSec
+        val paused = m.pausedAt > 0
+        val left = limit - elapsed
+        ScrollColumn {
+            Text(m.title, style = MaterialTheme.typography.titleLarge, color = Yks.c.text, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            Column(Modifier.fillMaxWidth().padding(vertical = Space.m), horizontalAlignment = Alignment.CenterHorizontally) {
+                Ring(if (limit > 0) (elapsed.toFloat() / limit).coerceAtMost(1f) else 0f, Timers.clock(elapsed), size = 220.dp, description = "Geçen süre ${elapsed / 60} dakika")
+                Spacer(Modifier.height(Space.m))
+                Text(
+                    if (left >= 0) "Hedef süreye ${Timers.clock(left)} kaldı" else "Hedef süreyi ${Timers.clock(-left)} geçtin",
+                    style = MaterialTheme.typography.bodyLarge, color = if (left >= 0) Yks.c.muted else Yks.c.warning,
+                    modifier = Modifier.semantics { contentDescription = "Hedef süre durumu" },
+                )
+                if (paused) Muted("Duraklatıldı")
             }
-        },
-        bottomBar = {
-            if (records.isNotEmpty()) {
-                Row(Modifier.navigationBarsPadding().fillMaxWidth().background(Yks.c.card).padding(Space.s), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    SoftButton("Önceki", Modifier.weight(1f), enabled = index > 0, icon = Icons.AutoMirrored.Rounded.ArrowBack) { index-- }
-                    SoftButton("${index + 1}/${records.size}", icon = Icons.Rounded.GridView) { gridOpen = true }
-                    SoftButton("Sonraki", Modifier.weight(1f), enabled = index < records.lastIndex, icon = Icons.AutoMirrored.Rounded.ArrowForward) { index++ }
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                if (paused) MainButton("Devam et", Modifier.weight(1f), icon = Icons.Rounded.PlayArrow) { scope.launch { r.resumeExam(id); exam = r.user.mock(id) } }
+                else SoftButton("Duraklat", Modifier.weight(1f), icon = Icons.Rounded.Pause) { scope.launch { r.pauseExam(id); exam = r.user.mock(id) } }
+                MainButton("Bitir", Modifier.weight(1f), icon = Icons.Rounded.Stop) { finish = true }
             }
-        },
-    ) { inner ->
-        if (rec == null || q == null) {
-            Box(Modifier.padding(inner).fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        } else {
-            Column(Modifier.padding(inner).fillMaxSize().verticalScroll(rememberScrollState()).padding(Space.l), verticalArrangement = Arrangement.spacedBy(Space.m)) {
-                Text("Soru ${index + 1}", style = MaterialTheme.typography.titleMedium, color = Yks.c.accent)
-                MathText(q.q.stem, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-                q.q.figure?.let { FigureView(it, Modifier.widthIn(max = 420.dp), color = Yks.c.text) }
-                q.options.sortedBy { it.label }.forEach { o ->
-                    OptionRow(o.label, o.text, rec.selected == o.label, false, false, true) {
-                        update(index, rec.copy(selected = o.label, answeredAt = System.currentTimeMillis()))
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    SoftButton("Boş bırak", Modifier.weight(1f), enabled = rec.selected != null, icon = Icons.Rounded.RadioButtonUnchecked) { update(index, rec.copy(selected = null, answeredAt = null)) }
-                    SoftButton(if (rec.flagged) "İşareti kaldır" else "Soruyu işaretle", Modifier.weight(1f), icon = if (rec.flagged) Icons.Rounded.Flag else Icons.Rounded.OutlinedFlag) { update(index, rec.copy(flagged = !rec.flagged)) }
-                }
-            }
+            Muted("Bu ekranda reklam gösterilmez. Uygulamadan çıksan da süre doğru hesaplanır.")
         }
     }
+    if (finish) ConfirmDialog("Deneme bitirilsin mi?", "Süre durur ve sonuç girişine geçersin.", "Bitir", false, { finish = false }) {
+        finish = false
+        scope.launch { r.stopExam(id); nav.navigate("examEntry/$id") { popUpTo("examRun/{id}") { inclusive = true } } }
+    }
+    if (leave) ConfirmDialog("Oturumdan çıkılsın mı?", "Süre işlemeye devam eder. Denemeler bölümünden geri dönebilirsin.", "Çık", false, { leave = false }) {
+        leave = false
+        nav.popBackStack()
+    }
+}
 
-    if (gridOpen) {
-        AlertDialog(
-            onDismissRequest = { gridOpen = false }, containerColor = Yks.c.card, title = { Text("Soru tablosu") },
-            text = {
-                Column {
-                    Muted("Dolu: cevaplandı • Bayrak: işaretli")
-                    Spacer(Modifier.height(Space.s))
-                    LazyVerticalGrid(GridCells.Adaptive(44.dp), Modifier.heightIn(max = 360.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        itemsIndexed(records) { i, x ->
-                            val tone = if (x.selected != null) Yks.c.accent else Yks.c.card
-                            Box(
-                                Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(tone)
-                                    .border(if (i == index) 2.dp else 1.dp, if (x.flagged) Yks.c.warning else if (i == index) Yks.c.text else Yks.c.line, RoundedCornerShape(10.dp))
-                                    .clickable { index = i; gridOpen = false }
-                                    .semantics { contentDescription = "Soru ${i + 1}, " + (if (x.selected != null) "cevaplandı" else "boş") + if (x.flagged) ", işaretli" else "" },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text("${i + 1}", color = if (x.selected != null) Color.White else Yks.c.text, style = MaterialTheme.typography.labelMedium)
-                                if (x.flagged) Icon(Icons.Rounded.Flag, null, tint = Yks.c.warning, modifier = Modifier.size(12.dp).align(Alignment.TopEnd))
-                            }
+data class FormSection(val key: String, val name: String, val max: Int, val subjectId: String?)
+
+/** Dışarıda çözülen denemenin sonuç formu. Boş sayısı yazılmazsa kalan sorular boş sayılır. */
+@Composable
+private fun ExamResultForm(
+    exam: String, kind: String, subjectId: String?, initialTitle: String, initialPublisher: String, initialDate: LocalDate, initialMinutes: Int,
+    initialRows: List<MockExamResult>, initialHard: String, initialNote: String, submit: String,
+    onSave: (title: String, publisher: String, date: LocalDate, minutes: Int, rows: List<SectionEntry>, hard: String, note: String) -> Unit,
+) {
+    val r = repo()
+    val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
+    val profile by r.user.profile().collectAsStateWithLifecycle(null)
+    val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
+    var title by rememberSaveable { mutableStateOf(initialTitle) }
+    var publisher by rememberSaveable { mutableStateOf(initialPublisher) }
+    var date by remember { mutableStateOf(initialDate) }
+    var spent by rememberSaveable { mutableStateOf(if (initialMinutes > 0) initialMinutes.toString() else "") }
+    var note by rememberSaveable { mutableStateOf(initialNote) }
+    var hard by rememberSaveable { mutableStateOf(initialHard) }
+    var pick by remember { mutableStateOf(false) }
+    val values = remember { mutableStateMapOf<String, String>() }
+    LaunchedEffect(initialRows) { initialRows.forEach { x -> values["${x.section}|c"] = "${x.correct}"; values["${x.section}|w"] = "${x.wrong}"; values["${x.section}|b"] = "${x.blank}" } }
+    val cfg = configs.firstOrNull { it.code == exam }
+    val all = cfg?.let { r.sectionsOf(it) }.orEmpty()
+    val general = kind == "GENERAL" || kind == "EXTERNAL" || kind in listOf("TYT", "AYT", "YDT")
+    var chosen by remember(cfg?.code, profile?.field) {
+        mutableStateOf(
+            if (initialRows.isNotEmpty()) initialRows.map { it.section }.toSet()
+            else when {
+                exam != "AYT" -> all.map { it.name }.toSet()
+                profile?.field == "SAY" -> setOf("Matematik", "Fen Bilimleri")
+                profile?.field == "EA" -> setOf("Matematik", "Türk Dili ve Edebiyatı-Sosyal Bilimler-1")
+                profile?.field == "SOZ" -> setOf("Türk Dili ve Edebiyatı-Sosyal Bilimler-1", "Sosyal Bilimler-2")
+                else -> all.map { it.name }.toSet()
+            }
+        )
+    }
+    val subjectName = subjects.firstOrNull { it.id == subjectId }?.name
+    var extra by rememberSaveable { mutableStateOf(initialRows.filter { !general }.joinToString("|") { it.section }.ifBlank { subjectName ?: "Genel" }) }
+    val sections: List<FormSection> = if (general) all.filter { it.name in chosen }.map { s -> FormSection(s.name, s.name, s.parts.sumOf { it.count }, s.parts.singleOrNull()?.subjectId) }
+    else extra.split('|').filter { it.isNotBlank() }.map { FormSection(it, it, 0, subjectId) }
+    val divisor = cfg?.wrongDivisor ?: 4.0
+    fun v(s: String, k: String) = values["$s|$k"]?.toIntOrNull() ?: 0
+    fun blank(s: FormSection): Int = values["${s.key}|b"]?.toIntOrNull() ?: if (s.max > 0) (s.max - v(s.key, "c") - v(s.key, "w")).coerceAtLeast(0) else 0
+    val problems = sections.filter { s -> s.max > 0 && !Scoring.validSection(v(s.key, "c"), v(s.key, "w"), blank(s), s.max) }
+    val answered = sections.sumOf { v(it.key, "c") + v(it.key, "w") + blank(it) }
+    val total = sections.sumOf { Scoring.net(v(it.key, "c"), v(it.key, "w"), divisor) }
+    ScrollColumn {
+        Field(title, { title = it }, "Deneme adı")
+        Field(publisher, { publisher = it }, "Yayınevi veya kaynak")
+        DateField(date, "Tarih") { date = it }
+        if (general && all.size > 1) {
+            Muted("Testler")
+            MultiPills(all.map { it.name to it.name }, chosen) { n -> chosen = if (n in chosen) chosen - n else chosen + n }
+        }
+        if (!general) {
+            Field(extra.replace("|", ", "), { extra = it.replace(", ", "|").replace(",", "|") }, "Testler (virgülle ayır)")
+        }
+        sections.forEach { s ->
+            YCard(padding = Space.m) {
+                Text(if (s.max > 0) "${s.name} (${s.max} soru)" else s.name, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                Spacer(Modifier.height(Space.s))
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    listOf("c" to "Doğru", "w" to "Yanlış", "b" to "Boş").forEach { (k, label) ->
+                        NumberField(values["${s.key}|$k"].orEmpty(), { values["${s.key}|$k"] = it }, label, Modifier.weight(1f), max = 3)
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                if (s in problems) Text("Toplam ${s.max} soruyu aşamaz.", color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
+                else Muted("Net: ${Scoring.formatNet(Scoring.net(v(s.key, "c"), v(s.key, "w"), divisor))}" + if (values["${s.key}|b"].isNullOrEmpty() && s.max > 0) " • ${blank(s)} boş" else "")
+            }
+        }
+        NumberField(spent, { spent = it }, "Süre (dakika)", max = 3)
+        Field(note, { note = it }, "Kişisel not", singleLine = false, minLines = 2)
+        val hardCount = hard.split(',').count { it.isNotBlank() }
+        SoftButton(if (hardCount > 0) "$hardCount zorlandığın konu seçildi" else "Zorlandığın konuları seç", Modifier.fillMaxWidth(), icon = Icons.Rounded.Flag) { pick = true }
+        YCard { Row { Text("Toplam net", color = Yks.c.text, modifier = Modifier.weight(1f)); Text(Scoring.formatNet(total), style = MaterialTheme.typography.titleLarge.merge(NumberStyle), color = Yks.c.accentLight) } }
+        MainButton(submit, Modifier.fillMaxWidth(), enabled = title.isNotBlank() && problems.isEmpty() && sections.isNotEmpty() && answered > 0) {
+            onSave(title.trim(), publisher.trim(), date, spent.toIntOrNull() ?: 0, sections.map { SectionEntry(it.name, v(it.key, "c"), v(it.key, "w"), blank(it), it.subjectId) }, hard, note.trim())
+        }
+    }
+    if (pick) TopicPickerDialog(exam, hard.split(',').filter { it.isNotBlank() }.toSet(), { pick = false }) { hard = it.joinToString(",") }
+}
+
+/** Birden çok konu seçmek için aranabilir liste. */
+@Composable
+fun TopicPickerDialog(exam: String, selected: Set<String>, onDismiss: () -> Unit, onChange: (Set<String>) -> Unit) {
+    val r = repo()
+    var all by remember { mutableStateOf<List<Pair<Topic, String>>>(emptyList()) }
+    var q by remember { mutableStateOf("") }
+    var cur by remember { mutableStateOf(selected) }
+    LaunchedEffect(exam) {
+        val subs = r.content.subjectsNow().associateBy { it.id }
+        all = r.content.allTopics().filter { subs[it.subjectId]?.exam == exam && it.scope != "EXCLUDED" }.map { it to subs[it.subjectId]?.name.orEmpty() }
+    }
+    val n = app.ykspusula.domain.SearchText.normalize(q)
+    val shown = all.filter { n.isEmpty() || app.ykspusula.domain.SearchText.score(n, app.ykspusula.domain.SearchText.normalize(it.first.name + " " + it.second)) > 0 }.take(60)
+    AlertDialog(
+        onDismissRequest = onDismiss, containerColor = Yks.c.card, title = { Text("Konu seç") },
+        text = {
+            Column {
+                Field(q, { q = it }, "Konu ara")
+                Spacer(Modifier.height(Space.s))
+                LazyColumn(Modifier.heightIn(max = 340.dp)) {
+                    items(shown, key = { it.first.id }) { (t, s) ->
+                        Row(Modifier.fillMaxWidth().clickable { cur = if (t.id in cur) cur - t.id else cur + t.id }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(t.id in cur, null)
+                            Spacer(Modifier.width(Space.s))
+                            Column { Text(t.name, color = Yks.c.text, style = MaterialTheme.typography.bodyMedium); Muted(s) }
                         }
                     }
                 }
-            },
-            confirmButton = { TextButton({ gridOpen = false }) { Text("Kapat") } },
-        )
+            }
+        },
+        confirmButton = { TextButton({ onChange(cur); onDismiss() }) { Text("Tamam") } },
+    )
+}
+
+/** Süreli oturumdan veya düzenlemeden gelen sonuç girişi. */
+@Composable
+fun ExamEntryScreen(id: String) {
+    val r = repo()
+    val nav = LocalNav.current
+    val scope = rememberUiScope()
+    var m by remember { mutableStateOf<MockExam?>(null) }
+    var rows by remember { mutableStateOf<List<MockExamResult>?>(null) }
+    LaunchedEffect(id) { m = r.user.mock(id); rows = r.user.results(id) }
+    Screen("Sonuçları gir", { nav.popBackStack() }) {
+        val e = m ?: return@Screen
+        val list = rows ?: return@Screen
+        ExamResultForm(
+            e.exam, e.kind, e.subjectId, e.title, e.publisher, e.examDate.takeIf { it.isNotBlank() }?.let(LocalDate::parse) ?: dateOf(e.createdAt), e.spentMinutes, list, e.hardTopics, e.note, "Sonucu kaydet",
+        ) { title, publisher, date, minutes, entries, hard, note ->
+            scope.launch {
+                r.saveExamResults(id, title, publisher, date, minutes, entries, hard, note)
+                nav.navigate("result/$id") { popUpTo("exams") }
+            }
+        }
     }
-    if (ask) {
-        val blank = records.count { it.selected == null }
-        ConfirmDialog("Sınav bitirilsin mi?", if (blank > 0) "$blank soru boş. Bitirdikten sonra cevapları değiştiremezsin." else "Bitirdikten sonra cevapları değiştiremezsin.", "Bitir", false, { ask = false }) { ask = false; finish() }
-    }
-    if (leave) {
-        ConfirmDialog("Denemeden çıkılsın mı?", "Cevapların kayıtlı. Sayaç işlemeye devam eder; süre bitmeden Ana Sayfa veya Denemeler bölümünden geri dönebilirsin.", "Çık", false, { leave = false }) {
-            leave = false
-            nav.popBackStack()
+}
+
+/** Süre tutmadan sonuç ekleme. */
+@Composable
+fun ExternalExamScreen(kind: String, exam: String, subject: String, title: String) {
+    val r = repo()
+    val nav = LocalNav.current
+    val scope = rememberUiScope()
+    var e by rememberSaveable { mutableStateOf(exam.ifEmpty { "TYT" }) }
+    Screen("Deneme sonucu ekle", { nav.popBackStack() }) {
+        if (kind.isEmpty() || kind in listOf("TYT", "AYT", "YDT")) {
+            Box(Modifier.padding(horizontal = Space.l)) { PillGroup(listOf("TYT" to "TYT", "AYT" to "AYT", "YDT" to "YDT"), e) { e = it } }
+        }
+        key(e) {
+            ExamResultForm(e, kind.ifEmpty { "EXTERNAL" }, subject.ifEmpty { null }, title, "", today(), 0, emptyList(), "", "", "Kaydet") { t, publisher, date, minutes, rows, hard, note ->
+                scope.launch {
+                    val k = if (kind in listOf("BRANCH", "TOPIC", "PERSONAL", "CUSTOM")) kind else "EXTERNAL"
+                    val id = r.saveExternalExam(t, publisher, date, e, minutes, rows, k, hard, note, subject.ifEmpty { null })
+                    nav.navigate("result/$id") { popUpTo("exams") }
+                }
+            }
         }
     }
 }
@@ -349,11 +406,13 @@ fun ExamRunScreen(id: String) {
 fun ResultScreen(id: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     var exam by remember { mutableStateOf<MockExam?>(null) }
     var results by remember { mutableStateOf<List<MockExamResult>>(emptyList()) }
     var previous by remember { mutableStateOf<MockSummary?>(null) }
+    var hardNames by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var ask by remember { mutableStateOf(false) }
+    val goals by r.user.netGoals().collectAsStateWithLifecycle(emptyList())
     LaunchedEffect(id) {
         val m = r.user.mock(id)
         exam = m
@@ -361,8 +420,11 @@ fun ResultScreen(id: String) {
         val all = r.user.mockSummariesNow().filter { it.exam == m?.exam }
         val i = all.indexOfFirst { it.id == id }
         previous = if (i > 0) all[i - 1] else null
+        val ids = m?.hardTopics.orEmpty().split(',').filter { it.isNotBlank() }
+        if (ids.isNotEmpty()) hardNames = r.content.allTopics().filter { it.id in ids }.map { it.id to it.name }
     }
     Screen("Deneme sonucu", { if (!nav.popBackStack()) nav.navigate("exams") }, actions = {
+        IconButton({ nav.navigate("examEntry/$id") }) { Icon(Icons.Rounded.Edit, "Düzenle") }
         IconButton({ ask = true }) { Icon(Icons.Rounded.DeleteOutline, "Denemeyi sil") }
     }) {
         val m = exam ?: return@Screen
@@ -373,42 +435,44 @@ fun ResultScreen(id: String) {
         ScrollColumn {
             YCard {
                 Text(m.title, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-                Muted(listOf(if (m.examDate.isNotBlank()) longDate(LocalDate.parse(m.examDate)) else shortDate(m.createdAt), m.publisher).filter { it.isNotBlank() }.joinToString(" • "))
+                Muted(listOf(if (m.examDate.isNotBlank()) longDate(LocalDate.parse(m.examDate)) else shortDate(m.createdAt), m.publisher, if (m.spentMinutes > 0) "${m.spentMinutes} dk" else "").filter { it.isNotBlank() }.joinToString(" • "))
                 Spacer(Modifier.height(Space.m))
-                Text(Scoring.formatNet(net), style = MaterialTheme.typography.displaySmall, color = Yks.c.accent)
+                Text(Scoring.formatNet(net), style = MaterialTheme.typography.displaySmall.merge(NumberStyle), color = Yks.c.accentLight)
                 Muted("Toplam net")
                 previous?.let { p ->
                     val diff = net - p.net
                     val up = diff >= 0
                     Spacer(Modifier.height(Space.s))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(if (up) Icons.Rounded.TrendingUp else Icons.Rounded.TrendingDown, null, tint = if (up) Yks.c.success else Yks.c.error, modifier = Modifier.size(18.dp))
+                        Icon(if (up) Icons.AutoMirrored.Rounded.TrendingUp else Icons.AutoMirrored.Rounded.TrendingDown, null, tint = if (up) Yks.c.success else Yks.c.warning, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Önceki denemeye göre ${if (up) "+" else ""}${Scoring.formatNet(diff)} net", style = MaterialTheme.typography.bodyMedium, color = if (up) Yks.c.success else Yks.c.error)
+                        Text("Önceki denemeye göre ${if (up) "+" else ""}${Scoring.formatNet(diff)} net", style = MaterialTheme.typography.bodyMedium, color = if (up) Yks.c.success else Yks.c.warning)
                     }
                 }
             }
             Row2({ Tile("$c", "Doğru", it, Yks.c.success) }, { Tile("$w", "Yanlış", it, Yks.c.error) })
             Tile("$b", "Boş")
-            if (results.size > 1) {
-                val best = results.maxBy { it.net }
-                val worst = results.minBy { it.net }
-                Row2({ Tile(best.section, "En başarılı: ${Scoring.formatNet(best.net)} net", it) }, { Tile(worst.section, "En zayıf: ${Scoring.formatNet(worst.net)} net", it) })
-            }
             Section("Testlere göre")
             GroupCard {
                 results.forEachIndexed { i, s ->
                     if (i > 0) Line()
+                    val goal = goals.firstOrNull { it.exam == m.exam && it.section == s.section }
                     Row(Modifier.fillMaxWidth().padding(Space.l), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(s.section, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-                            Muted("${s.correct} D • ${s.wrong} Y • ${s.blank} B")
+                            Muted("${s.correct} D • ${s.wrong} Y • ${s.blank} B" + (goal?.let { " • Hedef ${Scoring.formatNet(it.target)}" } ?: ""))
                         }
-                        Text(Scoring.formatNet(s.net), style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                        Text(Scoring.formatNet(s.net), style = MaterialTheme.typography.titleMedium.merge(NumberStyle), color = Yks.c.text)
                     }
                 }
             }
-            if (!m.isExternal) MainButton("Cevapları incele", Modifier.fillMaxWidth(), icon = Icons.Rounded.Visibility) { nav.navigate("examReview/$id") }
+            if (hardNames.isNotEmpty()) {
+                Section("Zorlandığın konular")
+                GroupCard { hardNames.forEachIndexed { i, (tid, n) -> if (i > 0) Line(); NavRow(n, "Pusula Koç bu konuyu önerilerine ekler", Icons.Rounded.Flag, Yks.c.warning, { nav.navigate("topic/$tid") }) } }
+            }
+            if (m.note.isNotBlank()) YCard { Muted("Notun"); Text(m.note, color = Yks.c.text) }
+            MainButton("Yanlış kaydet", Modifier.fillMaxWidth(), icon = Icons.Rounded.AddCircleOutline) { nav.navigate("wrongEdit/new") }
+            SoftButton("Deneme analizine git", Modifier.fillMaxWidth(), icon = Icons.Rounded.Insights) { nav.navigate("examAnalysis") }
         }
         if (ask) ConfirmDialog("Deneme silinsin mi?", "Bu deneme ve sonuçları istatistiklerinden kaldırılır.", "Sil", true, { ask = false }) {
             scope.launch { r.deleteExam(id); nav.popBackStack() }
@@ -416,46 +480,78 @@ fun ResultScreen(id: String) {
     }
 }
 
+/** Geçmiş: tarih, sınav türü, ders ve net aralığı filtreleri; iki deneme karşılaştırılabilir. */
 @Composable
-fun ExamReviewScreen(id: String) {
+fun ExamHistoryScreen() {
     val r = repo()
     val nav = LocalNav.current
-    var records by remember { mutableStateOf<List<AnswerRecord>>(emptyList()) }
-    var questions by remember { mutableStateOf<Map<String, QuestionFull>>(emptyMap()) }
-    var filter by rememberSaveable { mutableStateOf("ALL") }
-    LaunchedEffect(id) {
-        records = r.user.records(id)
-        questions = records.map { it.questionId }.chunked(400).flatMap { r.content.fullList(it) }.associateBy { it.q.id }
+    val mocks by r.user.mockSummaries().collectAsStateWithLifecycle(emptyList())
+    var exam by rememberSaveable { mutableStateOf("") }
+    var period by rememberSaveable { mutableStateOf("ALL") }
+    var minNet by rememberSaveable { mutableStateOf("") }
+    var maxNet by rememberSaveable { mutableStateOf("") }
+    var section by rememberSaveable { mutableStateOf("") }
+    var sections by remember { mutableStateOf<Map<String, Set<String>>>(emptyMap()) }
+    var picked by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(mocks) { sections = r.user.resultsNow().groupBy { it.mockExamId }.mapValues { e -> e.value.map { it.section }.toSet() } }
+    val now = remember { System.currentTimeMillis() }
+    val shown = mocks.filter { m ->
+        (exam.isEmpty() || m.exam == exam) &&
+            (period == "ALL" || now - m.createdAt <= period.toLong() * 86_400_000L) &&
+            (minNet.toDoubleOrNull()?.let { m.net >= it } ?: true) && (maxNet.toDoubleOrNull()?.let { m.net <= it } ?: true) &&
+            (section.isEmpty() || sections[m.id]?.contains(section) == true)
+    }.reversed()
+    Screen("Deneme geçmişi", { nav.popBackStack() }) {
+        LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                    PillGroup(listOf("" to "Tümü", "TYT" to "TYT", "AYT" to "AYT", "YDT" to "YDT"), exam) { exam = it }
+                    PillGroup(listOf("ALL" to "Tüm zamanlar", "30" to "30 gün", "90" to "90 gün"), period) { period = it }
+                    Dropdown(sections.values.flatten().distinct().sorted().map { it to it }, section, "Tüm dersler") { section = it }
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                        NumberField(minNet, { minNet = it }, "En az net", Modifier.weight(1f), 3)
+                        NumberField(maxNet, { maxNet = it }, "En çok net", Modifier.weight(1f), 3)
+                    }
+                    Muted("Karşılaştırmak için iki deneme seç.")
+                    if (picked.size == 2) MainButton("Seçilenleri karşılaştır", Modifier.fillMaxWidth(), icon = Icons.Rounded.CompareArrows) { nav.navigate("examCompare/${picked[0]}/${picked[1]}") }
+                }
+            }
+            if (shown.isEmpty()) item { EmptyStateView(Icons.Rounded.History, "Kayıt bulunamadı", "Filtreleri değiştirebilir veya yeni bir deneme ekleyebilirsin.") }
+            items(shown, key = { it.id }) { m ->
+                val on = m.id in picked
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(on, { picked = if (on) picked - m.id else (picked + m.id).takeLast(2) })
+                    RecentExamCard(m.title, shortDate(m.createdAt), 0, Scoring.formatNet(m.net), Modifier.weight(1f)) { nav.navigate("result/${m.id}") }
+                }
+            }
+        }
     }
-    Screen("Cevaplar", { nav.popBackStack() }) {
+}
+
+@Composable
+fun ExamCompareScreen(a: String, b: String) {
+    val r = repo()
+    val nav = LocalNav.current
+    var ma by remember { mutableStateOf<MockExam?>(null) }
+    var mb by remember { mutableStateOf<MockExam?>(null) }
+    var ra by remember { mutableStateOf<List<MockExamResult>>(emptyList()) }
+    var rb by remember { mutableStateOf<List<MockExamResult>>(emptyList()) }
+    LaunchedEffect(a, b) { ma = r.user.mock(a); mb = r.user.mock(b); ra = r.user.results(a); rb = r.user.results(b) }
+    Screen("Karşılaştırma", { nav.popBackStack() }) {
+        val x = ma ?: return@Screen
+        val y = mb ?: return@Screen
         ScrollColumn {
-            PillGroup(listOf("ALL" to "Tümü", "WRONG" to "Yanlış", "BLANK" to "Boş"), filter) { filter = it }
-            records.forEachIndexed { i, rec ->
-                val q = questions[rec.questionId] ?: return@forEachIndexed
-                val right = rec.selected == q.correctLabel
-                val show = filter == "ALL" || (filter == "BLANK" && rec.selected == null) || (filter == "WRONG" && rec.selected != null && !right)
-                if (show) {
-                    var open by remember { mutableStateOf(false) }
-                    YCard(onClick = { open = !open }, padding = Space.m) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                when { rec.selected == null -> Icons.Rounded.RadioButtonUnchecked; right -> Icons.Rounded.CheckCircle; else -> Icons.Rounded.Cancel }, null,
-                                tint = when { rec.selected == null -> Yks.c.muted; right -> Yks.c.success; else -> Yks.c.error }, modifier = Modifier.size(20.dp),
-                            )
-                            Spacer(Modifier.width(Space.s))
-                            Text("Soru ${i + 1} • " + when { rec.selected == null -> "Boş"; right -> "Doğru"; else -> "Yanlış" } + " • ${rec.sectionName}", style = MaterialTheme.typography.labelLarge, color = Yks.c.text)
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        MathText(q.q.stem, style = MaterialTheme.typography.bodyMedium, color = Yks.c.text)
-                        if (open) {
-                            Spacer(Modifier.height(Space.s))
-                            q.q.figure?.let { FigureView(it, Modifier.widthIn(max = 420.dp), color = Yks.c.text) }
-                            q.options.sortedBy { it.label }.forEach { o ->
-                                OptionRow(o.label, o.text, rec.selected == o.label, true, o.isCorrect, false) {}
-                                Spacer(Modifier.height(6.dp))
-                            }
-                            SolutionCard(q) { nav.navigate("topic/${q.q.topicId}") }
-                        }
+            Row2({ Tile(Scoring.formatNet(ra.sumOf { it.net }), x.title, it) }, { Tile(Scoring.formatNet(rb.sumOf { it.net }), y.title, it) })
+            GroupCard {
+                (ra.map { it.section } + rb.map { it.section }).distinct().forEachIndexed { i, s ->
+                    if (i > 0) Line()
+                    val p = ra.firstOrNull { it.section == s }
+                    val q = rb.firstOrNull { it.section == s }
+                    Row(Modifier.fillMaxWidth().padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
+                        Text(s, style = MaterialTheme.typography.bodyMedium, color = Yks.c.text, modifier = Modifier.weight(1f))
+                        Text(p?.let { Scoring.formatNet(it.net) } ?: "–", style = MaterialTheme.typography.titleMedium.merge(NumberStyle), color = Yks.c.text)
+                        Spacer(Modifier.width(Space.m))
+                        Text(q?.let { Scoring.formatNet(it.net) } ?: "–", style = MaterialTheme.typography.titleMedium.merge(NumberStyle), color = Yks.c.accentLight)
                     }
                 }
             }
@@ -464,53 +560,88 @@ fun ExamReviewScreen(id: String) {
 }
 
 @Composable
-fun ExternalExamScreen() {
+fun ExamAnalysisScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
-    val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
-    var title by rememberSaveable { mutableStateOf("") }
-    var publisher by rememberSaveable { mutableStateOf("") }
-    var date by rememberSaveable { mutableStateOf(today().toString()) }
     var exam by rememberSaveable { mutableStateOf("TYT") }
-    var spent by rememberSaveable { mutableStateOf("") }
-    val values = remember(exam) { mutableStateMapOf<String, String>() }
-    val cfg = configs.firstOrNull { it.code == exam }
-    val sections = cfg?.let { r.sectionsOf(it) }.orEmpty()
-    val divisor = cfg?.wrongDivisor ?: 4.0
-    fun v(s: String, k: String) = values["$s|$k"]?.toIntOrNull() ?: 0
-    val problems = sections.filter { s -> !Scoring.validSection(v(s.name, "c"), v(s.name, "w"), v(s.name, "b"), s.parts.sumOf { it.count }) }
-    val totalNet = sections.sumOf { Scoring.net(v(it.name, "c"), v(it.name, "w"), divisor) }
-    val parsedDate = runCatching { LocalDate.parse(date) }.getOrNull()
-    Screen("Dış deneme", { nav.popBackStack() }) {
+    val mocks by r.user.mockSummaries().collectAsStateWithLifecycle(emptyList())
+    var a by remember { mutableStateOf<ExamAnalysis?>(null) }
+    LaunchedEffect(exam, mocks) { a = r.examAnalysis(exam) }
+    val list = mocks.filter { it.exam == exam }
+    Screen("Deneme analizi", { nav.popBackStack() }) {
         ScrollColumn {
-            Field(title, { title = it }, "Deneme adı")
-            Field(publisher, { publisher = it }, "Yayınevi veya kaynak")
-            Field(date, { date = it }, "Tarih (YYYY-AA-GG)")
-            if (parsedDate == null) Text("Tarihi 2026-11-05 biçiminde yaz.", color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
             PillGroup(listOf("TYT" to "TYT", "AYT" to "AYT", "YDT" to "YDT"), exam) { exam = it }
-            sections.forEach { s ->
-                val max = s.parts.sumOf { it.count }
-                YCard(padding = Space.m) {
-                    Text("${s.name} ($max soru)", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-                    Spacer(Modifier.height(Space.s))
-                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                        listOf("c" to "Doğru", "w" to "Yanlış", "b" to "Boş").forEach { (k, label) ->
-                            Field(values["${s.name}|$k"].orEmpty(), { values["${s.name}|$k"] = it.filter(Char::isDigit).take(3) }, label, Modifier.weight(1f), keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
+            val x = a
+            if (x == null || x.examCount == 0) {
+                EmptyStateView(Icons.Rounded.Insights, "Henüz analiz yok", "Bu sınav türünde deneme kaydettiğinde analiz burada oluşur.", "Deneme ekle") { nav.navigate("external") }
+                return@ScrollColumn
+            }
+            Row2({ Tile("${x.examCount}", "Deneme", it) }, { Tile(x.avgMinutes?.let { m -> "$m dk" } ?: "–", "Ortalama süre", it) })
+            Tile("%.1f".format(java.util.Locale("tr", "TR"), x.blankAverage), "Deneme başına boş")
+            if (list.size >= 2) LineChart("Net gelişimi", list.map { shortDate(it.createdAt) }, list.map { it.net }) { Scoring.formatNet(it) }
+            x.trendNote?.let { InfoBanner(it, Icons.AutoMirrored.Rounded.TrendingUp, Yks.c.accentLight) }
+                ?: Muted("Eğilim yorumu için en az 3 deneme gerekir.")
+            if (x.strong.isNotEmpty()) InfoBanner("Güçlü olduğun testler: ${x.strong.joinToString(", ")}", Icons.Rounded.CheckCircle, Yks.c.success)
+            if (x.weak.isNotEmpty()) InfoBanner("Geliştirebileceğin testler: ${x.weak.joinToString(", ")}", Icons.Rounded.Flag, Yks.c.warning)
+            Section("Testlere göre")
+            GroupCard {
+                x.sections.forEachIndexed { i, s ->
+                    if (i > 0) Line()
+                    Column(Modifier.padding(Space.l)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(s.section, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text, modifier = Modifier.weight(1f))
+                            Text(Scoring.formatNet(s.lastNet), style = MaterialTheme.typography.titleMedium.merge(NumberStyle), color = Yks.c.accentLight)
                         }
+                        Muted("Ortalama ${Scoring.formatNet(s.avgNet)} • En iyi ${Scoring.formatNet(s.best)} • Doğruluk %${s.accuracy} • Boş %${s.blankRate}")
                     }
-                    Spacer(Modifier.height(4.dp))
-                    if (s in problems) Text("Toplam $max soruyu aşamaz.", color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
-                    else Muted("Net: ${Scoring.formatNet(Scoring.net(v(s.name, "c"), v(s.name, "w"), divisor))}")
                 }
             }
-            Field(spent, { spent = it.filter(Char::isDigit).take(3) }, "Çalışma süresi (dakika)", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
-            YCard { Row { Text("Toplam net", color = Yks.c.text, modifier = Modifier.weight(1f)); Text(Scoring.formatNet(totalNet), style = MaterialTheme.typography.titleLarge, color = Yks.c.accent) } }
-            MainButton("Kaydet", Modifier.fillMaxWidth(), enabled = title.isNotBlank() && problems.isEmpty() && parsedDate != null) {
-                scope.launch {
-                    val rows = sections.map { s -> Triple(s.name, intArrayOf(v(s.name, "c"), v(s.name, "w"), v(s.name, "b")), s.parts.sumOf { it.count }) }
-                    val id = r.saveExternalExam(title.trim(), publisher.trim(), parsedDate!!, exam, spent.toIntOrNull() ?: 0, rows)
-                    nav.navigate("result/$id") { popUpTo("exams") }
+        }
+    }
+}
+
+/** Testlere göre hedef net ve hedefe ulaşmak için gereken doğru sayısı. */
+@Composable
+fun NetGoalsScreen() {
+    val r = repo()
+    val nav = LocalNav.current
+    val scope = rememberUiScope()
+    val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
+    val goals by r.user.netGoals().collectAsStateWithLifecycle(emptyList())
+    val mocks by r.user.mockSummaries().collectAsStateWithLifecycle(emptyList())
+    var last by remember { mutableStateOf<Map<Pair<String, String>, MockExamResult>>(emptyMap()) }
+    LaunchedEffect(mocks) {
+        val m = HashMap<Pair<String, String>, MockExamResult>()
+        mocks.forEach { x -> r.user.results(x.id).forEach { m[x.exam to it.section] = it } }
+        last = m
+    }
+    Screen("Net hedeflerim", { nav.popBackStack() }) {
+        ScrollColumn {
+            Muted("Her test için hedef netini yaz. Son denemenle arasındaki farkı ve gereken doğru sayısını görürsün.")
+            configs.sortedBy { it.code }.forEach { c ->
+                Section(c.title)
+                r.sectionsOf(c).forEach { s ->
+                    val g = goals.firstOrNull { it.exam == c.code && it.section == s.name }
+                    var text by remember(g) { mutableStateOf(g?.target?.let { Scoring.formatNet(it) }.orEmpty()) }
+                    val cur = last[c.code to s.name]
+                    val max = s.parts.sumOf { it.count }
+                    val target = text.replace(',', '.').toDoubleOrNull()
+                    YCard(padding = Space.m) {
+                        Text(s.name, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                        Spacer(Modifier.height(Space.s))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                            Field(text, { text = it.take(6) }, "Hedef net", Modifier.weight(1f), keyboard = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
+                            SoftButton("Kaydet", enabled = target != null && target in 0.0..max.toDouble()) {
+                                scope.launch { r.user.saveNetGoal(NetGoal(c.code, s.name, target!!)) }
+                            }
+                        }
+                        if (cur != null && target != null) {
+                            val need = Scoring.correctNeeded(target, cur.wrong, c.wrongDivisor)
+                            Spacer(Modifier.height(4.dp))
+                            Muted("Son net ${Scoring.formatNet(cur.net)}. ${cur.wrong} yanlışla hedef için en az $need doğru gerekir.")
+                            ProgressBar(if (target > 0) (cur.net / target).toFloat() else 0f, height = 5.dp)
+                        }
+                    }
                 }
             }
         }
@@ -521,28 +652,29 @@ fun ExternalExamScreen() {
 fun ExamSettingsScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
     Screen("Sınav ayarları", { nav.popBackStack() }) {
         ScrollColumn {
             configs.sortedBy { it.code }.forEach { c ->
-                var date by remember(c) { mutableStateOf(c.examDate) }
+                var date by remember(c) { mutableStateOf(LocalDate.parse(c.examDate)) }
                 var minutes by remember(c) { mutableStateOf(c.durationMin.toString()) }
                 var divisor by remember(c) { mutableStateOf(c.wrongDivisor.toString()) }
-                val valid = runCatching { LocalDate.parse(date) }.isSuccess && (minutes.toIntOrNull() ?: 0) > 0 && (divisor.toDoubleOrNull() ?: 0.0) > 0.0
+                val valid = (minutes.toIntOrNull() ?: 0) > 0 && (divisor.toDoubleOrNull() ?: 0.0) > 0.0
                 YCard {
-                    Text(c.title, style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                    Text("${c.title} • ${c.examYear}", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
                     Muted("${c.questionCount} soru. ${c.sourceNote}")
                     if (c.applicationStart.isNotBlank()) Muted("Başvuru: ${c.applicationStart} - ${c.applicationEnd} • Sonuç: ${c.resultDate}")
+                    if (c.lastUpdated.isNotBlank()) Muted("Son güncelleme: ${c.lastUpdated}")
                     Spacer(Modifier.height(Space.s))
-                    Field(date, { date = it }, "Sınav tarihi (YYYY-AA-GG)")
+                    DateField(date, "Sınav tarihi") { date = it }
                     Spacer(Modifier.height(Space.s))
-                    Field(minutes, { minutes = it.filter(Char::isDigit).take(3) }, "Süre (dakika)", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
+                    NumberField(minutes, { minutes = it }, "Süre (dakika)", max = 3)
                     Spacer(Modifier.height(Space.s))
-                    Field(divisor, { divisor = it.filter { ch -> ch.isDigit() || ch == '.' }.take(4) }, "Kaç yanlış bir doğruyu götürür", keyboard = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    Field(divisor, { divisor = it.filter { ch -> ch.isDigit() || ch == '.' }.take(4) }, "Kaç yanlış bir doğruyu götürür", keyboard = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
                     Spacer(Modifier.height(Space.s))
                     MainButton("Kaydet", Modifier.fillMaxWidth(), enabled = valid) {
-                        scope.launch { r.user.saveExamConfig(c.copy(examDate = date, durationMin = minutes.toInt(), wrongDivisor = divisor.toDouble())) }
+                        scope.launch { r.user.saveExamConfig(c.copy(examDate = date.toString(), durationMin = minutes.toInt(), wrongDivisor = divisor.toDouble())) }
                     }
                 }
             }
@@ -555,30 +687,31 @@ fun ExamSettingsScreen() {
 fun ObpScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val s by r.settings.collectAsStateWithLifecycle(AppSettings())
+    val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
+    val cfg = configs.firstOrNull { it.code == "TYT" }
+    val mult = cfg?.obpMultiplier ?: 5.0
+    val coef = cfg?.obpCoefficient ?: 0.12
+    val placedCoef = cfg?.obpCoefficientPlaced ?: 0.06
     var diploma by remember(s.diploma) { mutableStateOf(s.diploma) }
     var placed by remember(s.placedLastYear) { mutableStateOf(s.placedLastYear) }
     val d = diploma.replace(',', '.').toDoubleOrNull()
     val ok = d != null && d in 50.0..100.0
     Screen("OBP hesaplama", { nav.popBackStack() }) {
         ScrollColumn {
-            Field(diploma, { diploma = it.take(6) }, "Diploma notu (50-100)", keyboard = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            Field(diploma, { diploma = it.take(6) }, "Diploma notu (50-100)", keyboard = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Geçen yıl bir programa yerleştim", color = Yks.c.text, modifier = Modifier.weight(1f))
                 Switch(placed, { placed = it })
             }
-            if (ok) {
-                Row2({ Tile(Scoring.formatNet(Scoring.obp(d!!)), "OBP", it) }, { Tile(Scoring.formatNet(Scoring.obpContribution(d!!, placed)), "Puana katkı", it, Yks.c.accent) })
-            }
-            MainButton("Kaydet", Modifier.fillMaxWidth(), enabled = ok) {
-                scope.launch { r.updateSettings { p -> p[Keys.diploma] = diploma; p[Keys.placed] = placed } }
-            }
+            if (ok) Row2({ Tile(Scoring.formatNet(Scoring.obp(d!!, mult)), "OBP", it) }, { Tile(Scoring.formatNet(Scoring.obpContribution(d!!, placed, mult, coef, placedCoef)), "Puana katkı", it, Yks.c.accentLight) })
+            MainButton("Kaydet", Modifier.fillMaxWidth(), enabled = ok) { scope.launch { r.updateSettings { p -> p[Keys.diploma] = diploma; p[Keys.placed] = placed } } }
             YCard {
-                Text("Kullanılan kural", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-                Muted("OBP = diploma notu × 5. Katkı = OBP × 0,12. Önceki yıl bir programa yerleşenlerde katsayı 0,06 olarak alınır. Sınav yılının kılavuzuyla karşılaştırmalısın.")
+                Text("Kullanılan kural (${cfg?.examYear ?: 2027})", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                Muted("OBP = diploma notu × ${Scoring.formatNet(mult)}. Katkı = OBP × ${Scoring.formatNet(coef)}. Önceki yıl bir programa yerleşenlerde katsayı ${Scoring.formatNet(placedCoef)} olarak alınır. Değerleri sınav yılının kılavuzuyla karşılaştırmalısın.")
                 Spacer(Modifier.height(Space.s))
-                Muted("Uygulama puan veya sıralama tahmini yapmaz. Bunun için her yılın resmî standart puan verileri gerekir ve bu veriler uygulamada yoktur.")
+                Muted("Uygulama puan veya sıralama tahmini yapmaz. Bunun için her yılın resmî verileri gerekir.")
             }
         }
     }

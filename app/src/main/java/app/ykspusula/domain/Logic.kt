@@ -23,14 +23,18 @@ object Scoring {
 
     fun formatNet(v: Double): String = String.format(java.util.Locale.US, "%.2f", v).replace('.', ',')
 
-    /** OBP = diploma notu × 5. Yerleştirme puanına katkısı OBP × katsayı. */
-    fun obp(diploma: Double): Double {
+    /** OBP = diploma notu × çarpan. Parametreler yıla göre sınav ayarlarından gelir. */
+    fun obp(diploma: Double, multiplier: Double = 5.0): Double {
         require(diploma in 50.0..100.0) { "Diploma notu 50-100 aralığında olmalı" }
-        return diploma * 5
+        return diploma * multiplier
     }
 
-    fun obpContribution(diploma: Double, placedLastYear: Boolean): Double =
-        obp(diploma) * (if (placedLastYear) 0.06 else 0.12)
+    fun obpContribution(diploma: Double, placedLastYear: Boolean, multiplier: Double = 5.0, coefficient: Double = 0.12, coefficientPlaced: Double = 0.06): Double =
+        obp(diploma, multiplier) * (if (placedLastYear) coefficientPlaced else coefficient)
+
+    /** Hedef nete ulaşmak için gereken en az doğru sayısı; yanlış sayısı sabit tutulur. */
+    fun correctNeeded(targetNet: Double, wrong: Int, divisor: Double = 4.0): Int =
+        kotlin.math.ceil(targetNet + wrong / divisor).toInt().coerceAtLeast(0)
 }
 
 /** 1-3-7-14-30 günlük aralıklı tekrar. */
@@ -45,11 +49,18 @@ object Repetition {
     /** Yanlış ilk kaydedildiğinde 1 gün sonraya planlanır. */
     fun onWrong(now: Long): Outcome = Outcome(0, nextAt(0, now), false)
 
-    /** Tekrar sırasında doğru: bir sonraki aralığa geçer; 30 günlük aşama da doğruysa soru çözülmüş sayılır. */
+    /** Hatırladım: bir sonraki aralığa geçer; 30 günlük aşama da geçilirse kayıt tamamlanır. */
     fun onCorrect(stage: Int, now: Long): Outcome {
         val next = stage + 1
-        return if (next > INTERVALS.lastIndex) Outcome(next, now + INTERVALS.last() * DAY_MS, true)
+        return if (next > INTERVALS.lastIndex) Outcome(INTERVALS.lastIndex, now + INTERVALS.last() * DAY_MS, true)
         else Outcome(next, nextAt(next, now), false)
+    }
+
+    /** Sonuç: 0 hatırlayamadım (baştan), 1 kısmen (aynı aralık), 2 hatırladım (sonraki aralık). */
+    fun onReview(stage: Int, result: Int, now: Long): Outcome = when (result) {
+        2 -> onCorrect(stage, now)
+        1 -> Outcome(stage.coerceIn(0, INTERVALS.lastIndex), nextAt(stage, now), false)
+        else -> Outcome(0, nextAt(0, now), false)
     }
 
     /** Kart değerlendirme: 0 Bilmiyorum, 1 Zorlandım, 2 Biliyorum. */
@@ -137,12 +148,17 @@ object SearchText {
 }
 
 object Streaks {
-    /** Bugün henüz çalışılmadıysa dünkü seri kırılmış sayılmaz. */
-    fun current(days: Collection<String>, today: LocalDate): Int {
+    /** Bugün henüz çalışılmadıysa seri bozulmaz. Planlı dinlenme günleri seriyi kesmez, sayıya da eklenmez. */
+    fun current(days: Collection<String>, today: LocalDate, rest: Collection<String> = emptyList()): Int {
         val set = days.toSet()
+        val off = rest.toSet()
         var d = if (today.toString() in set) today else today.minusDays(1)
         var n = 0
-        while (d.toString() in set) { n++; d = d.minusDays(1) }
+        repeat(4000) {
+            val key = d.toString()
+            if (key in set) n++ else if (key !in off) return n
+            d = d.minusDays(1)
+        }
         return n
     }
 
@@ -190,10 +206,15 @@ data class PlanInput(
     val weakSubjectIds: Set<String>,
     val strongSubjectIds: Set<String>,
     val wrongsDue: Int,
+    val maxDailyMinutes: Int = 720,
+    val breakMinutes: Int = 10,
+    val endHour: Int = 23,
+    val priorityTopics: Set<String> = emptySet(),
+    val blockMinutes: Int = PlanGenerator.BLOCK,
 )
 data class PlannedTask(
     val date: LocalDate, val time: String, val subjectId: String?, val topicId: String?, val title: String,
-    val kind: String, val minutes: Int, val questionGoal: Int,
+    val kind: String, val minutes: Int, val questionGoal: Int, val reason: String = "", val priority: Int = 2,
 )
 
 object PlanGenerator {
@@ -216,53 +237,131 @@ object PlanGenerator {
         }
     }
 
+    private fun reasonFor(t: PlanTopic?, subject: PlanSubject, input: PlanInput): Pair<String, Int> = when {
+        t == null -> "${subject.name} dersinin haftalık payı." to 3
+        t.id in input.priorityTopics -> "Bu konuyu öncelikli olarak seçtin." to 1
+        t.reviewDue -> "Tekrar zamanı geldi." to 1
+        t.success != null && t.success < 60 -> "Kayıtlarında doğru oranı %${t.success}." to 1
+        subject.id in input.weakSubjectIds -> "Zorlandığını belirttiğin ders." to 2
+        t.status == 0 -> "Henüz başlamadığın bir konu." to 2
+        else -> "Konuyu güçlendirmek için." to 3
+    }
+
     fun generate(input: PlanInput, days: Int = 7): List<PlannedTask> {
         val daysLeft = ChronoUnit.DAYS.between(input.start, input.examDate)
         val out = ArrayList<PlannedTask>()
         if (daysLeft <= 0 || input.subjects.isEmpty()) return out
         val weights = subjectWeights(input)
         val pool = input.topics.groupBy { it.subjectId }.mapValues { (_, list) ->
-            ArrayDeque(list.sortedWith(compareBy<PlanTopic>({ !it.reviewDue }, { it.status >= 3 }, { it.success ?: 101 }, { it.status })))
+            ArrayDeque(list.sortedWith(compareBy<PlanTopic>({ it.id !in input.priorityTopics }, { !it.reviewDue }, { it.status >= 3 }, { it.success ?: 101 }, { it.status })))
         }
         val credit = HashMap<String, Double>()
         var wrongBudget = input.wrongsDue
         var lastSubject: String? = null
+        val block = input.blockMinutes.coerceIn(15, 120)
+        val perDay = min(input.dailyMinutes, input.maxDailyMinutes)
+        val priority = input.topics.filter { it.id in input.priorityTopics }.toMutableList()
         for (offset in 0 until min(days.toLong(), daysLeft).toInt()) {
             val date = input.start.plusDays(offset.toLong())
             if (date.dayOfWeek.value !in input.studyDays) continue
-            val blocks = (input.dailyMinutes / BLOCK).coerceIn(1, MAX_BLOCKS_PER_DAY)
+            val blocks = (perDay / block).coerceIn(1, MAX_BLOCKS_PER_DAY)
             var minute = input.startHour * 60
             val review = wrongBudget > 0 && blocks >= 2
             val studyBlocks = if (review) blocks - 1 else blocks
-            repeat(studyBlocks) { i ->
-                val total = weights.values.sum()
-                weights.forEach { (k, v) -> credit[k] = (credit[k] ?: 0.0) + v / total }
-                val pick = credit.entries.filter { it.key != lastSubject || weights.size == 1 }.maxBy { it.value }.key
-                credit[pick] = (credit[pick] ?: 0.0) - 1.0
+            var i = 0
+            while (i < studyBlocks) {
+                if (minute + block > input.endHour * 60) break
+                val first = priority.removeFirstOrNull()
+                val pick = first?.subjectId ?: run {
+                    val total = weights.values.sum()
+                    weights.forEach { (k, v) -> credit[k] = (credit[k] ?: 0.0) + v / total }
+                    val p = credit.entries.filter { it.key != lastSubject || weights.size == 1 }.maxBy { it.value }.key
+                    credit[p] = (credit[p] ?: 0.0) - 1.0
+                    p
+                }
                 lastSubject = pick
-                val subject = input.subjects.first { it.id == pick }
+                val subject = input.subjects.firstOrNull { it.id == pick } ?: input.subjects.first()
                 val queue = pool[pick]
-                val topic = queue?.removeFirstOrNull()
-                if (topic != null) queue.addLast(topic)
-                val goal = if (topic != null && topic.status >= 2) 20 else 10
+                val topic = first ?: queue?.removeFirstOrNull()
+                if (first != null) queue?.remove(first)
+                if (topic != null) queue?.addLast(topic)
+                val goal = if (topic != null && topic.status >= 1) 20 else 10
+                val (reason, prio) = reasonFor(topic, subject, input)
                 out += PlannedTask(
                     date, clock(minute), pick, topic?.id,
                     if (topic != null) "${subject.name} / ${topic.name}" else subject.name,
-                    if (topic?.reviewDue == true) "REVIEW" else "STUDY", BLOCK, goal,
-                ).also { minute += BLOCK + breakAfter(i) }
+                    if (topic?.reviewDue == true) "REVIEW" else "STUDY", block, goal, reason, prio,
+                )
+                minute += block + breakAfter(i, input.breakMinutes)
+                i++
             }
-            if (review) {
+            if (review && minute + block <= input.endHour * 60) {
                 val goal = min(wrongBudget, 20)
                 wrongBudget -= goal
-                out += PlannedTask(date, clock(minute), null, null, "Yanlışların tekrarı", "WRONGS", BLOCK, goal)
+                out += PlannedTask(date, clock(minute), null, null, "Yanlışların tekrarı", "WRONGS", block, goal, "Tekrar bekleyen yanlışların var.", 1)
             }
         }
         return out
     }
 
-    private fun breakAfter(i: Int) = if ((i + 1) % 3 == 0) 40 else 10
+    private fun breakAfter(i: Int, base: Int) = if ((i + 1) % 3 == 0) base * 4 else base
 
-    private fun clock(m: Int) = "%02d:%02d".format(java.util.Locale.US, (m / 60) % 24, m % 60)
+    fun clock(m: Int) = "%02d:%02d".format(java.util.Locale.US, (m / 60) % 24, m % 60)
+}
+
+/* ---------- KAÇIRILAN PROGRAMI YENİDEN DÜZENLEME ---------- */
+
+data class SlotTask(val id: String, val date: LocalDate, val time: String, val minutes: Int, val priority: Int, val title: String)
+data class ReplanInput(
+    val today: LocalDate,
+    val missed: List<SlotTask>,
+    val upcoming: List<SlotTask>,
+    val studyDays: Set<Int>,
+    val dailyCapacity: Int,
+    val startHour: Int,
+    val endHour: Int,
+    val breakMinutes: Int,
+    val horizonDays: Int = 7,
+)
+data class ReplanMove(val id: String, val title: String, val from: LocalDate, val to: LocalDate, val time: String)
+data class ReplanResult(val moves: List<ReplanMove>, val unplaced: List<SlotTask>)
+
+object Replanner {
+    /** ALL: tüm kaçırılanlar. IMPORTANT: yalnızca öncelik 1 ve 2 olan görevler. Günlük kapasite ve molalar aşılmaz. */
+    fun preview(input: ReplanInput, importantOnly: Boolean): ReplanResult {
+        val chosen = input.missed
+            .filter { !importantOnly || it.priority <= 2 }
+            .sortedWith(compareBy({ it.priority }, { it.date }, { it.time }))
+        val used = HashMap<LocalDate, Int>()
+        val nextFree = HashMap<LocalDate, Int>()
+        input.upcoming.forEach { t ->
+            used[t.date] = (used[t.date] ?: 0) + t.minutes
+            val end = minuteOf(t.time) + t.minutes + input.breakMinutes
+            nextFree[t.date] = max(nextFree[t.date] ?: 0, end)
+        }
+        val days = (0 until input.horizonDays).map { input.today.plusDays(it.toLong()) }.filter { it.dayOfWeek.value in input.studyDays }
+        val moves = ArrayList<ReplanMove>()
+        val unplaced = ArrayList<SlotTask>()
+        for (t in chosen) {
+            // Boş kapasitesi en yüksek gün seçilir; böylece görevler dengeli dağılır.
+            val day = days.filter { d ->
+                val start = max(nextFree[d] ?: 0, input.startHour * 60)
+                (used[d] ?: 0) + t.minutes <= input.dailyCapacity && start + t.minutes <= input.endHour * 60
+            }.minByOrNull { (used[it] ?: 0) * 10_000L + ChronoUnit.DAYS.between(input.today, it) }
+            if (day == null) { unplaced += t; continue }
+            val start = max(nextFree[day] ?: 0, input.startHour * 60)
+            moves += ReplanMove(t.id, t.title, t.date, day, PlanGenerator.clock(start))
+            used[day] = (used[day] ?: 0) + t.minutes
+            nextFree[day] = start + t.minutes + input.breakMinutes
+        }
+        return ReplanResult(moves, unplaced)
+    }
+
+    private fun minuteOf(t: String): Int {
+        val h = t.substringBefore(':').toIntOrNull() ?: 0
+        val m = t.substringAfter(':', "0").toIntOrNull() ?: 0
+        return h * 60 + m
+    }
 }
 
 /* ---------- ÖNERİ MOTORU (kural tabanlı, gerçek veriden) ---------- */
@@ -307,41 +406,6 @@ object Advisor {
     }
 }
 
-/* ---------- DENEME OLUŞTURMA ---------- */
-
-data class PartPlan(val subjectId: String, val count: Int)
-data class SectionPlan(val name: String, val parts: List<PartPlan>)
-data class PickedSection(val name: String, val requested: Int, val questionIds: List<String>)
-
-object ExamBuilder {
-    /** Görülmemiş soruları öne alır; aynı soru bir denemede iki kez yer almaz. */
-    fun pick(
-        sections: List<SectionPlan>,
-        available: Map<String, List<String>>,
-        seen: Set<String>,
-        seed: Long,
-    ): List<PickedSection> {
-        val rnd = java.util.Random(seed)
-        val used = HashSet<String>()
-        return sections.map { sec ->
-            val picked = ArrayList<String>()
-            sec.parts.forEach { part ->
-                val pool = available[part.subjectId].orEmpty().filter { it !in used }.shuffled(rnd)
-                val ordered = pool.filter { it !in seen } + pool.filter { it in seen }
-                val take = ordered.take(part.count)
-                picked += take
-                used += take
-            }
-            PickedSection(sec.name, sec.parts.sumOf { it.count }, picked)
-        }
-    }
-
-    /** Eksik soruda süre orantılı kısalır; en az 1 dakika. */
-    fun scaledDuration(fullMinutes: Int, requested: Int, actual: Int): Int =
-        if (requested <= 0 || actual >= requested) fullMinutes
-        else max(1, (fullMinutes * actual.toDouble() / requested).roundToInt())
-}
-
 /* ---------- BAŞARI ROZETLERİ ---------- */
 
 data class HabitStats(
@@ -368,6 +432,16 @@ object Badges {
 }
 
 object ReminderTime {
+    /** Sıklık: DAILY her gün, WEEKDAYS hafta içi, WEEKLY seçilen gün. */
+    fun nextFor(now: Long, hour: Int, minute: Int, frequency: String, dayOfWeek: Int, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): Long {
+        if (frequency == "WEEKLY") return next(now, hour, minute, dayOfWeek, zone)
+        var at = next(now, hour, minute, null, zone)
+        if (frequency == "WEEKDAYS") {
+            while (java.time.Instant.ofEpochMilli(at).atZone(zone).dayOfWeek.value > 5) at = next(at, hour, minute, null, zone)
+        }
+        return at
+    }
+
     /** Bir sonraki bildirim zamanı; dayOfWeek null ise her gün, doluysa haftalık (1 Pazartesi ... 7 Pazar). */
     fun next(now: Long, hour: Int, minute: Int, dayOfWeek: Int?, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): Long {
         val base = java.time.Instant.ofEpochMilli(now).atZone(zone)

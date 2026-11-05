@@ -39,7 +39,6 @@ import app.ykspusula.ui.LocalNav
 import app.ykspusula.ui.components.*
 import app.ykspusula.ui.repo
 import app.ykspusula.ui.shortDate
-import app.ykspusula.ui.solve
 import app.ykspusula.ui.theme.Yks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,7 +54,7 @@ fun CardsScreen() {
     val decks by r.user.decks().collectAsStateWithLifecycle(emptyList())
     val due by r.user.cardsDueCount(System.currentTimeMillis()).collectAsStateWithLifecycle(0)
     val learned by r.user.learnedCards().collectAsStateWithLifecycle(0)
-    Screen("Kartlar", { nav.popBackStack() }) {
+    Screen("Bilgi kartları", { nav.popBackStack() }) {
         ScrollColumn {
             Row2({ Tile("$due", "Tekrarı gelen", it) }, { Tile("$learned", "Öğrenilen", it, Yks.c.success) })
             MainButton("Tüm destelerden tekrar", Modifier.fillMaxWidth(), icon = Icons.Rounded.Style) { nav.navigate("review/_all") }
@@ -77,7 +76,8 @@ fun DeckScreen(deck: String) {
     val scope = app.ykspusula.ui.rememberUiScope()
     val cards by remember(deck) { r.user.cardsOf(deck) }.collectAsStateWithLifecycle(emptyList())
     var filter by rememberSaveable { mutableStateOf("ALL") }
-    val shown = when (filter) { "NEW" -> cards.filter { it.learned != true }; "DONE" -> cards.filter { it.learned == true }; else -> cards }
+    val favs by r.user.bookmarkIds("CARD").collectAsStateWithLifecycle(emptyList())
+    val shown = when (filter) { "NEW" -> cards.filter { it.learned != true }; "DONE" -> cards.filter { it.learned == true }; "FAV" -> cards.filter { it.card.id in favs }; else -> cards }
     Screen(deck, { nav.popBackStack() }, actions = {
         IconButton({ nav.navigate("cardEdit/${Uri.encode(deck)}") }) { Icon(Icons.Rounded.Add, "Kart ekle") }
     }) {
@@ -85,7 +85,7 @@ fun DeckScreen(deck: String) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
                     MainButton("Tekrara başla", Modifier.fillMaxWidth(), enabled = cards.isNotEmpty()) { nav.navigate("review/${Uri.encode(deck)}") }
-                    PillGroup(listOf("ALL" to "Tümü (${cards.size})", "NEW" to "Yeni", "DONE" to "Öğrenilen (${cards.count { it.learned == true }})"), filter) { filter = it }
+                    PillGroup(listOf("ALL" to "Tümü (${cards.size})", "NEW" to "Yeni", "DONE" to "Öğrenilen (${cards.count { it.learned == true }})", "FAV" to "Favoriler"), filter) { filter = it }
                 }
             }
             items(shown, key = { it.card.id }) { c ->
@@ -102,6 +102,8 @@ fun DeckScreen(deck: String) {
                         IconButton({ scope.launch { r.setCardLearned(c.card.id, !l) } }) {
                             Icon(if (l) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked, if (l) "Öğrenildi, geri al" else "Öğrenildi olarak işaretle", tint = if (l) Yks.c.success else Yks.c.muted)
                         }
+                        val fav = c.card.id in favs
+                        IconButton({ scope.launch { r.toggleBookmark("CARD", c.card.id, !fav) } }) { Icon(if (fav) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (fav) "Favorilerden çıkar" else "Favorilere ekle", tint = if (fav) Yks.c.warning else Yks.c.muted) }
                         if (c.card.isUser) IconButton({ scope.launch { r.user.deleteUserCard(c.card.id) } }) { Icon(Icons.Rounded.DeleteOutline, "Kartı sil", tint = Yks.c.muted) }
                     }
                 }
@@ -120,6 +122,7 @@ fun CardReviewScreen(deck: String) {
     var flipped by remember { mutableStateOf(false) }
     LaunchedEffect(deck) { queue = r.user.cardsDue(if (deck == "_all") "" else deck, System.currentTimeMillis(), 50) }
     val rotation by animateFloatAsState(if (flipped) 180f else 0f, label = "kart")
+    val favs by r.user.bookmarkIds("CARD").collectAsStateWithLifecycle(emptyList())
     Screen("Kart tekrarı", { nav.popBackStack() }) {
         val q = queue ?: return@Screen
         val c = q.getOrNull(index)
@@ -128,7 +131,11 @@ fun CardReviewScreen(deck: String) {
             return@Screen
         }
         Column(Modifier.fillMaxSize().padding(Space.l), verticalArrangement = Arrangement.spacedBy(Space.m)) {
-            Muted("${index + 1} / ${q.size} • ${c.card.deck}")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Muted("${index + 1} / ${q.size} • ${c.card.deck}", Modifier.weight(1f))
+                val fav = c.card.id in favs
+                IconButton({ scope.launch { r.toggleBookmark("CARD", c.card.id, !fav) } }) { Icon(if (fav) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (fav) "Favorilerden çıkar" else "Favorilere ekle", tint = if (fav) Yks.c.warning else Yks.c.muted) }
+            }
             ProgressBar((index + 1f) / q.size, height = 4.dp)
             YCard(
                 Modifier.weight(1f).graphicsLayer { rotationY = rotation; cameraDistance = 24f * density }
@@ -197,19 +204,23 @@ fun FormulasScreen() {
     val scope = app.ykspusula.ui.rememberUiScope()
     val all by r.content.formulas().collectAsStateWithLifecycle(emptyList())
     val favs by r.user.bookmarkIds("FORMULA").collectAsStateWithLifecycle(emptyList())
+    val notes by r.user.itemNotes("FORMULA").collectAsStateWithLifecycle(emptyList())
     var query by rememberSaveable { mutableStateOf("") }
     var subject by rememberSaveable { mutableStateOf("") }
+    var category by rememberSaveable { mutableStateOf("") }
     var onlyFav by rememberSaveable { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<Formula?>(null) }
     val q = SearchText.normalize(query)
-    val shown = remember(all, q, subject, onlyFav, favs) {
-        all.filter { (subject.isEmpty() || it.subjectName == subject) && (!onlyFav || it.id in favs) && (q.isEmpty() || SearchText.score(q, SearchText.normalize(it.title), SearchText.normalize(it.body + " " + it.category)) > 0) }
+    val shown = remember(all, q, subject, category, onlyFav, favs) {
+        all.filter { (subject.isEmpty() || it.subjectName == subject) && (category.isEmpty() || it.category == category) && (!onlyFav || it.id in favs) && (q.isEmpty() || SearchText.score(q, SearchText.normalize(it.title), SearchText.normalize(it.body + " " + it.category)) > 0) }
     }
     Screen("Formüller ve bilgiler", { nav.popBackStack() }) {
         LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.s)) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     Field(query, { query = it }, "Ara")
-                    Dropdown(all.map { it.subjectName }.distinct().map { it to it }, subject, "Tüm dersler") { subject = it }
+                    Dropdown(all.map { it.subjectName }.distinct().map { it to it }, subject, "Tüm dersler") { subject = it; category = "" }
+                    Dropdown(all.filter { subject.isEmpty() || it.subjectName == subject }.map { it.category }.distinct().map { it to it }, category, "Tüm bölümler") { category = it }
                     Pill("Yalnızca favoriler", onlyFav) { onlyFav = !onlyFav }
                     if (all.isEmpty()) Muted("Henüz içerik yok.")
                 }
@@ -224,15 +235,40 @@ fun FormulasScreen() {
                             Spacer(Modifier.height(4.dp))
                             f.body.split("\n").forEach { MathText(it, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text) }
                             if (f.note.isNotBlank()) Muted(f.note)
+                            notes.firstOrNull { it.refId == f.id }?.let { Spacer(Modifier.height(4.dp)); Text("Notum: ${it.text}", style = MaterialTheme.typography.bodyMedium, color = Yks.c.accentLight) }
                         }
-                        IconButton({ scope.launch { r.toggleBookmark("FORMULA", f.id, !fav) } }) {
-                            Icon(if (fav) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (fav) "Favorilerden çıkar" else "Favorilere ekle", tint = if (fav) Yks.c.warning else Yks.c.muted)
+                        Column {
+                            IconButton({ scope.launch { r.toggleBookmark("FORMULA", f.id, !fav) } }) {
+                                Icon(if (fav) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (fav) "Favorilerden çıkar" else "Favorilere ekle", tint = if (fav) Yks.c.warning else Yks.c.muted)
+                            }
+                            IconButton({ editing = f }) { Icon(Icons.Rounded.EditNote, "Kişisel not", tint = Yks.c.muted) }
                         }
                     }
                 }
             }
         }
     }
+    editing?.let { FormulaNoteDialog(it) { editing = null } }
+}
+
+@Composable
+private fun FormulaNoteDialog(f: Formula, onDismiss: () -> Unit) {
+    val r = repo()
+    val scope = app.ykspusula.ui.rememberUiScope()
+    val notes by r.user.itemNotes("FORMULA").collectAsStateWithLifecycle(emptyList())
+    val cur = notes.firstOrNull { it.refId == f.id }
+    var text by remember(cur) { mutableStateOf(cur?.text.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss, containerColor = Yks.c.card, title = { Text("Kişisel not") },
+        text = { Field(text, { text = it }, f.title, singleLine = false, minLines = 3) },
+        confirmButton = {
+            TextButton({
+                scope.launch { if (text.isBlank()) r.user.deleteItemNote("FORMULA", f.id) else r.user.saveItemNote(ItemNote("FORMULA", f.id, text.trim(), System.currentTimeMillis())) }
+                onDismiss()
+            }) { Text("Kaydet") }
+        },
+        dismissButton = { TextButton(onDismiss) { Text("Vazgeç") } },
+    )
 }
 
 /* ---------- NOTLAR ---------- */
@@ -244,14 +280,16 @@ fun NotesScreen() {
     val notes by r.user.notes().collectAsStateWithLifecycle(emptyList())
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     var query by rememberSaveable { mutableStateOf("") }
+    var onlyFav by rememberSaveable { mutableStateOf(false) }
     val q = SearchText.normalize(query)
     val names = subjects.associate { it.id to "${it.exam} ${it.name}" }
-    val shown = notes.filter { q.isEmpty() || SearchText.score(q, SearchText.normalize(it.title), SearchText.normalize(it.body)) > 0 }
+    val shown = notes.filter { (!onlyFav || it.favorite) && (q.isEmpty() || SearchText.score(q, SearchText.normalize(it.title + " " + it.tags), SearchText.normalize(it.body)) > 0) }
     Screen("Notlarım", { nav.popBackStack() }, actions = {
         IconButton({ nav.navigate("note/new") }) { Icon(Icons.Rounded.Add, "Yeni not") }
     }) {
         LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-            item { Field(query, { query = it }, "Notlarda ara") }
+            item { Field(query, { query = it }, "Notlarda ve etiketlerde ara") }
+            item { Pill("Yalnızca favoriler", onlyFav) { onlyFav = !onlyFav } }
             if (shown.isEmpty()) item { Empty(Icons.Rounded.StickyNote2, "Not yok", "Ders notlarını buraya ekleyebilirsin.", "Yeni not") { nav.navigate("note/new") } }
             items(shown, key = { it.id }) { n ->
                 YCard(onClick = { nav.navigate("note/${n.id}") }, padding = Space.m) {
@@ -260,7 +298,7 @@ fun NotesScreen() {
                         if (n.favorite) Icon(Icons.Rounded.Star, "Favori", tint = Yks.c.warning, modifier = Modifier.size(18.dp))
                     }
                     Muted(n.body, maxLines = 2)
-                    Muted(listOfNotNull(n.subjectId?.let { names[it] }, shortDate(n.updatedAt)).joinToString(" • "))
+                    Muted(listOfNotNull(n.subjectId?.let { names[it] }, n.tags.ifBlank { null }, shortDate(n.updatedAt)).joinToString(" • "))
                 }
             }
         }
@@ -279,28 +317,32 @@ fun NoteEditScreen(id: String) {
     var subject by rememberSaveable { mutableStateOf("") }
     var topic by rememberSaveable { mutableStateOf("") }
     var favorite by rememberSaveable { mutableStateOf(false) }
+    var tags by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
     var existing by remember { mutableStateOf<UserNote?>(null) }
     var ask by remember { mutableStateOf(false) }
     val rows by remember(subject) { if (subject.isEmpty()) kotlinx.coroutines.flow.flowOf(emptyList()) else r.content.topicRows(subject) }.collectAsStateWithLifecycle(emptyList())
     LaunchedEffect(id) {
         if (id != "new") r.user.note(id)?.let {
-            existing = it; title = it.title; body = it.body; subject = it.subjectId.orEmpty(); topic = it.topicId.orEmpty(); favorite = it.favorite
+            existing = it; title = it.title; body = it.body; subject = it.subjectId.orEmpty(); topic = it.topicId.orEmpty(); favorite = it.favorite; tags = it.tags
         }
     }
     Screen(if (id == "new") "Yeni not" else "Notu düzenle", { nav.popBackStack() }, actions = {
         IconButton({ favorite = !favorite }) { Icon(if (favorite) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (favorite) "Favorilerden çıkar" else "Favorilere ekle", tint = if (favorite) Yks.c.warning else Yks.c.text) }
+        if (id != "new") IconButton({ app.ykspusula.report.ReportExporter.shareText(context, title + "\n\n" + body) }) { Icon(Icons.Rounded.Share, "Dışa aktar") }
         if (id != "new") IconButton({ ask = true }) { Icon(Icons.Rounded.DeleteOutline, "Notu sil") }
     }) {
         ScrollColumn {
             Field(title, { title = it }, "Başlık")
             Field(body, { body = it }, "Açıklama", singleLine = false, minLines = 8)
+            Field(tags, { tags = it }, "Etiketler (virgülle ayır)")
             Muted("Ders")
             Dropdown(relevant(subjects, profile).map { it.id to "${it.exam} ${it.name}" }, subject, "Ders seçilmedi") { subject = it; topic = "" }
             if (subject.isNotEmpty()) { Muted("Konu"); Dropdown(rows.map { it.id to it.name }, topic, "Konu seçilmedi") { topic = it } }
             MainButton("Kaydet", Modifier.fillMaxWidth(), enabled = title.isNotBlank()) {
                 val now = System.currentTimeMillis()
                 scope.launch {
-                    r.user.saveNote((existing ?: UserNote(title = "", body = "", createdAt = now, updatedAt = now)).copy(title = title.trim(), body = body, subjectId = subject.ifEmpty { null }, topicId = topic.ifEmpty { null }, updatedAt = now, favorite = favorite))
+                    r.user.saveNote((existing ?: UserNote(title = "", body = "", createdAt = now, updatedAt = now)).copy(title = title.trim(), body = body, subjectId = subject.ifEmpty { null }, topicId = topic.ifEmpty { null }, updatedAt = now, favorite = favorite, tags = tags.trim()))
                     nav.popBackStack()
                 }
             }
@@ -339,22 +381,48 @@ fun LibraryScreen() {
             }
         }
     }
-    Screen("Kaynaklarım", { nav.popBackStack() }, actions = {
+    var editing by remember { mutableStateOf<LibraryFile?>(null) }
+    Screen("PDF kaynaklarım", { nav.popBackStack() }, actions = {
         IconButton({ picker.launch(arrayOf("application/pdf")) }) { Icon(Icons.Rounded.Add, "PDF ekle") }
     }) {
         ScrollColumn {
-            Muted("Eklediğin PDF dosyaları uygulamanın özel klasörüne kopyalanır. Uygulama cihazını taramaz; yalnızca seçtiğin dosyaya erişir. PDF'ler yedek dosyasına dahil değildir.")
+            Muted("Eklediğin PDF dosyaları uygulamanın özel klasörüne kopyalanır. Uygulama cihazını taramaz; yalnızca seçtiğin dosyaya erişir. Dosyaların internete gönderilmez.")
             if (message.isNotEmpty()) Text(message, color = Yks.c.error)
             if (files.isEmpty()) Empty(Icons.Rounded.PictureAsPdf, "Henüz kaynak yok", "Kendi PDF dosyalarını ekleyebilirsin.", "PDF ekle") { picker.launch(arrayOf("application/pdf")) }
             else GroupCard {
-                files.forEachIndexed { i, f ->
+                files.sortedWith(compareByDescending<LibraryFile> { it.favorite }.thenByDescending { it.lastOpenedAt }).forEachIndexed { i, f ->
                     if (i > 0) Line()
-                    NavRow(f.name, "${f.sizeBytes / 1024} KB • ${shortDate(f.addedAt)}", Icons.Rounded.PictureAsPdf, Yks.c.error, { nav.navigate("pdf/${f.id}") }) {
+                    NavRow(f.name, (if (f.lastPage > 0) "${f.lastPage + 1}. sayfada kaldın" else "${f.sizeBytes / 1024} KB") + " • " + shortDate(if (f.lastOpenedAt > 0) f.lastOpenedAt else f.addedAt) + if (f.subjectName.isNotBlank()) " • ${f.subjectName}" else "", Icons.Rounded.PictureAsPdf, Yks.c.error, { nav.navigate("pdf/${f.id}") }) {
+                        IconButton({ scope.launch { r.user.saveLibrary(f.copy(favorite = !f.favorite)) } }) { Icon(if (f.favorite) Icons.Rounded.Star else Icons.Rounded.StarBorder, if (f.favorite) "Favorilerden çıkar" else "Favorilere ekle", tint = if (f.favorite) Yks.c.warning else Yks.c.muted) }
+                        IconButton({ editing = f }) { Icon(Icons.Rounded.Edit, "Düzenle", tint = Yks.c.muted) }
                         IconButton({ removing = f }) { Icon(Icons.Rounded.DeleteOutline, "Kaynağı sil", tint = Yks.c.muted) }
                     }
                 }
             }
         }
+    }
+    editing?.let { f ->
+        val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
+        val profile by r.user.profile().collectAsStateWithLifecycle(null)
+        var subject by remember { mutableStateOf(f.subjectId.orEmpty()) }
+        var note by remember { mutableStateOf(f.note) }
+        AlertDialog(
+            onDismissRequest = { editing = null }, containerColor = Yks.c.card, title = { Text(f.name) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                    Dropdown(relevant(subjects, profile).map { it.id to "${it.exam} ${it.name}" }, subject, "Ders seçilmedi") { subject = it }
+                    Field(note, { note = it }, "Kişisel not", singleLine = false, minLines = 2)
+                }
+            },
+            confirmButton = {
+                TextButton({
+                    val n = subjects.firstOrNull { it.id == subject }?.name.orEmpty()
+                    scope.launch { r.user.saveLibrary(f.copy(subjectId = subject.ifEmpty { null }, subjectName = n, note = note.trim())) }
+                    editing = null
+                }) { Text("Kaydet") }
+            },
+            dismissButton = { TextButton({ editing = null }) { Text("Vazgeç") } },
+        )
     }
     removing?.let { f ->
         ConfirmDialog("Kaynak silinsin mi?", f.name, "Sil", true, { removing = null }) {
@@ -371,20 +439,25 @@ fun PdfScreen(id: String) {
     val context = LocalContext.current
     val files by r.user.library().collectAsStateWithLifecycle(emptyList())
     val f = files.firstOrNull { it.id == id }
-    var page by rememberSaveable { mutableIntStateOf(0) }
+    val scope = app.ykspusula.ui.rememberUiScope()
+    var page by rememberSaveable { mutableIntStateOf(-1) }
     var pages by remember { mutableIntStateOf(0) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var failed by remember { mutableStateOf(false) }
+    LaunchedEffect(f?.id) { if (f != null && page < 0) page = f.lastPage }
     LaunchedEffect(f?.fileName, page) {
         val file = f?.let { File(File(context.filesDir, "library"), it.fileName) } ?: return@LaunchedEffect
+        if (page < 0) return@LaunchedEffect
+        scope.launch { r.user.saveLibrary(f.copy(lastPage = page, pageCount = pages, lastOpenedAt = System.currentTimeMillis())) }
         bitmap = withContext(Dispatchers.IO) {
             try {
                 ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
                     PdfRenderer(fd).use { pdf ->
                         pages = pdf.pageCount
                         pdf.openPage(page.coerceIn(0, pdf.pageCount - 1)).use { p ->
-                            val scale = 1600f / p.width
-                            val bmp = Bitmap.createBitmap(1600, (p.height * scale).toInt(), Bitmap.Config.ARGB_8888)
+                            val target = minOf(1400, context.resources.displayMetrics.widthPixels * 2)
+                            val scale = target.toFloat() / p.width
+                            val bmp = Bitmap.createBitmap(target, (p.height * scale).toInt(), Bitmap.Config.ARGB_8888)
                             bmp.eraseColor(android.graphics.Color.WHITE)
                             p.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                             bmp
@@ -431,11 +504,8 @@ fun SearchScreen() {
                 val isSub = t.parentId != null
                 out += Entry(if (isSub) "Alt konu" else "Konu", t.name, "${s?.exam} ${s?.name}", "topic/${t.id}", n(t.name), n(t.summary), 6)
             }
-            r.content.allQuestions().forEach { q ->
-                val s = names[q.subjectId]
-                val clean = q.stem.replace(Regex("[\\\\{}^_]"), " ")
-                out += Entry("Soru", clean.take(80), "${s?.exam} ${s?.name}", "solveOne:${q.topicId}", "", n(clean), 0)
-            }
+            r.user.sourcesNow().forEach { x -> out += Entry("Kaynak", x.name, x.publisher, "source/${x.id}", n(x.name), n(x.publisher + " " + x.description), 7) }
+            r.user.wrongsNow().forEach { x -> out += Entry("Yanlış", x.sourceLabel.ifBlank { "Yanlış kaydı" }, x.reason, "wrong/${x.id}", n(x.sourceLabel), n(x.note + " " + x.questionText), 3) }
             r.content.formulasNow().forEach { f -> out += Entry("Formül", f.title, "${f.subjectName} • ${f.category}", "formulas", n(f.title), n(f.body), 4) }
             r.user.notesNow().forEach { x -> out += Entry("Not", x.title, x.body.take(60), "note/${x.id}", n(x.title), n(x.body), 5) }
             r.content.flashcardsNow().forEach { c -> out += Entry("Kart", c.front, c.back.take(60), "deck/${Uri.encode(c.deck)}", n(c.front), n(c.back), 2) }
@@ -457,12 +527,10 @@ fun SearchScreen() {
     }
     Screen("Ara", { nav.popBackStack() }) {
         LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-            item { Field(query, { query = it }, "Ders, konu, soru, formül, not...") }
+            item { Field(query, { query = it }, "Ders, konu, kaynak, formül, not...") }
             if (query.isNotBlank() && hits.isEmpty() && index != null) item { Muted("Sonuç bulunamadı.") }
             items(hits) { h ->
-                YCard(padding = Space.m, onClick = {
-                    if (h.route.startsWith("solveOne:")) nav.solve(topic = h.route.removePrefix("solveOne:")) else nav.navigate(h.route)
-                }) {
+                YCard(padding = Space.m, onClick = { nav.navigate(h.route) }) {
                     Text(h.kind, style = MaterialTheme.typography.labelMedium, color = Yks.c.accent)
                     Text(h.title, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text, maxLines = 2)
                     Muted(h.detail, maxLines = 1)

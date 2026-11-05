@@ -1,0 +1,502 @@
+[
+{
+"id": "BAS-01",
+"category": "Yeni başlangıç",
+"text": "Bugün, dünkü hâlinden bir sayfa ileride olman yeter."
+},
+{
+"id": "BAS-02",
+"category": "Yeni başlangıç",
+"text": "Her büyük hazırlık küçük bir ilk adımla başlar."
+},
+{
+"id": "BAS-03",
+"category": "Yeni başlangıç",
+"text": "Başlamak için hazır hissetmeyi bekleme; başlayınca hazır hissedersin."
+},
+{
+"id": "BAS-04",
+"category": "Yeni başlangıç",
+"text": "Takvimin bugünkü yaprağı senin için boş bir sayfa."
+},
+{
+"id": "BAS-05",
+"category": "Yeni başlangıç",
+"text": "İlk adımın küçük olması, yolun kısa olduğu anlamına gelmez; ama yola çıktığını gösterir."
+},
+{
+"id": "BAS-06",
+"category": "Yeni başlangıç",
+"text": "Bugün açtığın kitap, yarınki özgüvenine yatırımdır."
+},
+{
+"id": "BAS-07",
+"category": "Yeni başlangıç",
+"text": "Yeni bir gün, yeni bir konu, yeni bir ihtimal."
+},
+{
+"id": "BAS-08",
+"category": "Yeni başlangıç",
+"text": "Başlangıçlar kusursuz olmak zorunda değil, yalnızca gerçek olmalı."
+},
+{
+"id": "BAS-09",
+"category": "Yeni başlangıç",
+"text": "Ne kadar geride olduğunu değil, bugün nereden başlayacağını düşün."
+},
+{
+"id": "BAS-10",
+"category": "Yeni başlangıç",
+"text": "Masaya oturduğun an, günün en zor kısmını geride bırakmışsındır."
+},
+{
+"id": "IST-01",
+"category": "İstikrar",
+"text": "Az ama her gün, çok ama bir günden güçlüdür."
+},
+{
+"id": "IST-02",
+"category": "İstikrar",
+"text": "Düzenli on soru, arada bir yapılan yüz sorudan daha çok şey öğretir."
+},
+{
+"id": "IST-03",
+"category": "İstikrar",
+"text": "Damlalar toplanır, netler de öyle."
+},
+{
+"id": "IST-04",
+"category": "İstikrar",
+"text": "Bugün yaptığın sıradan çalışma, ileride fark yaratan şeydir."
+},
+{
+"id": "IST-05",
+"category": "İstikrar",
+"text": "İstikrar gösterişli değildir ama sonuçları öyledir."
+},
+{
+"id": "IST-06",
+"category": "İstikrar",
+"text": "Her gün aynı masaya dönmek, yarısı kazanılmış bir yoldur."
+},
+{
+"id": "IST-07",
+"category": "İstikrar",
+"text": "Tempon yavaş olabilir; önemli olan yolda kalmak."
+},
+{
+"id": "IST-08",
+"category": "İstikrar",
+"text": "Küçük tekrarlar, büyük farklar biriktirir."
+},
+{
+"id": "IST-09",
+"category": "İstikrar",
+"text": "Motivasyon gelip gider, alışkanlık seni masaya getirir."
+},
+{
+"id": "IST-10",
+"category": "İstikrar",
+"text": "Bugünkü planını tamamlamak, yarının işini hafifletir."
+},
+{
+"id": "DIS-01",
+"category": "Disiplin",
+"text": "Canın istemediğinde yaptığın on dakika, en değerli on dakikadır."
+},
+{
+"id": "DIS-02",
+"category": "Disiplin",
+"text": "Disiplin kendine verdiğin sözü tutmaktır."
+},
+{
+"id": "DIS-03",
+"category": "Disiplin",
+"text": "Telefonu bir odaya bırakmak bazen en iyi çalışma tekniğidir."
+},
+{
+"id": "DIS-04",
+"category": "Disiplin",
+"text": "Planın seni sıkmasın; seni taşıyan şey o plan."
+},
+{
+"id": "DIS-05",
+"category": "Disiplin",
+"text": "Bugün kendine söz verdiğin kadarını yap, fazlası armağandır."
+},
+{
+"id": "DIS-06",
+"category": "Disiplin",
+"text": "Kararını her sabah yeniden verme, bir kez ver ve uygula."
+},
+{
+"id": "DIS-07",
+"category": "Disiplin",
+"text": "Odaklandığın bir saat, dağınık üç saatten verimlidir."
+},
+{
+"id": "DIS-08",
+"category": "Disiplin",
+"text": "Küçük bir düzen, büyük bir karmaşayı önler."
+},
+{
+"id": "DIS-09",
+"category": "Disiplin",
+"text": "Yapılacaklar listendeki ilk maddeyi bitir; gerisi kolaylaşır."
+},
+{
+"id": "DIS-10",
+"category": "Disiplin",
+"text": "Disiplin kendini cezalandırmak değil, geleceğine saygı duymaktır."
+},
+{
+"id": "GUV-01",
+"category": "Kendine güven",
+"text": "Bugüne kadar öğrendiğin her şeyi sen öğrendin; bunu da öğreneceksin."
+},
+{
+"id": "GUV-02",
+"category": "Kendine güven",
+"text": "Zor geldiyse bu, yetersiz olduğun için değil, öğrenmekte olduğun içindir."
+},
+{
+"id": "GUV-03",
+"category": "Kendine güven",
+"text": "Kendini başkalarıyla değil, geçen ayki hâlinle karşılaştır."
+},
+{
+"id": "GUV-04",
+"category": "Kendine güven",
+"text": "Anlamadığın bir konu, henüz anlamadığın bir konudur."
+},
+{
+"id": "GUV-05",
+"category": "Kendine güven",
+"text": "Sen sandığından daha fazlasını biliyorsun."
+},
+{
+"id": "GUV-06",
+"category": "Kendine güven",
+"text": "Hata yapmak bilgini değil, öğrenme cesaretini gösterir."
+},
+{
+"id": "GUV-07",
+"category": "Kendine güven",
+"text": "Kendi hızın, senin doğru hızındır."
+},
+{
+"id": "GUV-08",
+"category": "Kendine güven",
+"text": "Geçen yıl zor gelen konuları şimdi rahatça çözüyorsun; bunu unutma."
+},
+{
+"id": "GUV-09",
+"category": "Kendine güven",
+"text": "Emeğinin değerini sadece sonuçlar belirlemez."
+},
+{
+"id": "GUV-10",
+"category": "Kendine güven",
+"text": "Kendine, en iyi arkadaşına konuştuğun gibi konuş."
+},
+{
+"id": "HED-01",
+"category": "Hedefe odaklanma",
+"text": "Hedefini gözünün önünde tut, adımını önündeki yola at."
+},
+{
+"id": "HED-02",
+"category": "Hedefe odaklanma",
+"text": "Bütün yolu değil, bugünkü durağı düşün."
+},
+{
+"id": "HED-03",
+"category": "Hedefe odaklanma",
+"text": "Neden başladığını hatırlamak, devam etmenin en kısa yoludur."
+},
+{
+"id": "HED-04",
+"category": "Hedefe odaklanma",
+"text": "Bugünkü bir saat, hedefindeki kapıya bir adım daha yaklaştırır."
+},
+{
+"id": "HED-05",
+"category": "Hedefe odaklanma",
+"text": "Hayalini büyük tut, görevini küçük parçalara böl."
+},
+{
+"id": "HED-06",
+"category": "Hedefe odaklanma",
+"text": "Dikkatini dağıtan her şey bekleyebilir; bu konu şimdi senin."
+},
+{
+"id": "HED-07",
+"category": "Hedefe odaklanma",
+"text": "Pusulan doğruysa yavaş gitmek yolu değiştirmez."
+},
+{
+"id": "HED-08",
+"category": "Hedefe odaklanma",
+"text": "Bugün çözdüğün her soru, hedefine yazılmış küçük bir harftir."
+},
+{
+"id": "HED-09",
+"category": "Hedefe odaklanma",
+"text": "Önceliğin belliyse karar vermek kolaylaşır."
+},
+{
+"id": "HED-10",
+"category": "Hedefe odaklanma",
+"text": "Gideceğin yeri bilen, yolda kaybolmaz."
+},
+{
+"id": "ZOR-01",
+"category": "Zor günlerde devam etme",
+"text": "Bugün az yapabildiysen de az değildir; bırakmadın."
+},
+{
+"id": "ZOR-02",
+"category": "Zor günlerde devam etme",
+"text": "Yorgun olduğunda bırakma, dinlen ve yavaşla."
+},
+{
+"id": "ZOR-03",
+"category": "Zor günlerde devam etme",
+"text": "Zor günler de takvimin bir parçası, seni tanımlamazlar."
+},
+{
+"id": "ZOR-04",
+"category": "Zor günlerde devam etme",
+"text": "Bir kötü gün, bütün emeğini silmez."
+},
+{
+"id": "ZOR-05",
+"category": "Zor günlerde devam etme",
+"text": "Bugün sadece bir konu tekrar etmek de ilerlemektir."
+},
+{
+"id": "ZOR-06",
+"category": "Zor günlerde devam etme",
+"text": "Yağmur ne kadar sürerse sürsün, geçer."
+},
+{
+"id": "ZOR-07",
+"category": "Zor günlerde devam etme",
+"text": "Ağır gelen günlerde hedefi küçült, ama yolu bırakma."
+},
+{
+"id": "ZOR-08",
+"category": "Zor günlerde devam etme",
+"text": "Herkesin zorlandığı günler vardır; sadece herkes söylemez."
+},
+{
+"id": "ZOR-09",
+"category": "Zor günlerde devam etme",
+"text": "Bugün yapabildiğinin en iyisi, bugün için yeterlidir."
+},
+{
+"id": "ZOR-10",
+"category": "Zor günlerde devam etme",
+"text": "Zor bir günde masaya oturmak, başlı başına bir başarıdır."
+},
+{
+"id": "DEN-01",
+"category": "Deneme başarısızlıkları",
+"text": "Bir deneme seni ölçmez, sana yol gösterir."
+},
+{
+"id": "DEN-02",
+"category": "Deneme başarısızlıkları",
+"text": "Düşük net, eksiklerini gösteren bir haritadır; hüküm değil."
+},
+{
+"id": "DEN-03",
+"category": "Deneme başarısızlıkları",
+"text": "Denemedeki her yanlış, sınavda yapmayacağın bir hatadır."
+},
+{
+"id": "DEN-04",
+"category": "Deneme başarısızlıkları",
+"text": "Netin düştüğü gün, en çok şey öğrendiğin gün olabilir."
+},
+{
+"id": "DEN-05",
+"category": "Deneme başarısızlıkları",
+"text": "Deneme sonucu bir fotoğraftır, film değil."
+},
+{
+"id": "DEN-06",
+"category": "Deneme başarısızlıkları",
+"text": "Bugünkü deneme zor olabilir; önemli olan ondan ne aldığın."
+},
+{
+"id": "DEN-07",
+"category": "Deneme başarısızlıkları",
+"text": "Sonucuna üzülebilirsin, sonra yanlışlarına bak ve devam et."
+},
+{
+"id": "DEN-08",
+"category": "Deneme başarısızlıkları",
+"text": "Her deneme, sınav gününe yapılmış bir provadır."
+},
+{
+"id": "DEN-09",
+"category": "Deneme başarısızlıkları",
+"text": "Tek bir sonuç bütün hikâyeni anlatmaz."
+},
+{
+"id": "DEN-10",
+"category": "Deneme başarısızlıkları",
+"text": "Netlerin dalgalanabilir; bu öğrenmenin doğal hâlidir."
+},
+{
+"id": "YEN-01",
+"category": "Yeniden başlama",
+"text": "Yolu bırakmış olman, yola dönemeyeceğin anlamına gelmez."
+},
+{
+"id": "YEN-02",
+"category": "Yeniden başlama",
+"text": "Dün kaçırdığın program, bugün yeniden kurulabilir."
+},
+{
+"id": "YEN-03",
+"category": "Yeniden başlama",
+"text": "Birkaç gün ara vermek hiçbir emeği silmez."
+},
+{
+"id": "YEN-04",
+"category": "Yeniden başlama",
+"text": "Geri dönmek için en iyi zaman şimdi."
+},
+{
+"id": "YEN-05",
+"category": "Yeniden başlama",
+"text": "Yeniden başlamak baştan başlamak değildir; artık daha çok şey biliyorsun."
+},
+{
+"id": "YEN-06",
+"category": "Yeniden başlama",
+"text": "Seriyi bozmuş olman önemli değil, yeni bir seri bugün başlıyor."
+},
+{
+"id": "YEN-07",
+"category": "Yeniden başlama",
+"text": "Dünkü sen plana uymamış olabilir, bugünkü sen yeniden kurabilir."
+},
+{
+"id": "YEN-08",
+"category": "Yeniden başlama",
+"text": "Her pazartesiyi bekleme; yeniden başlamak için her saat uygun."
+},
+{
+"id": "YEN-09",
+"category": "Yeniden başlama",
+"text": "Düştüğün yerden değil, bulunduğun yerden devam et."
+},
+{
+"id": "YEN-10",
+"category": "Yeniden başlama",
+"text": "Kaçırdıklarını değil, hâlâ yapabileceklerini say."
+},
+{
+"id": "DIN-01",
+"category": "Dinlenme ve denge",
+"text": "Dinlenmek de çalışmanın bir parçasıdır."
+},
+{
+"id": "DIN-02",
+"category": "Dinlenme ve denge",
+"text": "İyi uyumak, gece yapılan tekrardan daha çok işe yarayabilir."
+},
+{
+"id": "DIN-03",
+"category": "Dinlenme ve denge",
+"text": "Mola vermek pes etmek değildir, yakıt almaktır."
+},
+{
+"id": "DIN-04",
+"category": "Dinlenme ve denge",
+"text": "Yürüyüşe çıkmak bazen en iyi tekrardır."
+},
+{
+"id": "DIN-05",
+"category": "Dinlenme ve denge",
+"text": "Zihnin bir kas gibi; dinlendikçe güçlenir."
+},
+{
+"id": "DIN-06",
+"category": "Dinlenme ve denge",
+"text": "Bugün kendine ayırdığın zaman, yarınki odağını besler."
+},
+{
+"id": "DIN-07",
+"category": "Dinlenme ve denge",
+"text": "Sevdiklerinle geçirdiğin zaman, çalışmandan çalınmış zaman değildir."
+},
+{
+"id": "DIN-08",
+"category": "Dinlenme ve denge",
+"text": "Sağlıklı bir beden, güçlü bir zihin taşır."
+},
+{
+"id": "DIN-09",
+"category": "Dinlenme ve denge",
+"text": "Bir bardak su, kısa bir esneme ve derin bir nefes; sonra devam."
+},
+{
+"id": "DIN-10",
+"category": "Dinlenme ve denge",
+"text": "Çok çalışmak kadar iyi dinlenmek de hazırlığın bir parçası."
+},
+{
+"id": "SIN-01",
+"category": "Sınava hazırlık",
+"text": "Sınav bir günlük, ama hazırlığın sana ömür boyu kalır."
+},
+{
+"id": "SIN-02",
+"category": "Sınava hazırlık",
+"text": "Yaptığın her tekrar, sınav gününe sakin bir adımdır."
+},
+{
+"id": "SIN-03",
+"category": "Sınava hazırlık",
+"text": "Sınav salonunda en güçlü yardımcın, burada yaptığın tekrarlardır."
+},
+{
+"id": "SIN-04",
+"category": "Sınava hazırlık",
+"text": "Bildiklerini sağlamlaştırmak, yeni şeyler eklemek kadar değerlidir."
+},
+{
+"id": "SIN-05",
+"category": "Sınava hazırlık",
+"text": "Bir soruya takılınca geç, dönersin; bu da bir stratejidir."
+},
+{
+"id": "SIN-06",
+"category": "Sınava hazırlık",
+"text": "Hazırlık, heyecanı kontrol etmenin en iyi yoludur."
+},
+{
+"id": "SIN-07",
+"category": "Sınava hazırlık",
+"text": "Sınav seni değil, o günkü cevaplarını ölçer."
+},
+{
+"id": "SIN-08",
+"category": "Sınava hazırlık",
+"text": "Sakin bir zihin, ezberden daha çok soru çözer."
+},
+{
+"id": "SIN-09",
+"category": "Sınava hazırlık",
+"text": "Deneme yaptıkça süre senin dostun olur."
+},
+{
+"id": "SIN-10",
+"category": "Sınava hazırlık",
+"text": "Sınav gününe kadar yapacağın en iyi şey, bugünkü küçük işi bitirmektir."
+}
+]

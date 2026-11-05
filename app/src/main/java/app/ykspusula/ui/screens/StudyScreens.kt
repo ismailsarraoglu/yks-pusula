@@ -1,19 +1,22 @@
 package app.ykspusula.ui.screens
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.StickyNote2
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,84 +25,102 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.compose.collectAsLazyPagingItems
 import app.ykspusula.data.*
+import app.ykspusula.domain.Mastery
+import app.ykspusula.domain.MasteryResult
 import app.ykspusula.domain.Scoring
+import app.ykspusula.monetize.AdPlacement
 import app.ykspusula.ui.LocalNav
 import app.ykspusula.ui.components.*
 import app.ykspusula.ui.repo
+import app.ykspusula.ui.rememberUiScope
 import app.ykspusula.ui.shortDate
-import app.ykspusula.ui.solve
 import app.ykspusula.ui.theme.Yks
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
-val STATUS_LABELS = listOf("Henüz başlanmadı", "Çalışılıyor", "Soru çözülüyor", "Tamamlandı")
-val WRONG_REASONS = listOf("Konu eksiği", "Dikkatsizlik", "İşlem hatası", "Soruyu yanlış anlama", "Zaman yetersizliği", "Yanlış yöntem")
+val MANUAL_STATUS = listOf("Başlanmadı", "Çalışılıyor", "Tekrar gerekiyor", "Öğrenildi")
+val WRONG_REASONS = listOf("Konuyu bilmiyordum", "Dikkatsizlik", "İşlem hatası", "Soruyu yanlış okuma", "Zaman yetersizliği", "İki seçenek arasında kalma", "Bilgiyi unutma", "Diğer")
+val TOPIC_CHECKS = listOf("KONU" to "Konu çalışıldı", "OZET" to "Özet çıkarıldı", "SORU" to "Soru çözüldü", "TEKRAR" to "Tekrar edildi")
 
-@Composable fun statusColor(s: Int): Color = when (s) { 3 -> Yks.c.success; 2 -> Yks.c.accent; 1 -> Yks.c.warning; else -> Yks.c.muted }
+@Composable fun masteryColor(level: Int): Color = when (level) { 4 -> Yks.c.purpleLight; 3 -> Yks.c.success; 2 -> Yks.c.warning; 1 -> Yks.c.accentLight; else -> Yks.c.muted }
 
 /** Öğrencinin alanına ve diline uyan dersleri seçer. */
 fun relevant(subjects: List<Subject>, p: UserProfile?): List<Subject> = subjects.filter { s ->
     s.language == null || s.language == (p?.ydtLanguage ?: "İngilizce")
 }
 
+private data class StudyLink(val title: String, val subtitle: String, val icon: ImageVector, val route: String, val purple: Boolean = false)
+
 @Composable
 fun StudyScreen() {
     val r = repo()
     val nav = LocalNav.current
+    val c = Yks.c
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
-    val boards by r.content.subjectBoards().collectAsStateWithLifecycle(emptyList())
+    val rows by r.content.allTopicRows().collectAsStateWithLifecycle(emptyList())
+    val date = remember { today() }
+    val route by remember { r.user.routeOn(date.toString()) }.collectAsStateWithLifecycle(emptyList())
+    val last by r.user.lastSource().collectAsStateWithLifecycle(null)
     var exam by rememberSaveable { mutableStateOf("TYT") }
+    LaunchedEffect(Unit) { r.ensureRoute() }
     val list = relevant(subjects, profile).filter { it.exam == exam }
     val grouped = list.groupBy { it.groupName }
     val y = profile?.examYear ?: 2027
-    val b = boards.associateBy { it.subjectId }
+    val now = remember { System.currentTimeMillis() }
+    val levels = remember(rows) { rows.filter { it.scope != "EXCLUDED" }.groupBy { it.subjectId }.mapValues { (_, v) -> v.count { r.mastery(it, now).level >= 3 } to v.size } }
 
     ScrollColumn(Modifier.statusBarsPadding()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Çalış", style = MaterialTheme.typography.headlineMedium, color = Yks.c.text, modifier = Modifier.weight(1f))
-            IconButton({ nav.navigate("search") }) { Icon(Icons.Rounded.Search, "Ara", tint = Yks.c.text) }
+        PageHeader("Çalış", "Bugün hedeflerine bir adım daha yaklaş.", Icons.Rounded.Search, "Ara") { nav.navigate("search") }
+        PrimaryGradientCard("Çalışmanı kaydet", "Kaynak, süre ve soru sayını ekle.", Icons.Rounded.EditNote) { nav.navigate("log") }
+        last?.let { s ->
+            if (s.lastPage > 0) InfoRow("Kaldığın yerden devam", "${s.name} • ${s.lastPage}. sayfa", Icons.Rounded.Bookmark) { nav.navigate("log?source=${s.id}") }
         }
-        QuickGrid(
-            listOf(
-                Triple("Soru bankası", Icons.Rounded.EditNote, "bank"), Triple("Yanlışlar", Icons.Rounded.ErrorOutline, "wrongs"),
-                Triple("Kartlar", Icons.Rounded.Style, "cards"), Triple("Formüller", Icons.Rounded.Functions, "formulas"),
-                Triple("Notlar", Icons.Rounded.StickyNote2, "notes"), Triple("Kaynaklar", Icons.Rounded.PictureAsPdf, "library"),
-            )
-        ) { nav.navigate(it) }
-        if (y >= 2028) {
-            YCard {
-                Row {
-                    Icon(Icons.Rounded.Info, null, tint = Yks.c.warning, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(Space.s))
-                    Text("İçerikler 2027 YKS çerçevesine göre hazırlandı. $y sınavı için Maarif Modeli'ne göre güncellenmiş kapsam ÖSYM ve MEB tarafından açıklandığında yeni içerik paketi gerekir.", style = MaterialTheme.typography.bodyMedium, color = Yks.c.text)
-                }
-            }
+        val open = route.filter { it.status == "SUGGESTED" || it.status == "ACCEPTED" }
+        if (open.isNotEmpty()) {
+            SectionHeader("Günün rotası", "Tümü") { nav.navigate("coach") }
+            GroupCard { open.take(2).forEachIndexed { i, x -> if (i > 0) Line(); NavRow(x.title, "${x.minutes} dk • ${x.reason}", Icons.Rounded.Explore, onClick = { nav.navigate("coach") }) } }
         }
+        SectionHeader("Çalışma alanın")
+        val links = listOf(
+            StudyLink("Çalışma planı", "Haftalık programın", Icons.Rounded.CalendarMonth, "plan"),
+            StudyLink("Konularım", "Konu ustalığı haritası", Icons.Rounded.Map, "mastery", true),
+            StudyLink("Kaynaklarım", "Kitap ve dokümanların", Icons.AutoMirrored.Rounded.MenuBook, "sources"),
+            StudyLink("Yanlış defterim", "Tekrar bekleyenler", Icons.Rounded.ErrorOutline, "wrongs", true),
+            StudyLink("Pomodoro", "Odaklanma sayacı", Icons.Rounded.Timer, "pomodoro"),
+            StudyLink("Formüller", "Hızlı erişim", Icons.Rounded.Functions, "formulas", true),
+            StudyLink("Bilgi kartları", "Aralıklı tekrar", Icons.Rounded.Style, "cards"),
+            StudyLink("Notlarım", "Kişisel notlar", Icons.AutoMirrored.Rounded.StickyNote2, "notes", true),
+            StudyLink("PDF kaynaklarım", "Kendi dosyaların", Icons.Rounded.PictureAsPdf, "library"),
+            StudyLink("YKS bilgi merkezi", "Sınav yapısı ve takvim", Icons.Rounded.Info, "info", true),
+        )
+        TwoColumn(links) { l, m -> FeatureShortcutCard(l.title, l.subtitle, l.icon, if (l.purple) c.purpleLight else c.accentLight, m) { nav.navigate(l.route) } }
+        AdSlot(AdPlacement.STUDY)
+        if (y >= 2028) InfoBanner("Konu listesi 2027 YKS çerçevesine göre hazırlandı. $y sınavı için kapsam ÖSYM ve MEB tarafından açıklandığında yeni içerik paketi gerekir.", Icons.Rounded.Info)
+        SectionHeader("Derslerim")
         PillGroup(listOf("TYT" to "TYT", "AYT" to "AYT", "YDT" to "YDT"), exam) { exam = it }
-        if (exam == "YDT") {
-            Muted("Seçili dil: ${profile?.ydtLanguage ?: "İngilizce"}. Dili Profil'den değiştirebilirsin.")
-        }
-        if (list.isEmpty()) {
-            YCard { Muted("Bu dil için henüz içerik yok. Bir içerik paketiyle eklenebilir.") }
-        }
+        if (exam == "YDT") Muted("Seçili dil: ${profile?.ydtLanguage ?: "İngilizce"}. Dili Profil'den değiştirebilirsin.")
+        if (list.isEmpty()) YCard { Muted("Bu dil için henüz içerik yok. Bir içerik paketiyle eklenebilir.") }
         grouped.forEach { (group, subs) ->
-            if (grouped.size > 1) Section(group)
+            if (grouped.size > 1) Text(group, style = MaterialTheme.typography.titleMedium, color = c.muted)
             GroupCard {
                 subs.forEachIndexed { i, s ->
                     if (i > 0) Line()
-                    val st = b[s.id]
-                    val pct = st?.let { Scoring.percent(it.done, it.total) } ?: 0
+                    val (done, total) = levels[s.id] ?: (0 to 0)
+                    val pct = Scoring.percent(done, total)
                     Column(Modifier.clickable { nav.navigate("subject/${s.id}") }.padding(horizontal = Space.l, vertical = Space.m)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(s.name, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text, modifier = Modifier.weight(1f))
+                            Text(s.name, style = MaterialTheme.typography.bodyLarge, color = c.text, modifier = Modifier.weight(1f))
                             Muted("%$pct")
                         }
                         Spacer(Modifier.height(6.dp))
@@ -108,8 +129,6 @@ fun StudyScreen() {
                 }
             }
         }
-        Section("Konu takibi")
-        GroupCard { NavRow("Tüm dersler", "Konu durumlarını ders ders gör", Icons.Rounded.Checklist, onClick = { nav.navigate("tracker") }) }
     }
 }
 
@@ -120,82 +139,109 @@ fun SubjectScreen(id: String) {
     val rows by r.content.topicRows(id).collectAsStateWithLifecycle(emptyList())
     var name by remember { mutableStateOf("") }
     LaunchedEffect(id) { name = r.content.subject(id)?.name.orEmpty() }
+    val now = remember { System.currentTimeMillis() }
     val inScope = rows.filter { it.scope != "EXCLUDED" }
     Screen(name, { nav.popBackStack() }) {
-        LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.m)) {
+        LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.s + 2.dp)) {
             item {
                 YCard {
-                    val done = inScope.count { it.status == 3 }
-                    val active = inScope.count { it.status == 1 || it.status == 2 }
-                    val idle = inScope.size - done - active
+                    val levels = inScope.map { r.mastery(it, now).level }
+                    val done = levels.count { it >= 3 }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("${inScope.size} konu", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-                            Muted("Tamamlanan: $done")
-                            Muted("Çalışılan: $active")
-                            Muted("Başlanmamış: $idle")
+                            Muted("Öğrenilen: $done")
+                            Muted("Tekrar gereken: ${levels.count { it == 2 }}")
+                            Muted("Çalışılan: ${levels.count { it == 1 }}")
+                            Muted("Başlanmamış: ${levels.count { it == 0 }}")
                         }
                         val pct = Scoring.percent(done, inScope.size)
                         Ring(pct / 100f, "%$pct", description = "$name ilerlemesi yüzde $pct")
                     }
                     Spacer(Modifier.height(Space.m))
-                    SoftButton("Bu dersten soru çöz", Modifier.fillMaxWidth(), icon = Icons.Rounded.EditNote) { nav.solve(subject = id) }
+                    SoftButton("Bu ders için çalışma kaydet", Modifier.fillMaxWidth(), icon = Icons.Rounded.EditNote) { nav.navigate("log?subject=$id") }
                 }
             }
-            items(rows, key = { it.id }) { t ->
-                YCard(onClick = { nav.navigate("topic/${t.id}") }, padding = Space.m) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(t.name, style = MaterialTheme.typography.bodyLarge, color = if (t.scope == "EXCLUDED") Yks.c.muted else Yks.c.text)
-                            val success = if (t.total > 0) " • %${Scoring.percent(t.right, t.total)} başarı" else ""
-                            Muted(STATUS_LABELS[t.status ?: 0] + " • ${t.questionCount} soru" + success, maxLines = 1)
-                        }
-                        when {
-                            t.scope == "EXCLUDED" -> Tag("Kapsam dışı", Yks.c.muted)
-                            t.scope == "REVIEW" -> Tag("Kontrol", Yks.c.warning)
-                            else -> Box(Modifier.size(10.dp).clip(CircleShape).background(statusColor(t.status ?: 0)))
-                        }
-                    }
-                }
-            }
+            items(rows, key = { it.id }) { t -> TopicCard(t, r.mastery(t, now)) { nav.navigate("topic/${t.id}") } }
         }
     }
 }
 
 @Composable
+private fun TopicCard(t: TopicRow, m: MasteryResult, onClick: () -> Unit) {
+    YCard(onClick = onClick, padding = Space.m) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(10.dp).clip(CircleShape).background(masteryColor(m.level)))
+            Spacer(Modifier.width(Space.m))
+            Column(Modifier.weight(1f)) {
+                Text(t.name, style = MaterialTheme.typography.bodyLarge, color = if (t.scope == "EXCLUDED") Yks.c.muted else Yks.c.text)
+                val success = if (t.total > 0) " • ${t.total} soru • %${Scoring.percent(t.right, t.total)}" else ""
+                Muted(Mastery.LABELS[m.level] + success, maxLines = 1)
+            }
+            when (t.scope) {
+                "EXCLUDED" -> Tag("Kapsam dışı", Yks.c.muted)
+                "REVIEW" -> Tag("Kontrol", Yks.c.warning)
+                else -> {}
+            }
+        }
+    }
+}
+
+/** Konu ayrıntısı: ustalık düzeyi, çalışma geçmişi, kaynaklar ve notlar. */
+@Composable
 fun TopicScreen(id: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
+    val scope = rememberUiScope()
     val topic by r.content.topic(id).collectAsStateWithLifecycle(null)
     val progress by r.user.progress(id).collectAsStateWithLifecycle(null)
+    val logs by remember(id) { r.user.logsOfTopic(id) }.collectAsStateWithLifecycle(emptyList())
+    val sessions by remember(id) { r.user.sessionsOfTopic(id) }.collectAsStateWithLifecycle(emptyList())
+    val sources by r.user.sources().collectAsStateWithLifecycle(emptyList())
+    val notes by r.user.notes().collectAsStateWithLifecycle(emptyList())
     val t = topic
     Screen(t?.name.orEmpty(), { nav.popBackStack() }) {
         if (t == null) return@Screen
         val rows by r.content.topicRows(t.subjectId).collectAsStateWithLifecycle(emptyList())
         val row = rows.firstOrNull { it.id == id }
+        val mastery = row?.let { r.mastery(it) }
         ScrollColumn {
-            if (t.scope != "IN") {
-                YCard {
-                    Row {
-                        Icon(Icons.Rounded.WarningAmber, null, tint = Yks.c.warning, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(Space.s))
-                        Text(t.scopeNote, style = MaterialTheme.typography.bodyMedium, color = Yks.c.text)
-                    }
+            if (t.scope != "IN") InfoBanner(t.scopeNote, Icons.Rounded.WarningAmber)
+            if (mastery != null) YCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(12.dp).clip(CircleShape).background(masteryColor(mastery.level)))
+                    Spacer(Modifier.width(Space.s))
+                    Text(Mastery.LABELS[mastery.level], style = MaterialTheme.typography.titleLarge, color = Yks.c.text)
                 }
+                Spacer(Modifier.height(4.dp))
+                Muted(mastery.explanation)
+                Spacer(Modifier.height(Space.m))
+                val total = row.total
+                KeyValue("Toplam çalışma", "${row.minutes} dk")
+                KeyValue("Son çalışma", progress?.lastStudiedAt?.let(::shortDate) ?: "yok")
+                KeyValue("Çözülen soru", "$total")
+                if (total > 0) { KeyValue("Doğru oranı", "%${Scoring.percent(row.right, total)}"); KeyValue("Yanlış oranı", "%${100 - Scoring.percent(row.right, total)}") }
+                KeyValue("Açık yanlış kaydı", "${row.wrongOpen}")
+                KeyValue("Tekrar sayısı", "${progress?.reviewCount ?: 0}")
+                KeyValue("Sonraki tekrar", progress?.nextReviewAt?.let(::shortDate) ?: "planlanmadı")
+            }
+            MainButton("Bu konuda çalışma kaydet", Modifier.fillMaxWidth(), icon = Icons.Rounded.EditNote) { nav.navigate("log?topic=$id&subject=${t.subjectId}") }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                SoftButton("Tekrar yaptım", Modifier.weight(1f), icon = Icons.Rounded.Replay) { scope.launch { r.markTopicReviewed(id) } }
+                SoftButton("Yanlış kaydet", Modifier.weight(1f), icon = Icons.Rounded.ErrorOutline) { nav.navigate("wrongEdit/new?topic=$id&subject=${t.subjectId}") }
             }
             YCard {
                 Muted("Konu durumu")
                 Spacer(Modifier.height(Space.s))
-                PillGroup(STATUS_LABELS.mapIndexed { i, s -> i.toString() to s }, (progress?.status ?: 0).toString()) { v -> scope.launch { r.setTopicStatus(id, v.toInt()) } }
+                PillGroup(MANUAL_STATUS.mapIndexed { i, s -> i.toString() to s }, (progress?.status ?: 0).toString()) { v -> scope.launch { r.setTopicStatus(id, v.toInt()) } }
+                Spacer(Modifier.height(Space.s))
+                Muted("Güçlü düzeyi işaretlenemez; yeterli soru, başarı ve tekrar kaydıyla kendiliğinden oluşur.")
                 Spacer(Modifier.height(Space.m))
-                Line()
-                Spacer(Modifier.height(Space.s))
-                val total = row?.total ?: 0
-                Muted(if (total > 0) "Başarı oranı: %${Scoring.percent(row?.right ?: 0, total)} ($total soru)" else "Başarı oranı: henüz soru çözülmedi")
-                Muted("Son çalışma: " + (progress?.lastStudiedAt?.let(::shortDate) ?: "yok"))
-                Muted("Tekrar tarihi: " + (progress?.nextReviewAt?.let(::shortDate) ?: "planlanmadı"))
-                Spacer(Modifier.height(Space.s))
+                Muted("Yaptıkların")
+                Spacer(Modifier.height(4.dp))
+                val done = progress?.checks.orEmpty().split(',').toSet()
+                MultiPills(TOPIC_CHECKS, done) { c -> scope.launch { r.toggleTopicCheck(id, c) } }
+                Spacer(Modifier.height(Space.m))
                 Muted("Tekrarı planla")
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -203,14 +249,33 @@ fun TopicScreen(id: String) {
                     SoftButton("7 gün", Modifier.weight(1f)) { scope.launch { r.setTopicReview(id, startOf(today().plusDays(7))) } }
                 }
             }
-            val count = row?.questionCount ?: 0
-            MainButton(if (count > 0) "$count soru çöz" else "Bu konuda henüz soru yok", Modifier.fillMaxWidth(), enabled = count > 0, icon = Icons.Rounded.EditNote) { nav.solve(topic = id) }
+            val usedIds = (logs.mapNotNull { it.sourceId } + sessions.mapNotNull { it.sourceId }).toSet()
+            val used = sources.filter { it.id in usedIds || it.topicId == id }
+            if (used.isNotEmpty()) {
+                Section("Kullanılan kaynaklar")
+                GroupCard { used.forEachIndexed { i, s -> if (i > 0) Line(); NavRow(s.name, s.publisher.ifBlank { sourceType(s.type) }, Icons.AutoMirrored.Rounded.MenuBook, onClick = { nav.navigate("source/${s.id}") }) } }
+            }
+            val mine = notes.filter { it.topicId == id }
+            if (mine.isNotEmpty()) {
+                Section("Notlarım")
+                GroupCard { mine.forEachIndexed { i, n -> if (i > 0) Line(); NavRow(n.title, n.body.take(60), Icons.AutoMirrored.Rounded.StickyNote2, onClick = { nav.navigate("note/${n.id}") }) } }
+            }
+            if (logs.isNotEmpty()) {
+                Section("Çalışma geçmişi")
+                GroupCard {
+                    logs.take(10).forEachIndexed { i, l ->
+                        if (i > 0) Line()
+                        Row(Modifier.fillMaxWidth().padding(Space.m)) {
+                            Text(shortDate(l.at), style = MaterialTheme.typography.bodyMedium, color = Yks.c.text, modifier = Modifier.weight(1f))
+                            Muted("${l.correct} D • ${l.wrong} Y • ${l.blank} B")
+                        }
+                    }
+                }
+            }
             if (t.summary.isNotBlank()) Block("Kısa özet", t.summary)
-            if (t.lesson.isNotBlank()) Block("Konu anlatımı", t.lesson)
+            if (t.lesson.isNotBlank()) Block("Konu notu", t.lesson)
             if (t.keyPoints.isNotBlank()) Block("Formüller ve önemli bilgiler", t.keyPoints)
-            if (t.example.isNotBlank()) Block("Örnek çözüm", t.example)
-            if (t.lesson.isBlank()) YCard { Muted("Bu konunun ayrıntılı anlatımı henüz eklenmedi.") }
-            if (t.example.isBlank()) YCard { Muted("Bu konu için örnek çözüm henüz eklenmedi.") }
+            if (t.example.isNotBlank()) Block("Örnek", t.example)
             Muted("Müfredat sürümü: ${t.curriculum} • Geçerlilik: ${t.validFromYear}-${t.validToYear}")
         }
     }
@@ -226,103 +291,53 @@ fun TopicScreen(id: String) {
     }
 }
 
+/** Konu ustalığı haritası: sınav, ders ve duruma göre filtrelenir. */
 @Composable
-fun TrackerScreen() {
+fun MasteryScreen() {
     val r = repo()
     val nav = LocalNav.current
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
-    val boards by r.content.subjectBoards().collectAsStateWithLifecycle(emptyList())
-    val b = boards.associateBy { it.subjectId }
-    Screen("Konu takibi", { nav.popBackStack() }) {
-        LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.m)) {
-            val list = relevant(subjects, profile)
-            items(list, key = { it.id }) { s ->
-                val st = b[s.id] ?: SubjectBoard(s.id, 0, 0, 0, 0)
-                val active = st.studying + st.solving
-                val idle = st.total - st.done - active
-                YCard(onClick = { nav.navigate("subject/${s.id}") }, padding = Space.m) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("${s.exam} ${s.name}", style = MaterialTheme.typography.titleMedium, color = Yks.c.text, modifier = Modifier.weight(1f))
-                        Text("%${Scoring.percent(st.done, st.total)}", style = MaterialTheme.typography.titleMedium, color = Yks.c.accent)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    SplitBar(st.done, active, idle)
-                    Spacer(Modifier.height(6.dp))
-                    Muted("${st.total} konu • ${st.done} tamamlandı • $active çalışılıyor • $idle başlanmadı")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SplitBar(done: Int, active: Int, idle: Int) {
-    Row(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Yks.c.line)) {
-        if (done > 0) Box(Modifier.weight(done.toFloat()).fillMaxHeight().background(Yks.c.success))
-        if (active > 0) Box(Modifier.weight(active.toFloat()).fillMaxHeight().background(Yks.c.accent))
-        if (idle > 0) Spacer(Modifier.weight(idle.toFloat()))
-    }
-}
-
-/* ---------- SORU BANKASI ---------- */
-
-@Composable
-fun BankScreen() {
-    val r = repo()
-    val nav = LocalNav.current
-    val profile by r.user.profile().collectAsStateWithLifecycle(null)
-    val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
-    var exam by rememberSaveable { mutableStateOf("") }
+    val rows by r.content.allTopicRows().collectAsStateWithLifecycle(emptyList())
+    var exam by rememberSaveable { mutableStateOf("TYT") }
     var subject by rememberSaveable { mutableStateOf("") }
-    var topic by rememberSaveable { mutableStateOf("") }
-    var diff by rememberSaveable { mutableStateOf("0") }
-    var state by rememberSaveable { mutableStateOf("ALL") }
-    var shuffle by rememberSaveable { mutableStateOf(false) }
-    val rows by remember(subject) { if (subject.isEmpty()) kotlinx.coroutines.flow.flowOf(emptyList()) else r.content.topicRows(subject) }.collectAsStateWithLifecycle(emptyList())
-    val filter = QuestionFilter(exam, subject, topic, diff.toInt(), state)
-    val paged = remember(exam, subject, topic, diff, state) { r.pagedQuestions(filter) }.collectAsLazyPagingItems()
-    var count by remember { mutableIntStateOf(0) }
-    LaunchedEffect(exam, subject, topic, diff, state) { count = r.questionIds(filter, 0, 0).size }
-    val subs = relevant(subjects, profile).filter { exam.isEmpty() || it.exam == exam }
-
-    Screen("Soru bankası", { nav.popBackStack() }) {
-        LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.m)) {
+    var level by rememberSaveable { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
+    val now = remember { System.currentTimeMillis() }
+    val subs = relevant(subjects, profile).filter { it.exam == exam }
+    val ids = subs.map { it.id }.toSet()
+    val all = remember(rows) { rows.filter { it.scope != "EXCLUDED" }.map { it to r.mastery(it, now) } }
+    val scoped = all.filter { it.first.subjectId in ids && (subject.isEmpty() || it.first.subjectId == subject) }
+    val q = app.ykspusula.domain.SearchText.normalize(query)
+    val shown = scoped.filter { (t, m) -> (level.isEmpty() || m.level.toString() == level) && (q.isEmpty() || app.ykspusula.domain.SearchText.score(q, app.ykspusula.domain.SearchText.normalize(t.name)) > 0) }
+    Screen("Konu ustalığı", { nav.popBackStack() }) {
+        LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.s + 2.dp)) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                    Muted("Sınav türü")
-                    PillGroup(listOf("" to "Tümü", "TYT" to "TYT", "AYT" to "AYT", "YDT" to "YDT"), exam) { exam = it; subject = ""; topic = "" }
-                    Muted("Ders")
-                    Dropdown(subs.map { it.id to (if (exam.isEmpty()) "${it.exam} ${it.name}" else it.name) }, subject, "Tüm dersler") { subject = it; topic = "" }
-                    if (subject.isNotEmpty()) {
-                        Muted("Konu")
-                        Dropdown(rows.map { it.id to "${it.name} (${it.questionCount})" }, topic, "Tüm konular") { topic = it }
+                    PillGroup(listOf("TYT" to "TYT", "AYT" to "AYT", "YDT" to "YDT"), exam) { exam = it; subject = "" }
+                    Dropdown(subs.map { it.id to it.name }, subject, "Tüm dersler") { subject = it }
+                    PillGroup(listOf("" to "Tümü") + Mastery.LABELS.mapIndexed { i, s -> "$i" to s }, level) { level = it }
+                    Field(query, { query = it }, "Konu ara")
+                    val counts = (0..4).map { l -> scoped.count { it.second.level == l } }
+                    YCard {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("${scoped.size} konu", style = MaterialTheme.typography.titleMedium, color = Yks.c.text, modifier = Modifier.weight(1f))
+                            Text("%${Scoring.percent(counts[3] + counts[4], scoped.size)} öğrenildi", style = MaterialTheme.typography.titleMedium, color = Yks.c.accentLight)
+                        }
+                        Spacer(Modifier.height(Space.s))
+                        Row(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Yks.c.line)) {
+                            listOf(4 to Yks.c.purpleLight, 3 to Yks.c.success, 2 to Yks.c.warning, 1 to Yks.c.accentLight).forEach { (l, col) ->
+                                if (counts[l] > 0) Box(Modifier.weight(counts[l].toFloat()).fillMaxHeight().background(col))
+                            }
+                            if (counts[0] > 0) Spacer(Modifier.weight(counts[0].toFloat()))
+                        }
+                        Spacer(Modifier.height(Space.s))
+                        Muted(Mastery.LABELS.mapIndexed { i, s -> "$s: ${counts[i]}" }.joinToString(" • "))
                     }
-                    Muted("Zorluk")
-                    PillGroup(listOf("0" to "Tümü", "1" to "Kolay", "2" to "Orta", "3" to "Zor"), diff) { diff = it }
-                    Muted("Durum")
-                    PillGroup(
-                        listOf("ALL" to "Tümü", "UNSOLVED" to "Çözülmeyen", "SOLVED" to "Çözülen", "WRONG" to "Yanlış yapılan", "MARKED" to "İşaretli", "LATER" to "Sonra çöz"),
-                        state,
-                    ) { state = it }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Soruları ve şıkları karıştır", color = Yks.c.text, modifier = Modifier.weight(1f))
-                        Switch(shuffle, { shuffle = it })
-                    }
-                    MainButton("$count soruyu çöz", Modifier.fillMaxWidth(), enabled = count > 0, icon = Icons.Rounded.PlayArrow) {
-                        nav.solve(exam = exam, subject = subject, topic = topic, diff = diff.toInt(), state = state, seed = if (shuffle) System.currentTimeMillis() else 0L, mix = shuffle)
-                    }
-                    if (count == 0) Muted("Bu filtreyle eşleşen soru yok.")
                 }
             }
-            items(paged.itemCount, key = { i -> paged.peek(i)?.id ?: i }) { i ->
-                val q = paged[i] ?: return@items
-                YCard(padding = Space.m) {
-                    Text(q.stem.replace(Regex("[\\\\{}^_]"), " ").take(120), style = MaterialTheme.typography.bodyMedium, color = Yks.c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.height(4.dp))
-                    Muted("${q.exam} • " + listOf("", "Kolay", "Orta", "Zor")[q.difficulty])
-                }
-            }
+            if (shown.isEmpty()) item { EmptyStateView(Icons.Rounded.Map, "Konu bulunamadı", "Filtreleri değiştirebilirsin.") }
+            items(shown, key = { it.first.id }) { (t, m) -> TopicCard(t, m) { nav.navigate("topic/${t.id}") } }
         }
     }
 }
@@ -340,252 +355,121 @@ fun Dropdown(options: List<Pair<String, String>>, selected: String, allLabel: St
     }
 }
 
-/* ---------- SORU EKRANI ---------- */
+/* ---------- ÇALIŞMA KAYDI ---------- */
 
-data class Picked(val label: String, val checked: Boolean)
+val ACTIVITIES = listOf("SORU" to "Soru çözümü", "KONU" to "Konu çalışması", "TEKRAR" to "Tekrar", "OKUMA" to "Okuma", "VIDEO" to "Video ders")
 
+/** Öğrencinin kendi kaynağından yaptığı çalışmayı kaydeder. */
 @Composable
-fun SolveScreen(mode: String, exam: String, subject: String, topic: String, diff: Int, state: String, seed: Long, limit: Int, mix: Boolean) {
+fun StudyLogScreen(sourceArg: String, topicArg: String, subjectArg: String, taskArg: String, routeArg: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
-    var ids by remember { mutableStateOf<List<String>?>(null) }
-    LaunchedEffect(Unit) {
-        ids = if (mode == "REVIEW") r.user.wrongDueIds(System.currentTimeMillis())
-        else r.questionIds(QuestionFilter(exam, subject, topic, diff, state), seed, limit)
+    val scope = rememberUiScope()
+    val profile by r.user.profile().collectAsStateWithLifecycle(null)
+    val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
+    val sources by r.user.sources().collectAsStateWithLifecycle(emptyList())
+    var source by rememberSaveable { mutableStateOf(sourceArg) }
+    var subject by rememberSaveable { mutableStateOf(subjectArg) }
+    var topic by rememberSaveable { mutableStateOf(topicArg) }
+    var activity by rememberSaveable { mutableStateOf("SORU") }
+    var from by rememberSaveable { mutableStateOf("") }
+    var to by rememberSaveable { mutableStateOf("") }
+    var correct by rememberSaveable { mutableStateOf("") }
+    var wrong by rememberSaveable { mutableStateOf("") }
+    var blank by rememberSaveable { mutableStateOf("") }
+    var minutes by rememberSaveable { mutableStateOf("") }
+    var note by rememberSaveable { mutableStateOf("") }
+    var date by remember { mutableStateOf(today()) }
+    val rows by remember(subject) { if (subject.isEmpty()) kotlinx.coroutines.flow.flowOf(emptyList()) else r.content.topicRows(subject) }.collectAsStateWithLifecycle(emptyList())
+    val s = sources.firstOrNull { it.id == source }
+    LaunchedEffect(s?.id) {
+        if (s != null) {
+            if (subject.isEmpty()) s.subjectId?.let { subject = it }
+            if (topic.isEmpty()) s.topicId?.let { topic = it }
+            if (from.isEmpty() && s.lastPage > 0) from = (s.lastPage + 1).toString()
+        }
     }
-    val list = ids
-    var index by rememberSaveable { mutableIntStateOf(0) }
-    val answers = remember { mutableStateMapOf<String, Picked>() }
-    var showSolution by remember { mutableStateOf(false) }
-    var noteOpen by remember { mutableStateOf(false) }
-    var q by remember { mutableStateOf<QuestionFull?>(null) }
-    val marked by r.user.bookmarkIds("QUESTION").collectAsStateWithLifecycle(emptyList())
-    val later by r.user.bookmarkIds("LATER").collectAsStateWithLifecycle(emptyList())
-    val snackbar = remember { SnackbarHostState() }
-
-    LaunchedEffect(list, index) {
-        val id = list?.getOrNull(index) ?: return@LaunchedEffect
-        q = r.content.full(id)
-        showSolution = answers[id]?.checked == true
-    }
-
-    Scaffold(
-        containerColor = Yks.c.bg,
-        snackbarHost = { SnackbarHost(snackbar) },
-        topBar = {
-            Row(Modifier.statusBarsPadding().fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton({ nav.popBackStack() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Geri", tint = Yks.c.text) }
-                Text(if (list.isNullOrEmpty()) "Soru" else "Soru ${index + 1} / ${list.size}", style = MaterialTheme.typography.titleMedium, color = Yks.c.text, modifier = Modifier.weight(1f))
-                val cur = q
-                if (cur != null) {
-                    val m = cur.q.id in marked
-                    IconButton({ scope.launch { r.toggleBookmark("QUESTION", cur.q.id, !m) } }) {
-                        Icon(if (m) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, if (m) "İşareti kaldır" else "Soruyu işaretle", tint = if (m) Yks.c.accent else Yks.c.text)
-                    }
-                    val l = cur.q.id in later
-                    IconButton({ scope.launch { r.toggleBookmark("LATER", cur.q.id, !l); snackbar.showSnackbar(if (l) "Sonra çöz listesinden çıkarıldı" else "Sonra çöz listesine eklendi") } }) {
-                        Icon(Icons.Rounded.Schedule, if (l) "Sonra çöz listesinden çıkar" else "Daha sonra çöz", tint = if (l) Yks.c.accent else Yks.c.text)
-                    }
+    val c = correct.toIntOrNull() ?: 0
+    val w = wrong.toIntOrNull() ?: 0
+    val b = blank.toIntOrNull() ?: 0
+    val m = minutes.toIntOrNull() ?: 0
+    val pf = from.toIntOrNull()
+    val pt = to.toIntOrNull()
+    val pagesOk = pf == null || pt == null || pt >= pf
+    Screen("Çalışma kaydı", { nav.popBackStack() }) {
+        ScrollColumn {
+            Muted("Kaynak")
+            Dropdown(sources.map { it.id to it.name }, source, "Kaynak seçilmedi") { source = it }
+            if (sources.isEmpty()) TextButton({ nav.navigate("sourceEdit/new") }) { Text("Kaynak ekle") }
+            Muted("Ders")
+            Dropdown(relevant(subjects, profile).map { it.id to "${it.exam} ${it.name}" }, subject, "Ders seçilmedi") { subject = it; topic = "" }
+            if (subject.isNotEmpty()) { Muted("Konu"); Dropdown(rows.map { it.id to it.name }, topic, "Konu seçilmedi") { topic = it } }
+            Muted("Çalışma türü")
+            PillGroup(ACTIVITIES, activity) { activity = it }
+            DateField(date, "Tarih") { date = it }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                NumberField(from, { from = it }, "İlk sayfa", Modifier.weight(1f))
+                NumberField(to, { to = it }, "Son sayfa", Modifier.weight(1f))
+            }
+            if (!pagesOk) Text("Son sayfa ilk sayfadan küçük olamaz.", color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                NumberField(correct, { correct = it }, "Doğru", Modifier.weight(1f))
+                NumberField(wrong, { wrong = it }, "Yanlış", Modifier.weight(1f))
+                NumberField(blank, { blank = it }, "Boş", Modifier.weight(1f))
+            }
+            if (c + w + b > 0) Muted("Toplam ${c + w + b} soru • Doğru oranı %${Scoring.percent(c, c + w + b)}")
+            NumberField(minutes, { minutes = it }, "Çalışma süresi (dakika)", max = 3)
+            Field(note, { note = it }, "Kısa not", singleLine = false, minLines = 2)
+            MainButton("Kaydet", Modifier.fillMaxWidth(), enabled = pagesOk && (m > 0 || c + w + b > 0 || pt != null)) {
+                val at = if (date == today()) System.currentTimeMillis() else startOf(date) + 12 * 3_600_000L
+                scope.launch {
+                    r.logStudy(StudyEntry(subject.ifEmpty { null }, topic.ifEmpty { null }, source.ifEmpty { null }, pf, pt, c, w, b, m, 0, activity, note.trim(), "", at, taskArg.ifEmpty { null }, routeArg.ifEmpty { null }))
+                    nav.popBackStack()
                 }
             }
-        },
-        bottomBar = {
-            if (!list.isNullOrEmpty()) {
-                Row(Modifier.navigationBarsPadding().fillMaxWidth().background(Yks.c.card).padding(Space.m), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                    SoftButton("Önceki", Modifier.weight(1f), enabled = index > 0, icon = Icons.AutoMirrored.Rounded.ArrowBack) { index-- }
-                    SoftButton("Sonraki", Modifier.weight(1f), enabled = index < list.lastIndex, icon = Icons.AutoMirrored.Rounded.ArrowForward) { index++ }
-                }
-            }
-        },
-    ) { inner ->
-        val cur = q
-        when {
-            list == null -> Box(Modifier.padding(inner).fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            list.isEmpty() -> Box(Modifier.padding(inner)) {
-                Empty(Icons.Rounded.CheckCircle, if (mode == "REVIEW") "Tekrar edilecek yanlış yok" else "Soru bulunamadı", if (mode == "REVIEW") "Tekrar zamanı gelen yanlışların burada görünür." else "Filtreleri değiştirerek yeniden deneyebilirsin.")
-            }
-            cur != null && cur.q.id == list.getOrNull(index) -> {
-                val pick = answers[cur.q.id]
-                val options = remember(cur.q.id, mix, seed) {
-                    val sorted = cur.options.sortedBy { it.label }
-                    if (mix) sorted.shuffled(java.util.Random(seed xor cur.q.id.hashCode().toLong())) else sorted
-                }
-                val letters = listOf("A", "B", "C", "D", "E")
-                Column(Modifier.padding(inner).fillMaxSize().verticalScroll(rememberScrollState()).padding(Space.l), verticalArrangement = Arrangement.spacedBy(Space.m)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Tag(cur.q.exam)
-                        Tag(listOf("", "Kolay", "Orta", "Zor")[cur.q.difficulty], Yks.c.muted)
-                    }
-                    MathText(cur.q.stem, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-                    cur.q.figure?.let { FigureView(it, Modifier.padding(vertical = Space.s).widthIn(max = 420.dp), color = Yks.c.text) }
-                    options.forEachIndexed { i, o ->
-                        OptionRow(letters[i], o.text, pick?.label == o.label, pick?.checked == true, o.isCorrect, enabled = pick?.checked != true) {
-                            answers[cur.q.id] = Picked(o.label, false)
-                        }
-                    }
-                    if (pick?.checked != true) {
-                        MainButton("Cevabı kontrol et", Modifier.fillMaxWidth(), enabled = pick != null, icon = Icons.Rounded.Check) {
-                            val p = pick ?: return@MainButton
-                            answers[cur.q.id] = p.copy(checked = true)
-                            showSolution = true
-                            scope.launch {
-                                val src = if (mode == "REVIEW") "REVIEW" else "BANK"
-                                r.answer(cur, p.label, src, cur.options.first { it.label == p.label }.text)
-                            }
-                        }
-                    } else {
-                        val right = pick.label == cur.correctLabel
-                        Verdict(right)
-                        if (!showSolution) SoftButton("Açıklamayı göster", Modifier.fillMaxWidth()) { showSolution = true }
-                        else SolutionCard(cur, onTopic = { nav.navigate("topic/${cur.q.topicId}") })
-                        if (!right) ReasonPicker(cur.q.id)
-                        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                            SoftButton("Çözüme ekle", Modifier.weight(1f), icon = Icons.Rounded.NoteAdd) { noteOpen = true }
-                            if (right) SoftButton("Yanlışlara ekle", Modifier.weight(1f), icon = Icons.Rounded.ErrorOutline) {
-                                scope.launch { r.addToWrongBook(cur); snackbar.showSnackbar("Yanlışlar defterine eklendi") }
-                            }
-                        }
-                    }
-                    Muted("Kaynak: ${cur.q.source}")
-                }
-                if (noteOpen) {
-                    var text by remember { mutableStateOf("") }
-                    AlertDialog(
-                        onDismissRequest = { noteOpen = false }, containerColor = Yks.c.card, title = { Text("Çözüm notu") },
-                        text = { Field(text, { text = it }, "Kendi çözümün", singleLine = false, minLines = 4) },
-                        confirmButton = {
-                            TextButton({
-                                val now = System.currentTimeMillis()
-                                scope.launch {
-                                    r.user.saveNote(UserNote(title = "Çözüm: " + cur.q.stem.take(50), body = text, subjectId = cur.q.subjectId, topicId = cur.q.topicId, createdAt = now, updatedAt = now))
-                                    snackbar.showSnackbar("Notlara eklendi")
-                                }
-                                noteOpen = false
-                            }, enabled = text.isNotBlank()) { Text("Kaydet") }
-                        },
-                        dismissButton = { TextButton({ noteOpen = false }) { Text("Vazgeç") } },
-                    )
-                }
-            }
-            else -> Box(Modifier.padding(inner).fillMaxSize())
+            if (w > 0) SoftButton("Yanlışları deftere ekle", Modifier.fillMaxWidth(), icon = Icons.Rounded.ErrorOutline) { nav.navigate("wrongEdit/new?topic=$topic&subject=$subject&source=$source") }
         }
     }
 }
 
-@Composable
-fun OptionRow(letter: String, text: String, selected: Boolean, reveal: Boolean, correct: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val c = Yks.c
-    val tone = when {
-        reveal && correct -> c.success
-        reveal && selected -> c.error
-        selected -> c.accent
-        else -> null
-    }
-    val state = when {
-        reveal && correct -> "Doğru cevap"
-        reveal && selected -> "Senin cevabın, yanlış"
-        selected -> "Seçildi"
-        else -> "Seçilmedi"
-    }
-    val shape = RoundedCornerShape(14.dp)
-    Row(
-        Modifier.fillMaxWidth().clip(shape).background(tone?.copy(alpha = 0.1f) ?: c.card).border(if (tone != null) 1.5.dp else 1.dp, tone ?: c.line, shape)
-            .selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onClick).defaultMinSize(minHeight = 52.dp).padding(horizontal = Space.m, vertical = 10.dp)
-            .semantics { stateDescription = state },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(30.dp).clip(CircleShape).background(tone ?: c.line), contentAlignment = Alignment.Center) {
-            Text(letter, style = MaterialTheme.typography.labelLarge, color = if (tone != null) Color.White else c.text)
-        }
-        Spacer(Modifier.width(Space.m))
-        MathText(text, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = c.text)
-        if (reveal && (correct || selected)) {
-            Icon(if (correct) Icons.Rounded.CheckCircle else Icons.Rounded.Cancel, null, tint = tone ?: c.text, modifier = Modifier.size(22.dp))
-        }
-    }
-}
-
-@Composable
-fun Verdict(right: Boolean) {
-    val color = if (right) Yks.c.success else Yks.c.error
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(color.copy(alpha = 0.12f)).padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
-        Icon(if (right) Icons.Rounded.CheckCircle else Icons.Rounded.Cancel, null, tint = color)
-        Spacer(Modifier.width(Space.s))
-        Text(if (right) "Doğru cevap" else "Yanlış cevap • Yanlışlar defterine eklendi", style = MaterialTheme.typography.titleMedium, color = color)
-    }
-}
-
-@Composable
-fun SolutionCard(q: QuestionFull, onTopic: (() -> Unit)?) {
-    val correct = q.options.first { it.isCorrect }
-    YCard {
-        Text("Doğru cevap", style = MaterialTheme.typography.labelMedium, color = Yks.c.muted)
-        MathText(correct.text, style = MaterialTheme.typography.titleMedium, color = Yks.c.success)
-        Spacer(Modifier.height(Space.s))
-        Text("Açıklama", style = MaterialTheme.typography.labelMedium, color = Yks.c.muted)
-        MathText(q.q.explanation, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-        val steps = q.q.steps.split("\n").filter { it.isNotBlank() }
-        if (steps.isNotEmpty()) {
-            Spacer(Modifier.height(Space.s))
-            Text("Adım adım çözüm", style = MaterialTheme.typography.labelMedium, color = Yks.c.muted)
-            steps.forEachIndexed { i, s ->
-                Row(Modifier.padding(top = 6.dp)) {
-                    Text("${i + 1}.", style = MaterialTheme.typography.bodyLarge, color = Yks.c.accent)
-                    Spacer(Modifier.width(Space.s))
-                    MathText(s, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-                }
-            }
-        }
-        if (onTopic != null) { Spacer(Modifier.height(Space.s)); TextButton(onTopic) { Text("İlgili konuya git") } }
-    }
-}
-
-@Composable
-fun ReasonPicker(questionId: String) {
-    val r = repo()
-    val scope = app.ykspusula.ui.rememberUiScope()
-    var reason by remember(questionId) { mutableStateOf("") }
-    YCard {
-        Text("Neden yanlış oldu?", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-        Spacer(Modifier.height(Space.s))
-        PillGroup(WRONG_REASONS.map { it to it }, reason) { v ->
-            reason = v
-            scope.launch { val w = r.user.wrongOf(questionId); if (w != null) r.updateWrong(questionId, v, w.note) }
-        }
-    }
-}
-
-/* ---------- YANLIŞLAR DEFTERİ ---------- */
+/* ---------- YANLIŞ DEFTERİ ---------- */
 
 @Composable
 fun WrongsScreen() {
     val r = repo()
     val nav = LocalNav.current
     val rows by r.user.wrongRows().collectAsStateWithLifecycle(null)
+    val reasons by r.user.wrongReasons().collectAsStateWithLifecycle(emptyList())
     val now = remember { System.currentTimeMillis() }
     var filter by rememberSaveable { mutableStateOf("OPEN") }
-    Screen("Yanlışlar defteri", { nav.popBackStack() }) {
+    Screen("Yanlış defterim", { nav.popBackStack() }, actions = {
+        IconButton({ nav.navigate("wrongEdit/new") }) { Icon(Icons.Rounded.Add, "Yanlış ekle") }
+    }) {
         val all = rows ?: return@Screen
         val due = all.count { !it.w.resolved && it.w.nextReviewAt <= now }
         val shown = when (filter) { "DUE" -> all.filter { !it.w.resolved && it.w.nextReviewAt <= now }; "DONE" -> all.filter { it.w.resolved }; else -> all.filter { !it.w.resolved } }
             .sortedWith(compareByDescending<WrongRow> { it.w.wrongCount }.thenBy { it.w.nextReviewAt })
-        LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.m)) {
+        LazyColumn(contentPadding = PaddingValues(Space.l), verticalArrangement = Arrangement.spacedBy(Space.s + 2.dp)) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
-                    MainButton(if (due > 0) "$due yanlışı tekrar et" else "Tekrar zamanı gelen yanlış yok", Modifier.fillMaxWidth(), enabled = due > 0, icon = Icons.Rounded.Replay) { nav.navigate("solve?mode=REVIEW") }
-                    PillGroup(listOf("OPEN" to "Açık", "DUE" to "Tekrarı gelen", "DONE" to "Çözülen"), filter) { filter = it }
+                    MainButton(if (due > 0) "$due yanlışı tekrar et" else "Tekrar zamanı gelen yanlış yok", Modifier.fillMaxWidth(), enabled = due > 0, icon = Icons.Rounded.Replay) { nav.navigate("wrongReview") }
+                    PillGroup(listOf("OPEN" to "Açık", "DUE" to "Tekrarı gelen", "DONE" to "Tamamlanan"), filter) { filter = it }
+                    if (reasons.isNotEmpty()) {
+                        val total = reasons.sumOf { it.value }
+                        Muted("En sık neden: ${reasons.first().name} (%${Scoring.percent(reasons.first().value, total)})")
+                    }
                 }
             }
-            if (shown.isEmpty()) item { Empty(Icons.Rounded.CheckCircle, "Burada kayıt yok", "Yanlış yaptığın sorular otomatik olarak buraya eklenir.") }
-            items(shown, key = { it.w.questionId }) { row ->
-                YCard(onClick = { nav.navigate("wrong/${row.w.questionId}") }, padding = Space.m) {
+            if (shown.isEmpty()) item { EmptyStateView(Icons.Rounded.CheckCircle, "Burada kayıt yok", "Kitabında, PDF'inde veya denemende yaptığın yanlışları ekleyebilirsin.", "Yanlış ekle") { nav.navigate("wrongEdit/new") } }
+            items(shown, key = { it.w.id }) { row ->
+                YCard(onClick = { nav.navigate("wrong/${row.w.id}") }, padding = Space.m) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("${row.subjectName} • ${row.topicName}", style = MaterialTheme.typography.labelMedium, color = Yks.c.accent, modifier = Modifier.weight(1f), maxLines = 1)
+                        Text(listOfNotNull(row.subjectName, row.topicName).joinToString(" • ").ifBlank { "Ders seçilmedi" }, style = MaterialTheme.typography.labelMedium, color = Yks.c.accentLight, modifier = Modifier.weight(1f), maxLines = 1)
                         if (row.w.wrongCount > 1) Tag("${row.w.wrongCount} kez", Yks.c.error)
                     }
                     Spacer(Modifier.height(4.dp))
-                    Text(row.stem.replace(Regex("[\\\\{}^_]"), " "), style = MaterialTheme.typography.bodyMedium, color = Yks.c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    val title = row.w.questionText.ifBlank { listOfNotNull(row.w.sourceLabel.ifBlank { null }, row.w.page?.let { "s. $it" }, row.w.questionNo.ifBlank { null }?.let { "Soru $it" }).joinToString(" • ").ifBlank { "Yanlış kaydı" } }
+                    Text(title.replace(Regex("[\\\\{}^_]"), " "), style = MaterialTheme.typography.bodyMedium, color = Yks.c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.height(4.dp))
                     Muted("Tekrar: " + shortDate(row.w.nextReviewAt) + if (row.w.reason.isNotBlank()) " • ${row.w.reason}" else "")
                 }
@@ -594,49 +478,184 @@ fun WrongsScreen() {
     }
 }
 
+/** Seçilen fotoğraf küçültülüp uygulamanın özel klasörüne yazılır; internete gönderilmez. */
+private suspend fun savePhoto(c: android.content.Context, uri: Uri, target: File): Boolean = withContext(Dispatchers.IO) {
+    try {
+        val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        c.contentResolver.openInputStream(uri)!!.use { BitmapFactory.decodeStream(it, null, o) }
+        var sample = 1
+        while (o.outWidth / sample > 1600 || o.outHeight / sample > 1600) sample *= 2
+        val bmp = c.contentResolver.openInputStream(uri)!!.use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) } ?: return@withContext false
+        target.outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 85, it) }
+        bmp.recycle()
+        true
+    } catch (e: Exception) { false }
+}
+
 @Composable
-fun WrongDetailScreen(id: String) {
+private fun PhotoView(file: File, modifier: Modifier = Modifier) {
+    var bmp by remember(file.path) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(file.path) { bmp = withContext(Dispatchers.IO) { BitmapFactory.decodeFile(file.path) } }
+    bmp?.let { Image(it.asImageBitmap(), "Soru fotoğrafı", modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.FillWidth) }
+}
+
+@Composable
+fun WrongEditScreen(id: String, topicArg: String, subjectArg: String, sourceArg: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = app.ykspusula.ui.rememberUiScope()
-    var w by remember { mutableStateOf<WrongQuestion?>(null) }
-    var q by remember { mutableStateOf<QuestionFull?>(null) }
-    var note by remember { mutableStateOf("") }
-    var reason by remember { mutableStateOf("") }
-    var ask by remember { mutableStateOf(false) }
+    val scope = rememberUiScope()
+    val context = LocalContext.current
+    val profile by r.user.profile().collectAsStateWithLifecycle(null)
+    val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
+    val sources by r.user.sources().collectAsStateWithLifecycle(emptyList())
+    var existing by remember { mutableStateOf<WrongEntry?>(null) }
+    var subject by rememberSaveable { mutableStateOf(subjectArg) }
+    var topic by rememberSaveable { mutableStateOf(topicArg) }
+    var source by rememberSaveable { mutableStateOf(sourceArg) }
+    var label by rememberSaveable { mutableStateOf("") }
+    var page by rememberSaveable { mutableStateOf("") }
+    var number by rememberSaveable { mutableStateOf("") }
+    var reason by rememberSaveable { mutableStateOf("") }
+    var note by rememberSaveable { mutableStateOf("") }
+    var photo by rememberSaveable { mutableStateOf<String?>(null) }
+    var review by remember { mutableStateOf(today().plusDays(1)) }
+    var error by remember { mutableStateOf("") }
     LaunchedEffect(id) {
-        w = r.user.wrongOf(id); q = r.content.full(id)
-        note = w?.note.orEmpty(); reason = w?.reason.orEmpty()
-    }
-    Screen("Yanlış ayrıntısı", { nav.popBackStack() }, actions = {
-        IconButton({ ask = true }) { Icon(Icons.Rounded.DeleteOutline, "Defterden sil") }
-    }) {
-        val wq = w
-        val qq = q
-        if (wq == null || qq == null) return@Screen
-        ScrollColumn {
-            MathText(qq.q.stem, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-            qq.q.figure?.let { FigureView(it, Modifier.widthIn(max = 420.dp), color = Yks.c.text) }
-            YCard {
-                Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.Cancel, null, tint = Yks.c.error, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Muted("Verdiğin cevap") }
-                MathText(wq.givenAnswer, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
-                Spacer(Modifier.height(Space.s))
-                Muted("Yanlış tarihi: ${shortDate(wq.lastWrongAt)} • Tekrar: ${shortDate(wq.nextReviewAt)} • ${wq.wrongCount} kez")
-            }
-            SolutionCard(qq) { nav.navigate("topic/${qq.q.topicId}") }
-            YCard {
-                Text("Yanlış nedeni", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-                Spacer(Modifier.height(Space.s))
-                PillGroup(WRONG_REASONS.map { it to it }, reason) { reason = it }
-                Spacer(Modifier.height(Space.m))
-                Field(note, { note = it }, "Kişisel not", singleLine = false, minLines = 3)
-                Spacer(Modifier.height(Space.s))
-                MainButton("Kaydet", Modifier.fillMaxWidth()) { scope.launch { r.updateWrong(id, reason, note); nav.popBackStack() } }
-            }
+        if (id != "new") r.user.wrong(id)?.let { w ->
+            existing = w; subject = w.subjectId.orEmpty(); topic = w.topicId.orEmpty(); source = w.sourceId.orEmpty(); label = w.sourceLabel
+            page = w.page?.toString().orEmpty(); number = w.questionNo; reason = w.reason; note = w.note; photo = w.photoFile; review = dateOf(w.nextReviewAt)
         }
-        if (ask) ConfirmDialog("Defterden silinsin mi?", "Bu soru yanlışlar defterinden çıkarılır. İstatistiklerin değişmez.", "Sil", true, { ask = false }) {
-            scope.launch { r.user.deleteWrong(id); nav.popBackStack() }
+    }
+    val rows by remember(subject) { if (subject.isEmpty()) kotlinx.coroutines.flow.flowOf(emptyList()) else r.content.topicRows(subject) }.collectAsStateWithLifecycle(emptyList())
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) scope.launch {
+            val name = newId() + ".jpg"
+            if (savePhoto(context, uri, r.photoFile(name))) { photo?.let { old -> r.photoFile(old).delete() }; photo = name; error = "" } else error = "Fotoğraf eklenemedi."
+        }
+    }
+    Screen(if (id == "new") "Yanlış ekle" else "Yanlışı düzenle", { nav.popBackStack() }) {
+        ScrollColumn {
+            Muted("Ders")
+            Dropdown(relevant(subjects, profile).map { it.id to "${it.exam} ${it.name}" }, subject, "Ders seçilmedi") { subject = it; topic = "" }
+            if (subject.isNotEmpty()) { Muted("Konu"); Dropdown(rows.map { it.id to it.name }, topic, "Konu seçilmedi") { topic = it } }
+            Muted("Kaynak")
+            Dropdown(sources.map { it.id to it.name }, source, "Kaynak seçilmedi") { source = it }
+            if (source.isEmpty()) Field(label, { label = it }, "Kaynak adı (kitap, PDF veya deneme)")
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                NumberField(page, { page = it }, "Sayfa", Modifier.weight(1f))
+                Field(number, { number = it.take(8) }, "Soru no", Modifier.weight(1f))
+            }
+            Muted("Yanlış nedeni")
+            PillGroup(WRONG_REASONS.map { it to it }, reason) { reason = it }
+            Field(note, { note = it }, "Kişisel açıklama", singleLine = false, minLines = 3)
+            photo?.let { PhotoView(r.photoFile(it)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                SoftButton(if (photo == null) "Fotoğraf ekle" else "Fotoğrafı değiştir", Modifier.weight(1f), icon = Icons.Rounded.AddPhotoAlternate) { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                if (photo != null) SoftButton("Kaldır", Modifier.weight(1f), color = Yks.c.error) { photo?.let { r.photoFile(it).delete() }; photo = null }
+            }
+            if (error.isNotEmpty()) Text(error, color = Yks.c.error)
+            DateField(review, "Tekrar tarihi") { review = it }
+            MainButton("Kaydet", Modifier.fillMaxWidth(), enabled = subject.isNotEmpty() || label.isNotBlank() || source.isNotEmpty() || photo != null) {
+                val now = System.currentTimeMillis()
+                val srcName = sources.firstOrNull { it.id == source }?.name ?: label.trim()
+                scope.launch {
+                    val e = existing
+                    val at = startOf(review) + 8 * 3_600_000L
+                    if (e == null) r.saveWrong(r.newWrong(subject.ifEmpty { null }, topic.ifEmpty { null }, source.ifEmpty { null }, srcName, page.toIntOrNull(), number, reason, note.trim(), photo, at, now))
+                    else r.saveWrong(e.copy(subjectId = subject.ifEmpty { null }, topicId = topic.ifEmpty { null }, sourceId = source.ifEmpty { null }, sourceLabel = srcName, page = page.toIntOrNull(), questionNo = number, reason = reason, note = note.trim(), photoFile = photo, nextReviewAt = at, updatedAt = now))
+                    nav.popBackStack()
+                }
+            }
         }
     }
 }
 
+@Composable
+private fun WrongBody(w: WrongEntry, subject: String?, topic: String?) {
+    val r = repo()
+    if (w.questionText.isNotBlank()) MathText(w.questionText, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
+    w.photoFile?.let { PhotoView(r.photoFile(it)) }
+    YCard {
+        listOfNotNull(subject, topic).joinToString(" • ").takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = Yks.c.accentLight) }
+        if (w.sourceLabel.isNotBlank()) KeyValue("Kaynak", w.sourceLabel)
+        w.page?.let { KeyValue("Sayfa", "$it") }
+        if (w.questionNo.isNotBlank()) KeyValue("Soru no", w.questionNo)
+        if (w.reason.isNotBlank()) KeyValue("Neden", w.reason)
+        if (w.givenAnswer.isNotBlank()) KeyValue("Verdiğin cevap", w.givenAnswer)
+        if (w.correctAnswer.isNotBlank()) KeyValue("Doğru cevap", w.correctAnswer, Yks.c.success)
+        KeyValue("İlk kayıt", shortDate(w.firstWrongAt))
+        KeyValue("Sonraki tekrar", shortDate(w.nextReviewAt))
+    }
+    if (w.note.isNotBlank()) YCard { Muted("Açıklaman"); Text(w.note, color = Yks.c.text) }
+}
+
+@Composable
+fun WrongDetailScreen(id: String) {
+    val r = repo()
+    val nav = LocalNav.current
+    val scope = rememberUiScope()
+    val rows by r.user.wrongRows().collectAsStateWithLifecycle(emptyList())
+    val history by remember(id) { r.user.reviewsOf(id) }.collectAsStateWithLifecycle(emptyList())
+    var ask by remember { mutableStateOf(false) }
+    val row = rows.firstOrNull { it.w.id == id }
+    Screen("Yanlış ayrıntısı", { nav.popBackStack() }, actions = {
+        IconButton({ nav.navigate("wrongEdit/$id") }) { Icon(Icons.Rounded.Edit, "Düzenle") }
+        IconButton({ ask = true }) { Icon(Icons.Rounded.DeleteOutline, "Defterden sil") }
+    }) {
+        val w = row?.w ?: return@Screen
+        ScrollColumn {
+            WrongBody(w, row.subjectName, row.topicName)
+            if (!w.resolved) RatingButtons { v -> scope.launch { r.reviewWrong(id, v) } }
+            if (history.isNotEmpty()) {
+                Section("Tekrar geçmişi")
+                GroupCard {
+                    history.take(12).forEachIndexed { i, h ->
+                        if (i > 0) Line()
+                        Row(Modifier.fillMaxWidth().padding(Space.m)) {
+                            Text(shortDate(h.at), style = MaterialTheme.typography.bodyMedium, color = Yks.c.text, modifier = Modifier.weight(1f))
+                            Muted(listOf("Hatırlayamadım", "Kısmen", "Hatırladım")[h.result.coerceIn(0, 2)])
+                        }
+                    }
+                }
+            }
+            w.topicId?.let { t -> SoftButton("İlgili konuya git", Modifier.fillMaxWidth()) { nav.navigate("topic/$t") } }
+        }
+        if (ask) ConfirmDialog("Defterden silinsin mi?", "Bu kayıt ve fotoğrafı silinir. İstatistiklerin değişmez.", "Sil", true, { ask = false }) {
+            scope.launch { r.deleteWrong(id); nav.popBackStack() }
+        }
+    }
+}
+
+@Composable
+private fun RatingButtons(onRate: (Int) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+        listOf(Triple("Hatırlayamadım", 0, Yks.c.error), Triple("Kısmen", 1, Yks.c.warning), Triple("Hatırladım", 2, Yks.c.success)).forEach { (t, v, col) ->
+            SoftButton(t, Modifier.weight(1f), color = col) { onRate(v) }
+        }
+    }
+}
+
+/** Tekrar zamanı gelen yanlışlar sırayla gösterilir. */
+@Composable
+fun WrongReviewScreen() {
+    val r = repo()
+    val nav = LocalNav.current
+    val scope = rememberUiScope()
+    var ids by remember { mutableStateOf<List<String>?>(null) }
+    var index by rememberSaveable { mutableIntStateOf(0) }
+    val rows by r.user.wrongRows().collectAsStateWithLifecycle(emptyList())
+    LaunchedEffect(Unit) { ids = r.user.wrongDueIds(System.currentTimeMillis()) }
+    Screen("Yanlış tekrarı", { nav.popBackStack() }) {
+        val list = ids ?: return@Screen
+        val id = list.getOrNull(index)
+        if (id == null) { Empty(Icons.Rounded.CheckCircle, if (list.isEmpty()) "Tekrar edilecek yanlış yok" else "Tekrar bitti", if (list.isEmpty()) "Tekrar zamanı gelen yanlışların burada görünür." else "${list.size} kayıt değerlendirildi.", "Kapat") { nav.popBackStack() }; return@Screen }
+        val row = rows.firstOrNull { it.w.id == id } ?: return@Screen
+        ScrollColumn {
+            Muted("${index + 1} / ${list.size}")
+            ProgressBar((index + 1f) / list.size, height = 4.dp)
+            WrongBody(row.w, row.subjectName, row.topicName)
+            Text("Bu soruyu yeniden çözdün mü? Nasıl geçti?", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+            RatingButtons { v -> scope.launch { r.reviewWrong(id, v) }; index++ }
+        }
+    }
+}

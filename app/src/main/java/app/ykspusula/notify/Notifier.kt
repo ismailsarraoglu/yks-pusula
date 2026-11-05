@@ -16,7 +16,10 @@ import androidx.core.content.ContextCompat
 import app.ykspusula.MainActivity
 import app.ykspusula.R
 import app.ykspusula.YksApp
+import app.ykspusula.data.Keys
 import app.ykspusula.data.Reminder
+import app.ykspusula.data.settingsStore
+import app.ykspusula.data.startOf
 import app.ykspusula.data.today
 import app.ykspusula.domain.ReminderTime
 import kotlinx.coroutines.flow.first
@@ -27,12 +30,14 @@ import java.time.temporal.ChronoUnit
 data class ReminderType(val type: String, val title: String, val detail: String, val weekly: Boolean)
 
 val REMINDER_TYPES = listOf(
-    ReminderType("DAILY", "Günlük çalışma saati", "Her gün seçtiğin saatte hatırlatır.", false),
-    ReminderType("REVIEW", "Konu tekrar zamanı", "Yalnızca tekrarı gelmiş konu veya yanlış varsa gönderilir.", false),
-    ReminderType("EXAM", "Deneme günü", "Her hafta seçtiğin gün hatırlatır.", true),
-    ReminderType("COUNTDOWN", "Sınava kalan gün", "Her hafta seçtiğin gün kalan süreyi bildirir.", true),
+    ReminderType("DAILY", "Çalışma hatırlatması", "Seçtiğin saatte günün programını hatırlatır.", false),
+    ReminderType("REVIEW", "Tekrar hatırlatması", "Yalnızca tekrarı gelmiş konu veya yanlış varsa gönderilir.", false),
+    ReminderType("EXAM", "Deneme hatırlatması", "Seçtiğin gün deneme çözmeni hatırlatır.", true),
+    ReminderType("COUNTDOWN", "Sınava kalan gün", "Seçtiğin gün kalan süreyi bildirir.", true),
     ReminderType("CARDS", "Kart tekrarı", "Yalnızca tekrarı gelmiş kart varsa gönderilir.", false),
-    ReminderType("WEEKLY", "Haftalık değerlendirme", "Haftanın özetine bakman için hatırlatır.", true),
+    ReminderType("WEEKLY", "Haftalık rapor", "Haftanın özeti hazır olduğunda hatırlatır.", true),
+    ReminderType("GOAL", "Günlük hedef", "Günlük hedefin tamamlanmadıysa akşam nazikçe hatırlatır.", false),
+    ReminderType("MOTIVATION", "Günün sözü", "Günde en fazla bir kez kısa bir söz gönderir.", false),
 )
 
 object Notifier {
@@ -67,16 +72,17 @@ object Notifier {
             c.getSystemService(AlarmManager::class.java).cancel(pi)
             return
         }
-        val weekly = REMINDER_TYPES.first { it.type == r.type }.weekly
-        alarm(c, ReminderTime.next(System.currentTimeMillis(), r.hour, r.minute, if (weekly) r.dayOfWeek else null), pi)
+        val def = REMINDER_TYPES.firstOrNull { it.type == r.type } ?: return
+        val frequency = r.frequency.ifBlank { if (def.weekly) "WEEKLY" else "DAILY" }
+        alarm(c, ReminderTime.nextFor(System.currentTimeMillis(), r.hour, r.minute, frequency, r.dayOfWeek), pi)
     }
 
     fun schedulePomodoro(c: Context, at: Long) = alarm(c, at, pending(c, "POMODORO"))
     fun cancelPomodoro(c: Context) = c.getSystemService(AlarmManager::class.java).cancel(pending(c, "POMODORO"))
 
-    fun show(c: Context, id: Int, title: String, text: String, channel: String = CH_REMINDER) {
+    fun show(c: Context, id: Int, title: String, text: String, channel: String = CH_REMINDER, route: String = "home") {
         if (!canNotify(c)) return
-        val open = PendingIntent.getActivity(c, 0, Intent(c, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        val open = PendingIntent.getActivity(c, id, Intent(c, MainActivity::class.java).putExtra("route", route).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(c, channel)
             .setSmallIcon(R.drawable.ic_notify).setContentTitle(title).setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -99,13 +105,13 @@ object Notifier {
                 }
                 return
             }
-            "DAILY" -> show(c, code, "Çalışma zamanı", "Bugünkü programına göz atabilirsin.")
+            "DAILY" -> show(c, code, "Çalışma zamanı", "Bugünkü rotana göz atabilirsin.", route = "coach")
             "REVIEW" -> {
                 val wrongs = repo.user.wrongDueNow(now)
                 val topics = repo.user.topicsDue(now).first()
-                if (wrongs + topics > 0) show(c, code, "Tekrar zamanı", "Tekrarı gelen $topics konu ve $wrongs yanlış var.")
+                if (wrongs + topics > 0) show(c, code, "Tekrar zamanı", "Tekrarı gelen $topics konu ve $wrongs yanlış var.", route = "wrongs")
             }
-            "EXAM" -> show(c, code, "Deneme günü", "Bugün için planladığın denemeyi çözebilirsin.")
+            "EXAM" -> show(c, code, "Deneme zamanı", "Uygunsan bugün bir deneme çözebilirsin.", route = "exams")
             "COUNTDOWN" -> {
                 val date = repo.user.examConfig("TYT")?.examDate ?: return
                 val left = ChronoUnit.DAYS.between(today(), LocalDate.parse(date))
@@ -113,9 +119,25 @@ object Notifier {
             }
             "CARDS" -> {
                 val n = repo.user.cardsDueCountNow(now)
-                if (n > 0) show(c, code, "Kart tekrarı", "Tekrarı gelen $n kartın var.")
+                if (n > 0) show(c, code, "Kart tekrarı", "Tekrarı gelen $n kartın var.", route = "cards")
             }
-            "WEEKLY" -> show(c, code, "Haftalık değerlendirme", "Bu haftanın istatistiklerine bakabilirsin.")
+            "WEEKLY" -> show(c, code, "Haftalık raporun hazır", "Bu haftanın özetine bakabilirsin.", route = "reports")
+            "GOAL" -> {
+                val d = today()
+                val goal = repo.user.profileNow()?.dailyMinutes ?: 0
+                val done = repo.user.minutesBetweenNow(startOf(d), startOf(d.plusDays(1)))
+                val rest = d.toString() in repo.user.restDaysNow().map { it.date }
+                if (goal > 0 && done < goal && !rest) show(c, code, "Günlük hedefin", "Bugün $done / $goal dakika. Kısa bir çalışma bile değerli.", route = "coach")
+            }
+            "MOTIVATION" -> {
+                val day = today().toString()
+                val prefs = c.settingsStore.data.first()
+                if (prefs[Keys.quoteNotifiedDay] != day) {
+                    val q = repo.quoteOfDay()
+                    show(c, code, "Günün sözü", q.text, route = "motivation")
+                    repo.updateSettings { it[Keys.quoteNotifiedDay] = day }
+                }
+            }
         }
         repo.user.remindersNow().firstOrNull { it.type == type }?.let { schedule(c, it) }
     }

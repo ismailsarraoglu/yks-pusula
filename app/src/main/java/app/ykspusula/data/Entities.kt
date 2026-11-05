@@ -5,7 +5,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import androidx.room.Relation
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
@@ -31,6 +30,10 @@ data class UserProfile(
     val weakSubjects: String = "",
     val startHour: Int = 9,
     val onboarded: Boolean = false,
+    val maxDailyMinutes: Int = 360,
+    val breakMinutes: Int = 10,
+    val endHour: Int = 22,
+    val priorityTopics: String = "",
 )
 
 @Serializable
@@ -48,6 +51,13 @@ data class ExamConfiguration(
     val applicationEnd: String = "",
     val resultDate: String = "",
     val sourceNote: String = "",
+    val examYear: Int = 2027,
+    val curriculum: String = "",
+    val sourceUrl: String = "",
+    val lastUpdated: String = "",
+    val obpMultiplier: Double = 5.0,
+    val obpCoefficient: Double = 0.12,
+    val obpCoefficientPlaced: Double = 0.06,
 )
 
 /* ---------- BAŞLANGIÇ İÇERİĞİ ---------- */
@@ -86,47 +96,6 @@ data class Topic(
     val sortOrder: Int,
     val packId: String,
 )
-
-@Entity(
-    foreignKeys = [ForeignKey(Topic::class, ["id"], ["topicId"], ForeignKey.CASCADE)],
-    indices = [Index("topicId"), Index("subjectId"), Index("exam"), Index("difficulty"), Index(value = ["contentHash"], unique = true)],
-)
-data class Question(
-    @PrimaryKey val id: String,
-    val exam: String,
-    val subjectId: String,
-    val topicId: String,
-    val difficulty: Int,
-    val stem: String,
-    val figure: String?,
-    val explanation: String,
-    val steps: String,
-    val examYear: Int,
-    val curriculum: String,
-    val source: String,
-    val license: String,
-    val generated: Boolean,
-    val contentHash: String,
-    val packId: String,
-)
-
-@Entity(
-    primaryKeys = ["questionId", "label"],
-    foreignKeys = [ForeignKey(Question::class, ["id"], ["questionId"], ForeignKey.CASCADE)],
-)
-data class AnswerOption(
-    val questionId: String,
-    val label: String,
-    val text: String,
-    val isCorrect: Boolean,
-)
-
-data class QuestionFull(
-    @Embedded val q: Question,
-    @Relation(parentColumn = "id", entityColumn = "questionId") val options: List<AnswerOption>,
-) {
-    val correctLabel: String get() = options.first { it.isCorrect }.label
-}
 
 @Entity(indices = [Index("subjectId")])
 data class Formula(
@@ -168,30 +137,56 @@ data class ImportedContentPack(
 
 /* ---------- ÖĞRENCİ VERİLERİ (yedeğe girer) ---------- */
 
+/** Öğrencinin kendi kaynağından çözdüğü soruların kaydı. İstatistiklerin tek kaynağıdır. */
 @Serializable
-@Entity(indices = [Index("questionId"), Index("topicId"), Index("subjectId"), Index("answeredAt")])
-data class QuestionAttempt(
-    @PrimaryKey val id: String = newId(),
-    val questionId: String,
-    val topicId: String,
-    val subjectId: String,
-    val selected: String?,
-    val isCorrect: Boolean,
-    val answeredAt: Long,
-    val source: String,
-    val mockExamId: String? = null,
+@Entity(
+    foreignKeys = [ForeignKey(StudySource::class, ["id"], ["sourceId"], ForeignKey.SET_NULL)],
+    indices = [Index("at"), Index("topicId"), Index("subjectId"), Index("sourceId"), Index("mockExamId"), Index("sessionId")],
 )
+data class PracticeLog(
+    @PrimaryKey val id: String = newId(),
+    val at: Long,
+    val subjectId: String? = null,
+    val topicId: String? = null,
+    val sourceId: String? = null,
+    val sessionId: String? = null,
+    val mockExamId: String? = null,
+    val pageFrom: Int? = null,
+    val pageTo: Int? = null,
+    val correct: Int = 0,
+    val wrong: Int = 0,
+    val blank: Int = 0,
+    val origin: String = "MANUAL",
+    val note: String = "",
+    val createdAt: Long = at,
+    val updatedAt: Long = at,
+) {
+    val solved: Int get() = correct + wrong + blank
+}
 
+/** Fiziksel kitap, PDF, video veya öğretmen dokümanı gibi öğrencinin kendi kaynağı. */
 @Serializable
-@Entity(primaryKeys = ["mockExamId", "questionId"], indices = [Index("mockExamId")])
-data class AnswerRecord(
-    val mockExamId: String,
-    val questionId: String,
-    val orderIndex: Int,
-    val sectionName: String,
-    val selected: String? = null,
-    val flagged: Boolean = false,
-    val answeredAt: Long? = null,
+@Entity(indices = [Index("subjectId"), Index("topicId"), Index("libraryFileId")])
+data class StudySource(
+    @PrimaryKey val id: String = newId(),
+    val name: String,
+    val publisher: String = "",
+    val type: String = "SORU_BANKASI",
+    val subjectId: String? = null,
+    val topicId: String? = null,
+    val description: String = "",
+    val totalPages: Int = 0,
+    val startDate: String = "",
+    val endDate: String = "",
+    val lastPage: Int = 0,
+    val pagesDone: Int = 0,
+    val favorite: Boolean = false,
+    val archived: Boolean = false,
+    val note: String = "",
+    val libraryFileId: String? = null,
+    val lastUsedAt: Long = 0,
+    val createdAt: Long,
+    val updatedAt: Long,
 )
 
 @Serializable
@@ -220,6 +215,13 @@ data class StudyTask(
     val questionGoal: Int = 0,
     val done: Boolean = false,
     val doneAt: Long? = null,
+    val reason: String = "",
+    val priority: Int = 2,
+    val sourceId: String? = null,
+    val originalDate: String = "",
+    val movedCount: Int = 0,
+    val skipped: Boolean = false,
+    val updatedAt: Long = 0,
 )
 
 @Serializable
@@ -233,6 +235,9 @@ data class StudySession(
     val minutes: Int,
     val kind: String = "POMODORO",
     val note: String = "",
+    val sourceId: String? = null,
+    val plannedMinutes: Int = 0,
+    val activity: String = "",
 )
 
 @Serializable
@@ -251,6 +256,11 @@ data class MockExam(
     val examDate: String = "",
     val spentMinutes: Int = 0,
     val note: String = "",
+    val pausedAt: Long = 0,
+    val pausedTotalMs: Long = 0,
+    val hardTopics: String = "",
+    val subjectId: String? = null,
+    val updatedAt: Long = 0,
 )
 
 @Serializable
@@ -276,24 +286,120 @@ data class TopicProgress(
     val lastStudiedAt: Long? = null,
     val nextReviewAt: Long? = null,
     val completedAt: Long? = null,
+    val reviewCount: Int = 0,
+    val lastReviewAt: Long? = null,
+    val checks: String = "",
 )
 
+/** Öğrencinin kendi kaynağında, PDF'inde veya denemesinde yaptığı yanlışın kaydı. */
 @Serializable
-@Entity(indices = [Index("nextReviewAt")])
-data class WrongQuestion(
-    @PrimaryKey val questionId: String,
-    val topicId: String,
-    val subjectId: String,
-    val givenAnswer: String,
-    val correctAnswer: String,
+@Entity(
+    foreignKeys = [ForeignKey(StudySource::class, ["id"], ["sourceId"], ForeignKey.SET_NULL)],
+    indices = [Index("nextReviewAt"), Index("topicId"), Index("subjectId"), Index("sourceId")],
+)
+data class WrongEntry(
+    @PrimaryKey val id: String = newId(),
+    val subjectId: String? = null,
+    val topicId: String? = null,
+    val sourceId: String? = null,
+    val sourceLabel: String = "",
+    val page: Int? = null,
+    val questionNo: String = "",
+    val reason: String = "",
+    val note: String = "",
+    val photoFile: String? = null,
+    val questionText: String = "",
+    val givenAnswer: String = "",
+    val correctAnswer: String = "",
     val firstWrongAt: Long,
     val lastWrongAt: Long,
     val nextReviewAt: Long,
     val stage: Int = 0,
     val wrongCount: Int = 1,
-    val reason: String = "",
-    val note: String = "",
     val resolved: Boolean = false,
+    val origin: String = "MANUAL",
+    val updatedAt: Long = firstWrongAt,
+)
+
+/** Tekrar geçmişi. Sonuç: 0 hatırlayamadım, 1 kısmen, 2 hatırladım. */
+@Serializable
+@Entity(
+    foreignKeys = [ForeignKey(WrongEntry::class, ["id"], ["wrongId"], ForeignKey.CASCADE)],
+    indices = [Index("wrongId"), Index("at")],
+)
+data class WrongReview(
+    @PrimaryKey val id: String = newId(),
+    val wrongId: String,
+    val at: Long,
+    val result: Int,
+    val stageAfter: Int,
+)
+
+/** Pusula Koç'un bir güne ait önerisi. Öğrencinin kararı kalıcıdır. */
+@Serializable
+@Entity(indices = [Index("date")])
+data class RouteItem(
+    @PrimaryKey val id: String = newId(),
+    val date: String,
+    val orderIndex: Int,
+    val kind: String,
+    val title: String,
+    val subjectId: String? = null,
+    val topicId: String? = null,
+    val sourceId: String? = null,
+    val minutes: Int,
+    val priority: Int,
+    val reason: String,
+    val status: String = "SUGGESTED",
+    val movedTo: String = "",
+    val createdAt: Long,
+    val updatedAt: Long,
+)
+
+/** Plan değişmeden önceki görevlerin kopyası: eski plan kaybolmaz. */
+@Serializable
+@Entity
+data class PlanRevision(
+    @PrimaryKey val id: String = newId(),
+    val createdAt: Long,
+    val summary: String,
+    val snapshotJson: String,
+)
+
+@Serializable
+@Entity(indices = [Index("cardId"), Index("at")])
+data class CardReview(
+    @PrimaryKey val id: String = newId(),
+    val cardId: String,
+    val at: Long,
+    val rating: Int,
+)
+
+/** Formül veya kart gibi yerleşik içeriğe eklenen kişisel not. */
+@Serializable
+@Entity(primaryKeys = ["kind", "refId"])
+data class ItemNote(
+    val kind: String,
+    val refId: String,
+    val text: String,
+    val updatedAt: Long,
+)
+
+/** Testlere göre hedef net. */
+@Serializable
+@Entity(primaryKeys = ["exam", "section"])
+data class NetGoal(
+    val exam: String,
+    val section: String,
+    val target: Double,
+)
+
+/** Öğrencinin planlı dinlenme günü: çalışma serisini bozmaz. */
+@Serializable
+@Entity
+data class RestDay(
+    @PrimaryKey val date: String,
+    val createdAt: Long,
 )
 
 @Serializable
@@ -325,6 +431,7 @@ data class UserNote(
     val createdAt: Long,
     val updatedAt: Long,
     val favorite: Boolean = false,
+    val tags: String = "",
 )
 
 @Serializable
@@ -343,6 +450,7 @@ data class Reminder(
     val hour: Int = 20,
     val minute: Int = 0,
     val dayOfWeek: Int = 7,
+    val frequency: String = "",
 )
 
 @Serializable
@@ -368,6 +476,11 @@ data class TargetDepartment(
     val targetScore: Double? = null,
     val note: String = "",
     val favorite: Boolean = false,
+    val targetTytNet: Double? = null,
+    val targetAytNet: Double? = null,
+    val dataSource: String = "",
+    val dataYear: Int? = null,
+    val updatedAt: Long = 0,
 )
 
 @Serializable
@@ -379,6 +492,13 @@ data class LibraryFile(
     val sizeBytes: Long,
     val addedAt: Long,
     val subjectName: String = "",
+    val subjectId: String? = null,
+    val topicId: String? = null,
+    val lastOpenedAt: Long = 0,
+    val lastPage: Int = 0,
+    val pageCount: Int = 0,
+    val favorite: Boolean = false,
+    val note: String = "",
 )
 
 /** Kullanıcının içe aktardığı, kaynağı ve sürümü belli üniversite veri paketi satırı. */
@@ -412,16 +532,26 @@ data class TopicRow(
     val status: Int?,
     val nextReviewAt: Long?,
     val lastStudiedAt: Long?,
-    val questionCount: Int,
+    val reviewCount: Int?,
+    val checks: String?,
     val total: Int,
     val right: Int,
+    val wrongOpen: Int,
+    val minutes: Int,
 )
 data class WeakTopic(val topicId: String, val name: String, val subjectName: String, val total: Int, val right: Int)
 data class WrongRow(
-    @Embedded val w: WrongQuestion,
-    val stem: String,
-    val topicName: String,
-    val subjectName: String,
+    @Embedded val w: WrongEntry,
+    val topicName: String?,
+    val subjectName: String?,
+)
+data class SourceRow(
+    @Embedded val s: StudySource,
+    val solved: Int,
+    val correct: Int,
+    val wrong: Int,
+    val minutes: Int,
+    val lastAt: Long?,
 )
 data class MockSummary(
     val id: String,
