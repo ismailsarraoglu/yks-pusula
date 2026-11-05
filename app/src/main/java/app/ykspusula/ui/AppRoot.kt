@@ -37,6 +37,9 @@ import app.ykspusula.ui.screens.*
 import app.ykspusula.ui.theme.Yks
 import kotlinx.coroutines.flow.map
 
+/** Yalnızca otomatik testlerin ekranlara doğrudan gidebilmesi için. */
+object DebugNav { @Volatile var nav: NavController? = null }
+
 val LocalNav = staticCompositionLocalOf<NavController> { error("Nav yok") }
 
 @Composable fun app(): YksApp = LocalContext.current.applicationContext as YksApp
@@ -86,6 +89,7 @@ private fun MainNav() {
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val showBar = TABS.any { it.route == route }
+    DisposableEffect(nav) { DebugNav.nav = nav; onDispose { DebugNav.nav = null } }
     CompositionLocalProvider(LocalNav provides nav) {
         Scaffold(
             containerColor = Yks.c.bg,
