@@ -218,7 +218,13 @@ fun HomeScreen() {
             }
         }
 
-        if (daysLeft != null && exam != null) {
+        val yearMismatch = exam != null && LocalDate.parse(exam.examDate).year != p.examYear
+        if (yearMismatch) {
+            YCard(onClick = { nav.navigate("examSettings") }) {
+                Text("${p.examYear} sınav tarihi", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+                Muted("Bu yılın resmî takvimi uygulamada yok. Tarih açıklandığında Sınav ayarlarından girebilirsin.")
+            }
+        } else if (daysLeft != null && exam != null) {
             YCard(Modifier.semantics(mergeDescendants = true) {}) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
