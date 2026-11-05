@@ -578,7 +578,7 @@ fun ExamAnalysisScreen() {
             }
             Row2({ Tile("${x.examCount}", "Deneme", it) }, { Tile(x.avgMinutes?.let { m -> "$m dk" } ?: "–", "Ortalama süre", it) })
             Tile("%.1f".format(java.util.Locale("tr", "TR"), x.blankAverage), "Deneme başına boş")
-            if (list.size >= 2) LineChart("Net gelişimi", list.map { shortDate(it.createdAt) }, list.map { it.net }) { Scoring.formatNet(it) }
+            if (list.size >= 2) LineChart("Net gelişimi", list.map { shortDate(it.createdAt) }, list.map { it.net }, { Scoring.formatNet(it) })
             x.trendNote?.let { InfoBanner(it, Icons.AutoMirrored.Rounded.TrendingUp, Yks.c.accentLight) }
                 ?: Muted("Eğilim yorumu için en az 3 deneme gerekir.")
             if (x.strong.isNotEmpty()) InfoBanner("Güçlü olduğun testler: ${x.strong.joinToString(", ")}", Icons.Rounded.CheckCircle, Yks.c.success)
