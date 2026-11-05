@@ -49,6 +49,28 @@ if [ -n "$CLS" ]; then
   adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk | tail -1 >> "$R"
   timeout 1800 adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -60 > "ci/logs/uyum-$NAME-test.txt"
   echo "test: $(tail -4 ci/logs/uyum-$NAME-test.txt | tr '\n' ' ')" >> "$R"
+  if [ -n "$CEVRIMICI" ]; then
+    adb shell cmd connectivity airplane-mode disable; adb shell svc wifi enable; adb shell svc data enable
+    for i in $(seq 1 12); do
+      PING=$(timeout 10 adb shell ping -c 1 -W 3 8.8.8.8 2>&1 | tail -2 | tr -d '\r' | tr '\n' ' ')
+      echo "$PING" | grep -q ' 0% packet loss' && break
+      sleep 5
+    done
+    echo "ping-cevrimici: $PING" >> "$R"
+    echo "dns-cevrimici: $(timeout 20 adb shell ping -c 1 -W 3 googleads.g.doubleclick.net 2>&1 | head -1 | tr -d '\r' | cut -c1-90)" >> "$R"
+    for d in 1 2 3; do
+      adb logcat -c
+      timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
+      adb logcat -d 2>/dev/null | grep -E 'YksAds|Ads|NativeAd' | tail -30 | cut -c1-220 > "ci/logs/reklam-logcat-$NAME.txt"
+      tail -3 "ci/logs/reklam-$NAME.txt" | grep -q 'OK (1 test)' && break
+      sleep 20
+    done
+    echo "reklam-denemesi: $d" >> "$R"
+    echo "reklam-testi: $(tail -4 ci/logs/reklam-$NAME.txt | tr '\n' ' ' | cut -c1-200)" >> "$R"
+    grep -m1 'yüklenemedi' "ci/logs/reklam-$NAME.txt" | cut -c1-300 >> "$R"
+    adb exec-out screencap -p > "ci/screens/reklam-$NAME.png"
+    adb shell cmd connectivity airplane-mode enable; sleep 5
+  fi
   if [ -n "$KALICILIK" ]; then
     P=$PKG.PersistenceTest
     calistir() { timeout 300 adb shell am instrument -w -e class "$1" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -3 | tr -d '\r' | tr '\n' ' '; }
@@ -57,17 +79,18 @@ if [ -n "$CLS" ]; then
     echo "kalicilik-durdurma: $(calistir "$P#readData")" >> "$R"
     adb reboot; sleep 20; timeout 300 adb wait-for-device
     for i in $(seq 1 80); do [ "$(timeout 15 adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 3; done
-    sleep 10
+    # Yeni sürüm emülatörü açılıştan sonra uzun süre yoğun çalışır; sistem sakinleşince denenir.
+    sleep 60
     adb shell svc power stayon true
-    echo "kalicilik-yeniden-baslatma: $(calistir "$P#readData")" >> "$R"
-  fi
-  if [ -n "$CEVRIMICI" ]; then
-    adb shell cmd connectivity airplane-mode disable; adb shell svc wifi enable; adb shell svc data enable; sleep 20
-    echo "ping-cevrimici: $(timeout 20 adb shell ping -c 1 -W 3 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" >> "$R"
-    timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
-    echo "reklam-testi: $(tail -4 ci/logs/reklam-$NAME.txt | tr '\n' ' ' | cut -c1-200)" >> "$R"
-    adb exec-out screencap -p > "ci/screens/reklam-$NAME.png"
-    adb shell cmd connectivity airplane-mode enable; sleep 5
+    for d in 1 2 3; do
+      adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1
+      adb logcat -c
+      SONUC=$(calistir "$P#readData")
+      echo "$SONUC" | grep -q 'OK (1 test)' && break
+      adb logcat -d 2>/dev/null | grep -E 'FATAL EXCEPTION|AndroidRuntime|ykspusula' | tail -40 | cut -c1-220 > "ci/logs/kalicilik-logcat-$NAME.txt"
+      sleep 45
+    done
+    echo "kalicilik-yeniden-baslatma: $SONUC (deneme $d)" >> "$R"
   fi
   mkdir -p ci/screens-$NAME
   adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' 2>/dev/null | tar -x -C ci/screens-$NAME 2>/dev/null
@@ -76,6 +99,7 @@ fi
 echo "release-kurulum: $(adb install -r app/build/outputs/apk/release/app-release.apk 2>&1 | tail -1)" >> "$R"
 adb logcat -c
 adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard; sleep 2
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1
 adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
 sleep 15
 echo "release-surec: $(adb shell pidof $PKG)" >> "$R"

@@ -42,7 +42,7 @@ class AdOnlineTest {
         var loaded = false
         rule.runOnUiThread { m.ads.nativeFor(AdPlacement.EXAMS) { loaded = it != null; latch.countDown() } }
         assertTrue("Reklam yanıtı gelmedi", latch.await(90, TimeUnit.SECONDS))
-        assertTrue("Test reklamı yüklenemedi", loaded)
+        assertTrue("Test reklamı yüklenemedi: ${m.ads.lastError}", loaded)
         rule.runOnUiThread { DebugNav.nav!!.navigate("exams") }
         rule.waitForIdle()
         Thread.sleep(3000)

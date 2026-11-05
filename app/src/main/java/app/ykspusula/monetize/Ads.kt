@@ -2,6 +2,7 @@ package app.ykspusula.monetize
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import app.ykspusula.BuildConfig
 import com.google.android.libraries.ads.mobile.sdk.MobileAds
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
@@ -48,6 +49,9 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
     @Volatile private var initialized = false
     private val cache = HashMap<AdPlacement, Pair<NativeAd, Long>>()
     private val failedAt = HashMap<AdPlacement, Long>()
+    /** Son yükleme hatası. Yalnızca teşhis için tutulur, hiçbir yere gönderilmez. */
+    @Volatile var lastError: String? = null
+        private set
 
     /** Tüm uygulama için geçerli: içerik düzeyi gençlere uygun tutulur. */
     private fun requestConfiguration() = RequestConfiguration.Builder()
@@ -111,11 +115,14 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
                     }
                 }
                 override fun onAdFailedToLoad(adError: LoadAdError) {
+                    lastError = adError.toString()
+                    Log.w("YksAds", "Reklam yuklenemedi: $lastError")
                     failedAt[placement] = System.currentTimeMillis()
                     scope.launch(Dispatchers.Main) { onReady(null) }
                 }
             })
         } catch (e: Throwable) {
+            lastError = e.toString()
             failedAt[placement] = now
             onReady(null)
         }
