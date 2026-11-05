@@ -16,7 +16,7 @@ echo no | "$SDK/avdmanager" create avd -n "$NAME" -k "$IMG" -d pixel_6 --force >
 df -h / | tail -1 >> "$S"
 if [ ! -f "$ANDROID_AVD_HOME/$NAME.avd/config.ini" ]; then echo "acilis=yok sanal-cihaz-olusmadi" | tee "$R"; exit 0; fi
 printf 'hw.ramSize=3072\ndisk.dataPartition.size=4096M\nhw.keyboard=yes\n' >> "$ANDROID_AVD_HOME/$NAME.avd/config.ini"
-"$ANDROID_HOME/emulator/emulator" -avd "$NAME" -accel on -cores 2 -memory 3072 -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -camera-front none > "ci/logs/emulator-$NAME.txt" 2>&1 &
+"$ANDROID_HOME/emulator/emulator" -avd "$NAME" -accel on -cores 2 -memory ${BELLEK:-3072} -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -camera-front none > "ci/logs/emulator-$NAME.txt" 2>&1 &
 EMU=$!
 B=""
 for i in $(seq 1 170); do
@@ -39,6 +39,7 @@ adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell svc wifi disable; adb shell svc data disable
 adb shell svc power stayon true
+[ -n "$HAREKET" ] && { adb shell cmd overlay enable com.android.internal.systemui.navbar.gestural; sleep 3; }
 adb shell cmd connectivity airplane-mode enable 2>/dev/null
 sleep 6
 echo "ucak-modu: $(adb shell settings get global airplane_mode_on | tr -d '\r') ping: $(adb shell ping -c 1 -W 2 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" >> "$R"
@@ -58,6 +59,14 @@ if [ -n "$CLS" ]; then
     sleep 10
     adb shell svc power stayon true
     echo "kalicilik-yeniden-baslatma: $(calistir "$P#readData")" >> "$R"
+  fi
+  if [ -n "$CEVRIMICI" ]; then
+    adb shell cmd connectivity airplane-mode disable; adb shell svc wifi enable; adb shell svc data enable; sleep 20
+    echo "ping-cevrimici: $(timeout 20 adb shell ping -c 1 -W 3 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" >> "$R"
+    timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
+    echo "reklam-testi: $(tail -4 ci/logs/reklam-$NAME.txt | tr '\n' ' ' | cut -c1-200)" >> "$R"
+    adb exec-out screencap -p > "ci/screens/reklam-$NAME.png"
+    adb shell cmd connectivity airplane-mode enable; sleep 5
   fi
   mkdir -p ci/screens-$NAME
   adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' 2>/dev/null | tar -x -C ci/screens-$NAME 2>/dev/null

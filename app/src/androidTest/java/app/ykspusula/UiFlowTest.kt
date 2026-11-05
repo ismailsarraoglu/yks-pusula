@@ -158,7 +158,7 @@ class UiFlowTest {
         assertEquals("DONE", runBlocking { r.user.mock(id)!!.status })
         rule.runOnUiThread { assertEquals("Oturum ekranı geri yığınında kalmamalı", 0, DebugNav.nav!!.currentBackStack.value.count { it.destination.route == "examRun/{id}" }) }
         Espresso.pressBack()
-        waitText("Hemen deneme oluştur!")
+        waitText("Bugünkü Rotan")
     }
 
     /** Reklamsız durumda ve reklam izni yokken hiçbir ekranda reklam alanı çizilmez. */

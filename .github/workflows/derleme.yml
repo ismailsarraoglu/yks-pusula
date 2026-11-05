@@ -11,7 +11,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 130
+    timeout-minutes: 170
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -52,32 +52,25 @@ jobs:
           cp app/build/outputs/bundle/release/app-release.aab ci/apk/yks-pusula-release.aab
           ls -la ci/apk > ci/logs/apk-sizes.txt
       - name: KVM ayarla
-        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[a14]'))
+        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]'))
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Disk alani ac
-        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[a14]'))
+        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]'))
         run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup /usr/share/swift
       - name: Emulator testleri
         id: emu
-        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[emu]')
+        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]'))
         continue-on-error: true
-        timeout-minutes: 50
+        timeout-minutes: 70
         run: bash tools/run-emulator.sh
-      - name: Android 8 ve 14 uyumluluk
-        if: steps.emu.outcome == 'success'
+      - name: Surum uyumlulugu
+        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[tam]')
         continue-on-error: true
-        timeout-minutes: 35
-        run: |
-          bash tools/smoke.sh a8 "system-images;android-26;default;x86_64" app.ykspusula.DataFlowTest
-          bash tools/smoke.sh a13 "system-images;android-33;aosp_atd;x86_64" app.ykspusula.DataFlowTest
-      - name: Android 14 denemesi
-        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[a14]')
-        continue-on-error: true
-        timeout-minutes: 100
-        run: bash tools/android14.sh
+        timeout-minutes: 70
+        run: bash tools/matris.sh
       - name: Rapor
         if: always()
         run: |

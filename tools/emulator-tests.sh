@@ -30,6 +30,20 @@ run() { adb shell am instrument -w -e class "$1" $INST 2>&1 | tail -4 | tr '\n' 
 
 # Akış ekranlarının görüntüleri (Gradle uygulamayı kaldırdığı için ayrıca çalıştırılır)
 echo "akislar: $(run $PKG.UiFlowTest#onboardingAndTabs) $(run $PKG.UiFlowTest#studyLogUpdatesStats) $(run $PKG.UiFlowTest#examSessionSurvivesRecreate)" >> $R
+# Standart telefon: mağaza görselleri bu ölçüden alınır
+echo "standart: $(run $PKG.UiFlowTest#allScreensOpenBothThemes)" >> $R
+adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' > /tmp/screens.tar 2>/dev/null
+tar -xf /tmp/screens.tar -C ci/ 2>/dev/null
+# Büyük yazı
+adb shell settings put system font_scale 1.5
+echo "buyuk-yazi: $(run $PKG.UiFlowTest#allScreensOpenBothThemes)" >> $R
+adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' | tar -x -C /tmp/ 2>/dev/null
+mkdir -p ci/screens-buyuk; cp /tmp/screens/*-s-dark-0[0-9]-* ci/screens-buyuk/ 2>/dev/null
+adb shell settings put system font_scale 1.0
+# Yatay ekran
+adb shell settings put system accelerometer_rotation 0; adb shell settings put system user_rotation 1
+echo "yatay: $(run $PKG.UiFlowTest#allScreensOpenBothThemes)" >> $R
+adb shell settings put system user_rotation 0
 # Küçük ve tablet ekran
 adb shell wm size 480x800; adb shell wm density 240
 adb shell settings put system font_scale 1.0
@@ -62,5 +76,9 @@ echo "release-surec: $(adb shell pidof $PKG)" >> $R
 adb exec-out screencap -p > ci/screens/release-acilis.png
 adb logcat -d | grep -E 'FATAL EXCEPTION|E AndroidRuntime' | head -20 > ci/logs/release-crash.txt
 echo "release-crash-satir: $(wc -l < ci/logs/release-crash.txt)" >> $R
+# Performans: release sürümünde soğuk açılış ve bellek
+for n in 1 2 3; do adb shell am force-stop $PKG; sleep 2; echo "soguk-acilis-$n: $(adb shell am start -W -n $PKG/.MainActivity | grep -E 'TotalTime' | tr -d '\r')" >> $R; sleep 3; done
+adb shell dumpsys meminfo $PKG | grep -E 'TOTAL( PSS)?:|TOTAL  ' | head -2 | tr -d '\r' > ci/logs/bellek.txt
+echo "anr: $(adb logcat -d | grep -c 'ANR in')" >> $R
 adb logcat -d > ci/logs/logcat.txt
 true
