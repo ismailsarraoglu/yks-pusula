@@ -17,7 +17,13 @@ for i in $(seq 1 170); do
   B=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break; sleep 5
 done
 echo "acilis=$B deneme=$i" | tee "$R"
-[ "$B" = "1" ] || exit 0
+if [ "$B" != "1" ]; then
+  adb devices >> "$R"
+  adb logcat -d 2>/dev/null | tail -150 > "ci/logs/logcat-$NAME.txt"
+  tail -40 "ci/logs/emulator-$NAME.txt" > "ci/logs/emulator-son-$NAME.txt"
+  pkill -f qemu-system; sleep 5
+  exit 0
+fi
 echo "android=$(adb shell getprop ro.build.version.release | tr -d '\r') api=$(adb shell getprop ro.build.version.sdk | tr -d '\r')" >> "$R"
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
@@ -26,8 +32,10 @@ adb shell svc wifi disable; adb shell svc data disable
 if [ -n "$CLS" ]; then
   adb install -r -g app/build/outputs/apk/debug/app-debug.apk | tail -1 >> "$R"
   adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk | tail -1 >> "$R"
-  adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -25 > "ci/logs/uyum-$NAME-test.txt"
+  adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -60 > "ci/logs/uyum-$NAME-test.txt"
   echo "test: $(tail -4 ci/logs/uyum-$NAME-test.txt | tr '\n' ' ')" >> "$R"
+  mkdir -p ci/screens-$NAME
+  adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' 2>/dev/null | tar -x -C ci/screens-$NAME 2>/dev/null
   adb uninstall $PKG.test; adb uninstall $PKG
 fi
 echo "release-kurulum: $(adb install -r app/build/outputs/apk/release/app-release.apk 2>&1 | tail -1)" >> "$R"
