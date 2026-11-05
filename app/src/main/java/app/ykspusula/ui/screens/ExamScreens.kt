@@ -569,7 +569,7 @@ fun ObpScreen() {
                 Switch(placed, { placed = it })
             }
             if (ok) {
-                Row2({ Tile("%.1f".format(Scoring.obp(d!!)), "OBP", it) }, { Tile("%.2f".format(Scoring.obpContribution(d!!, placed)), "Puana katkı", it, Yks.c.accent) })
+                Row2({ Tile(Scoring.formatNet(Scoring.obp(d!!)), "OBP", it) }, { Tile(Scoring.formatNet(Scoring.obpContribution(d!!, placed)), "Puana katkı", it, Yks.c.accent) })
             }
             MainButton("Kaydet", Modifier.fillMaxWidth(), enabled = ok) {
                 scope.launch { r.updateSettings { p -> p[Keys.diploma] = diploma; p[Keys.placed] = placed } }

@@ -169,7 +169,7 @@ object Timers {
         val h = s / 3600
         val m = (s % 3600) / 60
         val r = s % 60
-        return if (h > 0) "%d:%02d:%02d".format(h, m, r) else "%02d:%02d".format(m, r)
+        return if (h > 0) "%d:%02d:%02d".format(java.util.Locale.US, h, m, r) else "%02d:%02d".format(java.util.Locale.US, m, r)
     }
 }
 
@@ -262,7 +262,7 @@ object PlanGenerator {
 
     private fun breakAfter(i: Int) = if ((i + 1) % 3 == 0) 40 else 10
 
-    private fun clock(m: Int) = "%02d:%02d".format((m / 60) % 24, m % 60)
+    private fun clock(m: Int) = "%02d:%02d".format(java.util.Locale.US, (m / 60) % 24, m % 60)
 }
 
 /* ---------- ÖNERİ MOTORU (kural tabanlı, gerçek veriden) ---------- */
