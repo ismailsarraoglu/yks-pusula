@@ -228,7 +228,7 @@ fun ExamRunScreen(id: String) {
     LaunchedEffect(id) {
         val m = r.user.mock(id)
         exam = m
-        if (m == null || m.status != "RUNNING") { nav.navigate("result/$id") { popUpTo("exams") }; return@LaunchedEffect }
+        if (m == null || m.status != "RUNNING") { nav.navigate("result/$id") { popUpTo("exam/{id}") { inclusive = true } }; return@LaunchedEffect }
         val rec = r.user.records(id)
         records.clear(); records.addAll(rec)
         questions = rec.map { it.questionId }.chunked(400).flatMap { r.content.fullList(it) }.associateBy { it.q.id }
@@ -238,7 +238,7 @@ fun ExamRunScreen(id: String) {
         finishing = true
         scope.launch {
             r.finishExam(id)
-            nav.navigate("result/$id") { popUpTo("exams") }
+            nav.navigate("result/$id") { popUpTo("exam/{id}") { inclusive = true } }
         }
     }
     LaunchedEffect(exam) {

@@ -21,7 +21,8 @@ import java.time.LocalDate
 
 @RunWith(AndroidJUnit4::class)
 class DataFlowTest {
-    @get:Rule val perm: GrantPermissionRule = GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS)
+    @get:Rule val perm: GrantPermissionRule =
+        if (android.os.Build.VERSION.SDK_INT >= 33) GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS) else GrantPermissionRule.grant()
     private val app get() = ApplicationProvider.getApplicationContext<Context>() as YksApp
     private val r get() = app.repo
 

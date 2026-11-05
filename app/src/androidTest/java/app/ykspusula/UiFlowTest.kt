@@ -21,6 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
+@android.annotation.SuppressLint("RestrictedApi")
 @RunWith(AndroidJUnit4::class)
 class UiFlowTest {
     @get:Rule val rule = createEmptyComposeRule()
@@ -164,6 +165,10 @@ class UiFlowTest {
         waitText("Sınav bitirilsin mi?"); rule.onNodeWithText("Bitir").performClick()
         waitText("Toplam net"); shot("32-sonuc")
         assertEquals("DONE", runBlocking { r.user.mock(id)!!.status })
+        rule.runOnUiThread { assertEquals("Deneme ekranı geri yığınında kalmamalı", 0, DebugNav.nav!!.currentBackStack.value.count { it.destination.route == "exam/{id}" }) }
+        Espresso.pressBack()
+        waitText("Bugünkü ilerleme")
+        rule.waitForIdle()
     }
 
     @Test fun allScreensOpenBothThemes() {
