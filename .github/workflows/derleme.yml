@@ -34,15 +34,15 @@ jobs:
         id: manifest
         continue-on-error: true
         run: |
-          M=$(find app/build/intermediates/merged_manifests/release -name AndroidManifest.xml | head -1)
+          M=$(find app/build/intermediates -path "*release*" -name AndroidManifest.xml | grep -E "merged_manifest|packaged_manifests" | head -1)
           cp "$M" ci/logs/merged-manifest.xml
           grep -E 'uses-permission|allowBackup' "$M" | tee ci/logs/permissions.txt
           if grep -qE 'permission.INTERNET|ACCESS_NETWORK_STATE' "$M"; then echo "AG IZNI BULUNDU"; exit 1; fi
           echo "AG IZNI YOK" >> ci/logs/permissions.txt
-          AAPT=$(ls -d $ANDROID_HOME/build-tools/35.*/aapt2 | head -1)
+          AAPT=$(ls -d $ANDROID_HOME/build-tools/*/aapt2 | tail -1)
           $AAPT dump permissions app/build/outputs/apk/release/app-release.apk | tee ci/logs/apk-permissions.txt
           ! grep -qE 'INTERNET|ACCESS_NETWORK_STATE' ci/logs/apk-permissions.txt
-          APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/35.*/apksigner | head -1)
+          APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/*/apksigner | tail -1)
           $APKSIGNER verify --verbose app/build/outputs/apk/release/app-release.apk | tee ci/logs/apk-signature.txt
       - name: APK dosyalarini kopyala
         if: steps.gradle.outcome == 'success'
