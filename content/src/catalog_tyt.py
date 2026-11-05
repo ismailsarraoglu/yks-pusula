@@ -78,7 +78,7 @@ TYT = {
 ("Basit Eşitsizlikler", "Eşitsizliklerin özellikleri ve aralıklar.", "Eşitsizliğin iki tarafı negatif sayı ile çarpılır veya bölünürse yön değişir. İki eşitsizlikte uç değerler dikkatle birleştirilir.",
  "a < b ise −a > −b|Pozitif sayılarda a < b ise 1/a > 1/b", "−2x < 6 ise x > −3 olur."),
 ("Mutlak Değer", "Bir sayının sıfıra uzaklığı.", "|x| her zaman negatif olmayan bir değerdir. |x| = a denkleminde a > 0 ise x = a veya x = −a olur.",
- "|x| ≥ 0|x ≥ 0 ise |x| = x; x < 0 ise |x| = −x|Eşitsizlik: |x| < a ise −a < x < a", "|x − 2| = 3 ise x = 5 veya x = −1 olur."),
+ "∣x∣ ≥ 0|x ≥ 0 ise ∣x∣ = x; x < 0 ise ∣x∣ = −x|Eşitsizlik: ∣x∣ < a ise −a < x < a", "∣x − 2∣ = 3 ise x = 5 veya x = −1 olur."),
 ("Üslü Sayılar", "Üs kuralları.", "Tabanlar aynı iken çarpmada üsler toplanır, bölmede çıkarılır. Üssün üssünde üsler çarpılır.",
  "a^{m} · a^{n} = a^{m+n}|\\frac{a^{m}}{a^{n}} = a^{m−n}|(a^{m})^{n} = a^{mn}|a^{0} = 1 (a ≠ 0)|a^{−n} = \\frac{1}{a^{n}}", "2^{3} · 2^{4} = 2^{7} = 128"),
 ("Köklü Sayılar", "Kök kuralları ve sadeleştirme.", "Kök içindeki tam kareler dışarı alınır. Benzer köklü ifadeler toplanabilir. Payda eşlenikle çarpılarak rasyonel yapılır.",

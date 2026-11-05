@@ -89,7 +89,9 @@ class ProductLogicTest {
         assertEquals(6, r.moves.size)
         val perDay = r.moves.groupBy { it.to }.mapValues { (k, v) -> v.size * 50 + if (k == d) 50 else 0 }
         assertTrue(perDay.values.all { it <= 120 })
-        assertTrue(r.moves.first { it.to == d }.time >= "10:00")
+        val sameDay = Replanner.preview(ReplanInput(d, missed, up, setOf(d.dayOfWeek.value), 120, 9, 22, 10), false)
+        assertEquals("10:00", sameDay.moves.single { it.to == d }.time)
+        assertEquals("Molalar korunmalı", 5, sameDay.unplaced.size)
         val important = Replanner.preview(ReplanInput(d, missed, up, setOf(1, 2, 3, 4, 5, 6, 7), 120, 9, 22, 10), true)
         assertEquals(setOf("m1", "m2"), important.moves.map { it.id }.toSet())
     }
