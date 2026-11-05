@@ -11,4 +11,7 @@ for IMG in "system-images;android-34;aosp_atd;x86_64" "system-images;android-34;
   echo "imaj-$i: $IMG: $(head -1 ci/logs/uyum-a14-$i.txt)" >> ci/logs/a14-ozet.txt
   grep -q 'acilis=1' ci/logs/uyum-a14-$i.txt && break
 done
+# Bu imajda ekran görüntüsü de alınabilsin diye release sürümü tam Android imajında ayrıca açılır.
+bash tools/smoke.sh a14-ekran "system-images;android-34;default;x86_64" ""
+echo "ekran-imaji: $(head -1 ci/logs/uyum-a14-ekran.txt)" >> ci/logs/a14-ozet.txt
 true
