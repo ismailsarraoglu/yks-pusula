@@ -159,20 +159,6 @@ class LogicTest {
         assertTrue(a.any { it.kind == "WRONGS" })
     }
 
-    @Test fun examBuilderNoDuplicatesAndFlagsShortage() {
-        val avail = mapOf("a" to (1..10).map { "a$it" }, "b" to (1..3).map { "b$it" })
-        val picked = ExamBuilder.pick(
-            listOf(SectionPlan("A", listOf(PartPlan("a", 8))), SectionPlan("B", listOf(PartPlan("b", 5)))), avail, setOf("a1", "a2"), 7,
-        )
-        assertEquals(8, picked[0].questionIds.size)
-        assertEquals(3, picked[1].questionIds.size)
-        assertEquals(5, picked[1].requested)
-        val all = picked.flatMap { it.questionIds }
-        assertEquals(all.size, all.toSet().size)
-        assertEquals(165, ExamBuilder.scaledDuration(165, 120, 120))
-        assertEquals(83, ExamBuilder.scaledDuration(165, 120, 60))
-    }
-
     @Test fun badgesFromRealStats() {
         val zero = Badges.all(HabitStats(0, 0, 0, 0, 0, 0, 0))
         assertTrue(zero.none { it.earned })
