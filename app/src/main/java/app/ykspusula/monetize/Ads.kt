@@ -45,6 +45,7 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
     private val _privacyRequired = MutableStateFlow(false)
     val privacyOptionsRequired: StateFlow<Boolean> = _privacyRequired
     private var started = false
+    @Volatile private var initialized = false
     private val cache = HashMap<AdPlacement, Pair<NativeAd, Long>>()
     private val failedAt = HashMap<AdPlacement, Long>()
 
@@ -70,7 +71,7 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         _privacyRequired.value = consent.privacyOptionsRequirementStatus == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
         val allowed = consent.canRequestAds() && !entitlement.value
         if (allowed) initialize()
-        _can.value = allowed && started
+        _can.value = allowed && initialized
     }
 
     private fun initialize() {
@@ -78,7 +79,10 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         started = true
         scope.launch(Dispatchers.IO) {
             try {
-                MobileAds.initialize(context.applicationContext, InitializationConfig.Builder(AdsConfig.appId).setRequestConfiguration(requestConfiguration()).build()) { }
+                MobileAds.initialize(context.applicationContext, InitializationConfig.Builder(AdsConfig.appId).setRequestConfiguration(requestConfiguration()).build()) {
+                    initialized = true
+                    update()
+                }
             } catch (e: Throwable) {
                 started = false
                 _can.value = false

@@ -143,6 +143,7 @@ fun ProgressBar(fraction: Float, modifier: Modifier = Modifier, color: Color = Y
 
 @Composable
 fun Ring(fraction: Float, label: String, modifier: Modifier = Modifier, size: Dp = 84.dp, color: Color = Yks.c.accent, description: String = label) {
+    val big = size > 150.dp
     val f by animateFloatAsState(fraction.coerceIn(0f, 1f), tween(500), label = "ring")
     val track = Yks.c.line
     val gradient = color == Yks.c.accent
@@ -156,7 +157,7 @@ fun Ring(fraction: Float, label: String, modifier: Modifier = Modifier, size: Dp
             drawArc(track, 0f, 360f, false, o, s, style = Stroke(w))
             drawArc(if (gradient) Brush.sweepGradient(listOf(c1, c2, c1)) else SolidColor(color), -90f, 360f * f, false, o, s, style = Stroke(w, cap = StrokeCap.Round))
         }
-        Text(label, style = MaterialTheme.typography.titleMedium.merge(NumberStyle), color = Yks.c.text)
+        Text(label, style = (if (big) MaterialTheme.typography.displaySmall else MaterialTheme.typography.titleMedium).merge(NumberStyle), color = Yks.c.text)
     }
 }
 
@@ -267,9 +268,9 @@ fun MainButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = t
 
 @Composable
 fun SoftButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, icon: ImageVector? = null, color: Color = Yks.c.accent, onClick: () -> Unit) {
-    OutlinedButton(onClick, modifier.defaultMinSize(minHeight = 48.dp), enabled = enabled, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Yks.c.line), colors = ButtonDefaults.outlinedButtonColors(contentColor = color, containerColor = Yks.c.card.copy(alpha = 0.5f))) {
+    OutlinedButton(onClick, modifier.defaultMinSize(minHeight = 48.dp), enabled = enabled, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Yks.c.line), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = color, containerColor = Yks.c.card.copy(alpha = 0.5f))) {
         if (icon != null) { Icon(icon, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)) }
-        Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }
 

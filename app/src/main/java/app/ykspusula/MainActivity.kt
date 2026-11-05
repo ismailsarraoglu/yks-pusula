@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
                     statusBarStyle = SystemBarStyle.auto(clear, clear) { dark },
                     navigationBarStyle = SystemBarStyle.auto(clear, clear) { dark },
                 )
+                if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
                 onDispose { }
             }
             YksTheme(settings.theme, settings.fontScale) { AppRoot() }

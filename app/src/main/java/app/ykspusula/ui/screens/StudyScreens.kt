@@ -628,10 +628,10 @@ fun WrongDetailScreen(id: String) {
 
 @Composable
 private fun RatingButtons(onRate: (Int) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-        listOf(Triple("Hatırlayamadım", 0, Yks.c.error), Triple("Kısmen", 1, Yks.c.warning), Triple("Hatırladım", 2, Yks.c.success)).forEach { (t, v, col) ->
-            SoftButton(t, Modifier.weight(1f), color = col) { onRate(v) }
-        }
+    val items = listOf(Triple("Hatırlayamadım", 0, Yks.c.error), Triple("Kısmen hatırladım", 1, Yks.c.warning), Triple("Hatırladım", 2, Yks.c.success))
+    BoxWithConstraints {
+        if (rememberCompact(maxWidth, 400.dp)) Column(verticalArrangement = Arrangement.spacedBy(Space.s)) { items.forEach { (t, v, col) -> SoftButton(t, Modifier.fillMaxWidth(), color = col) { onRate(v) } } }
+        else Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) { items.forEach { (t, v, col) -> SoftButton(t, Modifier.weight(1f), color = col) { onRate(v) } } }
     }
 }
 
