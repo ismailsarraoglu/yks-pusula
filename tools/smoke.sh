@@ -7,19 +7,28 @@ PKG=app.ykspusula
 export PATH="$ANDROID_HOME/platform-tools:$PATH"
 export ANDROID_AVD_HOME="$HOME/.android/avd"
 SDK="$ANDROID_HOME/cmdline-tools/latest/bin"
-adb emu kill 2>/dev/null; sleep 4
-"$SDK/sdkmanager" "$IMG" | tail -1
-echo no | "$SDK/avdmanager" create avd -n "$NAME" -k "$IMG" -d pixel_6 --force
+S=ci/logs/kurulum-$NAME.txt
+mkdir -p "$ANDROID_AVD_HOME"
+yes | "$SDK/sdkmanager" --licenses > /dev/null 2>&1
+timeout 10 adb emu kill 2>/dev/null; sleep 4
+"$SDK/sdkmanager" "$IMG" "emulator" "platform-tools" 2>&1 | tr '\r' '\n' | tail -3 > "$S"
+echo no | "$SDK/avdmanager" create avd -n "$NAME" -k "$IMG" -d pixel_6 --force >> "$S" 2>&1
+df -h / | tail -1 >> "$S"
+if [ ! -f "$ANDROID_AVD_HOME/$NAME.avd/config.ini" ]; then echo "acilis=yok sanal-cihaz-olusmadi" | tee "$R"; exit 0; fi
 printf 'hw.ramSize=3072\ndisk.dataPartition.size=4096M\nhw.keyboard=yes\n' >> "$ANDROID_AVD_HOME/$NAME.avd/config.ini"
-"$ANDROID_HOME/emulator/emulator" -avd "$NAME" -accel on -cores 2 -memory 3072 -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot > "ci/logs/emulator-$NAME.txt" 2>&1 &
+"$ANDROID_HOME/emulator/emulator" -avd "$NAME" -accel on -cores 2 -memory 3072 -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -camera-front none > "ci/logs/emulator-$NAME.txt" 2>&1 &
+EMU=$!
 B=""
 for i in $(seq 1 170); do
-  B=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break; sleep 5
+  B=$(timeout 15 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break
+  kill -0 $EMU 2>/dev/null || { echo "emulator-kapandi deneme=$i" >> "$S"; break; }
+  sleep 5
 done
 echo "acilis=$B deneme=$i" | tee "$R"
 if [ "$B" != "1" ]; then
-  adb devices >> "$R"
-  adb logcat -d 2>/dev/null | tail -150 > "ci/logs/logcat-$NAME.txt"
+  timeout 10 adb devices >> "$R"
+  timeout 15 adb shell getprop init.svc.bootanim >> "$R" 2>&1
+  timeout 30 adb logcat -d 2>/dev/null | tail -300 | cut -c1-220 > "ci/logs/logcat-$NAME.txt"
   tail -40 "ci/logs/emulator-$NAME.txt" > "ci/logs/emulator-son-$NAME.txt"
   pkill -f qemu-system; sleep 5
   exit 0
@@ -32,7 +41,7 @@ adb shell svc wifi disable; adb shell svc data disable
 if [ -n "$CLS" ]; then
   adb install -r -g app/build/outputs/apk/debug/app-debug.apk | tail -1 >> "$R"
   adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk | tail -1 >> "$R"
-  adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -60 > "ci/logs/uyum-$NAME-test.txt"
+  timeout 1800 adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -60 > "ci/logs/uyum-$NAME-test.txt"
   echo "test: $(tail -4 ci/logs/uyum-$NAME-test.txt | tr '\n' ' ')" >> "$R"
   mkdir -p ci/screens-$NAME
   adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' 2>/dev/null | tar -x -C ci/screens-$NAME 2>/dev/null

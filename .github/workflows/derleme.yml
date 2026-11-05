@@ -11,7 +11,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 130
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -76,7 +76,7 @@ jobs:
       - name: Android 14 denemesi
         if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[a14]')
         continue-on-error: true
-        timeout-minutes: 60
+        timeout-minutes: 100
         run: bash tools/android14.sh
       - name: Rapor
         if: always()

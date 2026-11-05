@@ -1,6 +1,9 @@
 #!/bin/bash
 # Android 14 için imajları sırayla dener; açılan ilk imajda veri ve arayüz testlerini çalıştırır.
 TESTS=app.ykspusula.DataFlowTest,app.ykspusula.UiFlowTest
+export ANDROID_AVD_HOME="$HOME/.android/avd"
+yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1
+"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list 2>/dev/null | grep -E 'system-images;android-34' | cut -c1-80 | sort -u > ci/logs/a14-imajlar.txt
 i=0
 for IMG in "system-images;android-34;aosp_atd;x86_64" "system-images;android-34;default;x86_64" "system-images;android-34;google_apis;x86_64"; do
   i=$((i+1))
