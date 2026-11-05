@@ -1,0 +1,33 @@
+name: ortam-testi
+on:
+  push:
+    paths: ['.github/workflows/ortam-testi.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ortami incele
+        run: |
+          mkdir -p out
+          {
+            echo "date: $(date -u)"; echo "nproc: $(nproc)"; free -g | head -2
+            echo "kvm: $(ls -l /dev/kvm 2>&1)"
+            echo "ANDROID_HOME=$ANDROID_HOME"; java -version 2>&1 | head -1; echo "JAVA_17=$JAVA_HOME_17_X64"
+            ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" 2>&1 | tr '\n' ' '; echo
+            df -h / | tail -1
+          } > out/ortam.txt
+          cat out/ortam.txt
+      - name: Sonucu ci-results dalina yaz
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q -b ci-results
+          git config user.name ci
+          git config user.email ci@users.noreply.github.com
+          git add -A
+          git commit -qm "ortam testi $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-results
