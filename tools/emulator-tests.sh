@@ -36,6 +36,7 @@ run() {
 
 # Akış ekranlarının görüntüleri (Gradle uygulamayı kaldırdığı için ayrıca çalıştırılır)
 echo "akislar: $(run $PKG.UiFlowTest#onboardingAndTabs) $(run $PKG.UiFlowTest#studyLogUpdatesStats) $(run $PKG.UiFlowTest#examSessionSurvivesRecreate)" >> $R
+echo "dugmeler: $(run $PKG.UiFlowTest#mainButtonsDoTheirJob)" >> $R
 # Standart telefon: mağaza görselleri bu ölçüden alınır
 echo "standart: $(run $PKG.UiFlowTest#allScreensOpenBothThemes)" >> $R
 adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' > /tmp/screens.tar 2>/dev/null

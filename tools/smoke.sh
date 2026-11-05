@@ -40,6 +40,8 @@ adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell svc wifi disable; adb shell svc data disable
 adb shell svc power stayon true
+# Yavaş emülatörde sistem arayüzünün "yanıt vermiyor" penceresi testlerin odağını çalmasın.
+adb shell settings put global hide_error_dialogs 1
 [ -n "$HAREKET" ] && { adb shell cmd overlay enable com.android.internal.systemui.navbar.gestural; sleep 3; }
 adb shell cmd connectivity airplane-mode enable 2>/dev/null
 sleep 6
@@ -49,6 +51,13 @@ if [ -n "$CLS" ]; then
   adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk | tail -1 >> "$R"
   timeout 1800 adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -60 > "ci/logs/uyum-$NAME-test.txt"
   echo "test: $(tail -4 ci/logs/uyum-$NAME-test.txt | tr '\n' ' ')" >> "$R"
+  if ! tail -4 "ci/logs/uyum-$NAME-test.txt" | grep -q 'OK ('; then
+    # Başarısız tur saklanır, ikinci tur ayrı satırda raporlanır.
+    cp "ci/logs/uyum-$NAME-test.txt" "ci/logs/uyum-$NAME-test-ilk.txt"
+    sleep 30
+    timeout 1800 adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -60 > "ci/logs/uyum-$NAME-test.txt"
+    echo "test-ikinci-tur: $(tail -4 ci/logs/uyum-$NAME-test.txt | tr '\n' ' ')" >> "$R"
+  fi
   if [ -n "$CEVRIMICI" ]; then
     adb shell cmd connectivity airplane-mode disable; adb shell svc wifi enable; adb shell svc data enable
     for i in $(seq 1 12); do
@@ -61,7 +70,7 @@ if [ -n "$CLS" ]; then
     for d in 1 2 3; do
       adb logcat -c
       timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
-      adb logcat -d 2>/dev/null | grep -E 'YksAds|Ads|NativeAd' | tail -30 | cut -c1-220 > "ci/logs/reklam-logcat-$NAME.txt"
+      adb logcat -d 2>/dev/null | grep -v 'YksAds' | grep -iE 'gma|ads|webview|chromium|cr_|exception|native' | tail -500 | cut -c1-400 > "ci/logs/reklam-logcat-$NAME.txt"
       tail -3 "ci/logs/reklam-$NAME.txt" | grep -q 'OK (1 test)' && break
       sleep 20
     done
@@ -109,7 +118,9 @@ echo "ilk-cizim: $(adb logcat -d | grep -m1 'Displayed app.ykspusula' | cut -c1-
 adb shell uiautomator dump /sdcard/ekran.xml > /dev/null 2>&1
 echo "ekrandaki-yazilar: $(adb exec-out cat /sdcard/ekran.xml 2>/dev/null | grep -o 'text="[^"]*"' | grep -v 'text=""' | head -12 | tr '\n' ' ')" >> "$R"
 adb exec-out screencap -p > "ci/screens/uyum-$NAME.png"
-echo "release-crash: $(adb logcat -d | grep -cE 'FATAL EXCEPTION|E AndroidRuntime')" >> "$R"
+adb logcat -d | grep -E 'FATAL EXCEPTION|E AndroidRuntime' | head -120 | cut -c1-200 > "ci/logs/release-crash-$NAME.txt"
+echo "release-crash-tum-cihaz: $(wc -l < "ci/logs/release-crash-$NAME.txt")" >> "$R"
+echo "release-crash: $(grep -c 'Process: app.ykspusula' "ci/logs/release-crash-$NAME.txt")" >> "$R"
 adb emu kill; sleep 5
 pkill -f qemu-system; sleep 2
 # Disk dolmasın: bu sürümün imajı ve sanal cihazı silinir.

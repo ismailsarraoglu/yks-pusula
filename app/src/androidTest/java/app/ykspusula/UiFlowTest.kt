@@ -17,12 +17,20 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
+import org.junit.runners.model.Statement
 import java.io.File
 
 @android.annotation.SuppressLint("RestrictedApi")
 @RunWith(AndroidJUnit4::class)
 class UiFlowTest {
+    /** Hata mesajına test iş parçacığını yazar: Compose eşzamanlılık hatasının kaynağını ayırt etmek için. */
+    @get:Rule(order = -2) val threadNote = TestRule { base, _ -> object : Statement() {
+        override fun evaluate() {
+            try { base.evaluate() } catch (t: Throwable) { throw AssertionError("testThread=${Thread.currentThread().id}", t) }
+        }
+    } }
     @get:Rule val rule = createEmptyComposeRule()
     private val app get() = ApplicationProvider.getApplicationContext<Context>() as YksApp
     private val r get() = app.repo
