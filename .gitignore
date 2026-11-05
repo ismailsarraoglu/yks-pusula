@@ -6,5 +6,3 @@ build/
 local.properties
 captures/
 .DS_Store
-*.keystore
-*.jks

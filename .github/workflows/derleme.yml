@@ -1,0 +1,96 @@
+name: derleme
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: derleme
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Hazirlik
+        run: |
+          mkdir -p ci/logs ci/apk ci/screens
+          git log -1 --format='%h %s' > ci/logs/commit.txt
+      - name: Derle ve birim testleri calistir
+        id: gradle
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest 2>&1 | tee ci/logs/gradle.txt
+      - name: Manifest denetimi
+        if: steps.gradle.outcome == 'success'
+        id: manifest
+        continue-on-error: true
+        run: |
+          M=$(find app/build/intermediates/merged_manifests/release -name AndroidManifest.xml | head -1)
+          cp "$M" ci/logs/merged-manifest.xml
+          grep -E 'uses-permission|allowBackup' "$M" | tee ci/logs/permissions.txt
+          if grep -qE 'permission.INTERNET|ACCESS_NETWORK_STATE' "$M"; then echo "AG IZNI BULUNDU"; exit 1; fi
+          echo "AG IZNI YOK" >> ci/logs/permissions.txt
+          AAPT=$(ls -d $ANDROID_HOME/build-tools/35.*/aapt2 | head -1)
+          $AAPT dump permissions app/build/outputs/apk/release/app-release.apk | tee ci/logs/apk-permissions.txt
+          ! grep -qE 'INTERNET|ACCESS_NETWORK_STATE' ci/logs/apk-permissions.txt
+          APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/35.*/apksigner | head -1)
+          $APKSIGNER verify --verbose app/build/outputs/apk/release/app-release.apk | tee ci/logs/apk-signature.txt
+      - name: APK dosyalarini kopyala
+        if: steps.gradle.outcome == 'success'
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk ci/apk/yks-pusula-debug.apk
+          cp app/build/outputs/apk/release/app-release.apk ci/apk/yks-pusula-release.apk
+          ls -la ci/apk > ci/logs/apk-sizes.txt
+          cp -r app/schemas ci/logs/schemas || true
+      - name: KVM ayarla
+        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[emu]')
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Emulator testleri
+        id: emu
+        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[emu]')
+        continue-on-error: true
+        timeout-minutes: 40
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: bash tools/emulator-tests.sh
+      - name: Rapor
+        if: always()
+        run: |
+          {
+            echo "gradle=${{ steps.gradle.outcome }}"
+            echo "manifest=${{ steps.manifest.outcome }}"
+            echo "emu=${{ steps.emu.outcome }}"
+            echo "run=${{ github.run_id }}"
+          } > ci/logs/ozet.txt
+          grep -E '^e: |error:|FAILED|What went wrong|\[ksp\]' ci/logs/gradle.txt | head -150 > ci/logs/hatalar.txt || true
+          for f in app/build/test-results/testDebugUnitTest/*.xml; do [ -f "$f" ] && cp "$f" ci/logs/; done
+      - name: Sonuclari ci-results dalina yaz
+        if: always()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd ci
+          git init -q -b ci-results
+          git config user.name ci
+          git config user.email ci@users.noreply.github.com
+          git add -A
+          git commit -qm "derleme $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-results

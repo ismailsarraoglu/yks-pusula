@@ -1,0 +1,4 @@
+-keepattributes *Annotation*, InnerClasses, Signature
+-keep class app.ykspusula.data.** { *; }
+-keep class app.ykspusula.domain.** { *; }
+-dontnote kotlinx.serialization.**
