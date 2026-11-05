@@ -57,20 +57,15 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      - name: Disk alani ac
+        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[emu]')
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup /usr/share/swift
       - name: Emulator testleri
         id: emu
         if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[emu]')
         continue-on-error: true
-        timeout-minutes: 40
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 33
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          script: bash tools/emulator-tests.sh
+        timeout-minutes: 50
+        run: bash tools/run-emulator.sh
       - name: Rapor
         if: always()
         run: |
