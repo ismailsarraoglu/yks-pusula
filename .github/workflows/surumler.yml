@@ -1,0 +1,27 @@
+name: surumler
+on:
+  push:
+    branches: [surum]
+permissions:
+  contents: write
+jobs:
+  sorgu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Surumleri sor
+        run: |
+          mkdir -p sonuc
+          g() { curl -fsSL "https://dl.google.com/android/maven2/$1/maven-metadata.xml" | grep -oP '(?<=<version>)[^<]+' | grep -viE 'alpha|beta|rc|dev|-[a-z]' | tail -3 | tr '\n' ' '; }
+          m() { curl -fsSL "https://repo1.maven.org/maven2/$1/maven-metadata.xml" | grep -oP '(?<=<version>)[^<]+' | grep -viE 'alpha|beta|rc|dev|M[0-9]|eap' | tail -3 | tr '\n' ' '; }
+          {
+          for a in com/android/tools/build/gradle androidx/compose/compose-bom androidx/core/core-ktx androidx/activity/activity-compose androidx/lifecycle/lifecycle-runtime-compose androidx/navigation/navigation-compose androidx/room/room-runtime androidx/sqlite/sqlite androidx/datastore/datastore-preferences androidx/glance/glance-appwidget androidx/work/work-runtime-ktx com/android/billingclient/billing com/android/billingclient/billing-ktx com/google/android/ump/user-messaging-platform com/google/android/libraries/ads/mobile/sdk/ads-mobile-sdk com/google/android/gms/play-services-ads androidx/test/ext/junit androidx/test/runner androidx/test/espresso/espresso-core androidx/test/uiautomator/uiautomator androidx/profileinstaller/profileinstaller; do echo "$a: $(g $a)"; done
+          for a in org/jetbrains/kotlin/kotlin-gradle-plugin org/jetbrains/kotlinx/kotlinx-coroutines-android org/jetbrains/kotlinx/kotlinx-serialization-json; do echo "$a: $(m $a)"; done
+          echo "ksp: $(curl -fsSL https://repo1.maven.org/maven2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/maven-metadata.xml | grep -oP '(?<=<version>)[^<]+' | tail -8 | tr '\n' ' ')"
+          echo "gradle: $(curl -fsSL https://services.gradle.org/versions/current | head -c 200)"
+          } > sonuc/surumler.txt 2>&1
+          cat sonuc/surumler.txt
+      - name: Yayinla
+        run: |
+          cd sonuc && git init -q && git config user.name ci && git config user.email ci@example.com
+          git add -A && git commit -qm sonuc && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-surum
