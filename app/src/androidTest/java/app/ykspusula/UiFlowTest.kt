@@ -61,7 +61,13 @@ class UiFlowTest {
         rule.waitUntil(ms) { rule.onAllNodesWithText(t, substring = sub).fetchSemanticsNodes().isNotEmpty() }
     }
 
-    private fun clickText(t: String) { waitText(t); rule.onAllNodesWithText(t).onFirst().performScrollTo().performClick(); rule.waitForIdle() }
+    private fun clickText(t: String) {
+        waitText(t)
+        val n = rule.onAllNodesWithText(t).onFirst()
+        runCatching { n.performScrollTo() }
+        n.performClick()
+        rule.waitForIdle()
+    }
 
     private fun seedProfile() = runBlocking {
         r.user.saveProfile(UserProfile(onboarded = true, name = "Elif", targetDepartment = "Bilgisayar Mühendisliği", targetUniversity = "ODTÜ", weakSubjects = "tyt-mat"))
@@ -94,7 +100,7 @@ class UiFlowTest {
         shot("03-hedef")
         clickText("Devam"); waitText("Çalışma düzenin"); shot("04-duzen")
         clickText("Devam"); waitText("Güçlü olduğun dersler"); shot("05-guclu")
-        clickText("Matematik".let { "Temel Matematik" })
+        clickText("Temel Matematik")
         clickText("Devam"); waitText("Zorlandığın dersler")
         clickText("Fizik"); clickText("Bitir")
         waitText("Bugünkü ilerleme"); shot("06-ana-sayfa")
@@ -119,7 +125,7 @@ class UiFlowTest {
         waitText("Cevabı kontrol et"); shot("21-soru")
         val first = runBlocking { r.content.full(r.questionIds(QuestionFilter(topicId = topic), 0, 0).first())!! }
         val bad = first.options.first { !it.isCorrect }
-        rule.onAllNodesWithContentDescription(bad.text.replace("−", "−"), substring = true).onFirst().performScrollTo().performClick()
+        clickText(bad.label)
         clickText("Cevabı kontrol et")
         waitText("Yanlış cevap", sub = true); shot("22-yanlis")
         clickText("Dikkatsizlik")
@@ -143,7 +149,7 @@ class UiFlowTest {
         waitText("Soru 1"); shot("31-deneme")
         val rec = runBlocking { r.user.records(id).first() }
         val q = runBlocking { r.content.full(rec.questionId)!! }
-        rule.onAllNodesWithContentDescription(q.options.first().text, substring = true).onFirst().performScrollTo().performClick()
+        clickText(q.options.minBy { it.label }.label)
         rule.waitUntil(5000) { runBlocking { r.user.records(id).first().selected != null } }
         clickText("Sonraki"); waitText("Soru 2")
         scenario!!.recreate()
