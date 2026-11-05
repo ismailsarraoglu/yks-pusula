@@ -67,6 +67,7 @@ for q in raw:
     if key not in topic_index:
         errors.append(f"Konu yok: {key}")
         continue
+    q["stem"] = re.sub(r"(?<=[(, ])-(?=\d)", "−", q["stem"])
     norm = re.sub(r"\s+", " ", q["stem"].lower()).strip()
     if norm in seen:
         continue  # aynı soru iki kez üretilmişse biri alınır

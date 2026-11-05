@@ -71,7 +71,7 @@ fun StudyScreen() {
             listOf(
                 Triple("Soru bankası", Icons.Rounded.EditNote, "bank"), Triple("Yanlışlar", Icons.Rounded.ErrorOutline, "wrongs"),
                 Triple("Kartlar", Icons.Rounded.Style, "cards"), Triple("Formüller", Icons.Rounded.Functions, "formulas"),
-                Triple("Notlar", Icons.Rounded.StickyNote2, "notes"), Triple("Kaynaklarım", Icons.Rounded.PictureAsPdf, "library"),
+                Triple("Notlar", Icons.Rounded.StickyNote2, "notes"), Triple("Kaynaklar", Icons.Rounded.PictureAsPdf, "library"),
             )
         ) { nav.navigate(it) }
         if (y >= 2028) {
@@ -196,9 +196,11 @@ fun TopicScreen(id: String) {
                 Muted("Son çalışma: " + (progress?.lastStudiedAt?.let(::shortDate) ?: "yok"))
                 Muted("Tekrar tarihi: " + (progress?.nextReviewAt?.let(::shortDate) ?: "planlanmadı"))
                 Spacer(Modifier.height(Space.s))
+                Muted("Tekrarı planla")
+                Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    SoftButton("Yarın tekrar et", Modifier.weight(1f)) { scope.launch { r.setTopicReview(id, startOf(today().plusDays(1))) } }
-                    SoftButton("7 gün sonra", Modifier.weight(1f)) { scope.launch { r.setTopicReview(id, startOf(today().plusDays(7))) } }
+                    SoftButton("Yarın", Modifier.weight(1f)) { scope.launch { r.setTopicReview(id, startOf(today().plusDays(1))) } }
+                    SoftButton("7 gün", Modifier.weight(1f)) { scope.launch { r.setTopicReview(id, startOf(today().plusDays(7))) } }
                 }
             }
             val count = row?.questionCount ?: 0

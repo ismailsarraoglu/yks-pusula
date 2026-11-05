@@ -74,12 +74,14 @@ fun Screen(title: String, onBack: (() -> Unit)? = null, actions: @Composable Row
 
 @Composable
 fun ScrollColumn(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.l, vertical = Space.s),
-        verticalArrangement = Arrangement.spacedBy(Space.m),
-    ) {
-        content()
-        Spacer(Modifier.height(Space.xl))
+    Box(modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.TopCenter) {
+        Column(
+            Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(horizontal = Space.l, vertical = Space.s),
+            verticalArrangement = Arrangement.spacedBy(Space.m),
+        ) {
+            content()
+            Spacer(Modifier.height(Space.xl))
+        }
     }
 }
 
@@ -155,7 +157,7 @@ fun MultiPills(options: List<Pair<String, String>>, selected: Set<String>, onTog
 @Composable
 fun Tile(value: String, label: String, modifier: Modifier = Modifier, tint: Color = Yks.c.text) {
     YCard(modifier, padding = Space.m) {
-        Text(value, style = MaterialTheme.typography.titleLarge, color = tint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(value, style = MaterialTheme.typography.titleLarge, color = tint, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(label, style = MaterialTheme.typography.labelMedium, color = Yks.c.muted, maxLines = 2)
     }
 }

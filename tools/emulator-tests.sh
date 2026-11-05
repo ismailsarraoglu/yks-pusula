@@ -12,7 +12,7 @@ adb shell svc wifi disable; adb shell svc data disable
 adb shell cmd connectivity airplane-mode enable
 echo "ag: $(adb shell dumpsys connectivity | grep -c 'state: CONNECTED')" >> $R
 
-GR="./gradlew --no-daemon --console=plain --offline"
+GR="./gradlew --no-daemon --console=plain"
 $GR :app:connectedDebugAndroidTest 2>&1 | tee ci/logs/connected.txt | tail -40
 echo "connected=$(grep -cE 'BUILD SUCCESSFUL' ci/logs/connected.txt)" >> $R
 mkdir -p ci/logs/xml; find app/build/outputs/androidTest-results -name '*.xml' -exec cp {} ci/logs/xml/ \;
@@ -54,7 +54,7 @@ adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
 sleep 12
 echo "release-surec: $(adb shell pidof $PKG)" >> $R
 adb exec-out screencap -p > ci/screens/release-acilis.png
-adb logcat -d | grep -E 'FATAL EXCEPTION|AndroidRuntime' | head -20 > ci/logs/release-crash.txt
+adb logcat -d | grep -E 'FATAL EXCEPTION|E AndroidRuntime' | head -20 > ci/logs/release-crash.txt
 echo "release-crash-satir: $(wc -l < ci/logs/release-crash.txt)" >> $R
 adb logcat -d > ci/logs/logcat.txt
 true

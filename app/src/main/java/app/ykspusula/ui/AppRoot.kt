@@ -9,13 +9,22 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -96,26 +105,30 @@ private fun MainNav() {
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
                 if (showBar) {
-                    Column {
+                    Column(Modifier.background(Yks.c.card).navigationBarsPadding()) {
                         HorizontalDivider(thickness = 0.5.dp, color = Yks.c.line)
-                        NavigationBar(containerColor = Yks.c.card, tonalElevation = 0.dp) {
+                        Row(Modifier.fillMaxWidth().height(62.dp).selectableGroup()) {
                             TABS.forEach { t ->
-                                NavigationBarItem(
-                                    selected = route == t.route,
-                                    onClick = {
+                                val selected = route == t.route
+                                val tint = if (selected) Yks.c.accent else Yks.c.muted
+                                Column(
+                                    Modifier.weight(1f).fillMaxHeight().selectable(selected, role = Role.Tab) {
                                         nav.navigate(t.route) {
                                             popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                                             launchSingleTop = true
                                             restoreState = true
                                         }
                                     },
-                                    icon = { Icon(t.icon, null) },
-                                    label = { Text(t.label, style = MaterialTheme.typography.labelMedium, maxLines = 1) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Yks.c.accent, selectedTextColor = Yks.c.accent, indicatorColor = Yks.c.soft,
-                                        unselectedIconColor = Yks.c.muted, unselectedTextColor = Yks.c.muted,
-                                    ),
-                                )
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    Box(
+                                        Modifier.size(width = 52.dp, height = 28.dp).clip(CircleShape).background(if (selected) Yks.c.soft else Color.Transparent),
+                                        contentAlignment = Alignment.Center,
+                                    ) { Icon(t.icon, null, tint = tint, modifier = Modifier.size(22.dp)) }
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(t.label, color = tint, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+                                }
                             }
                         }
                     }
