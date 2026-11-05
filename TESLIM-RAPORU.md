@@ -1,13 +1,13 @@
 # YKS Pusula teslim raporu
 
-Sürüm 1.0.0. Test edilen kod sürümü: `9ce13fd` (5 Kasım 2026). Bu rapordaki sonuçlar bu sürüme aittir.
+Sürüm 1.0.0. Test edilen uygulama kodu: `9ce13fd` (5 Kasım 2026). Android 14 denemesi `ea7dddd` ile yapıldı. Bu iki sürüm arasında uygulama kodu ve içerik değişmedi, yalnızca test betikleri ve belgeler değişti.
 
 ## Özet
 
 Uygulama Kotlin, Jetpack Compose, Material 3, Room ve DataStore ile yazıldı. APK dosyaları derlendi,
-Android 8, 11 ve 13 emülatörlerinde kuruldu ve açıldı. Tüm otomatik testler geçti.
+Android 8, 11, 13 ve 14 emülatörlerinde kuruldu ve açıldı. Tüm otomatik testler geçti.
 
-**Gerçek bir telefonda denenmedi.** Android 14 ve üzeri de denenemedi, çünkü Android 14 emülatörü test ortamında açılmadı.
+**Gerçek bir telefonda denenmedi.** Android 15 ve üzeri de denenmedi.
 
 ## Testler
 
@@ -17,18 +17,28 @@ Android 8, 11 ve 13 emülatörlerinde kuruldu ve açıldı. Tüm otomatik testle
 | Tam uygulama testleri | Android 11 | 23/23 geçti |
 | Veri ve iş akışı testleri | Android 8.0 | 16/16 geçti |
 | Veri ve iş akışı testleri | Android 13 | 16/16 geçti |
-| Release APK temiz kurulum ve açılış | Android 8, 11, 13 | Kuruldu, açıldı, çökme yok |
+| Veri, arayüz ve kalıcılık testleri | Android 14 | 21/21 ve 3/3 geçti |
+| Release APK temiz kurulum ve açılış | Android 8, 11, 13, 14 | Kuruldu, açıldı, çökme yok |
 | Ağ izni denetimi | Birleşik manifest ve APK | INTERNET ve ACCESS_NETWORK_STATE yok |
 | APK imza denetimi | Release APK | v2 imzası doğrulandı |
 
-Testler sırasında uçak modu açıktı, Wi-Fi kapalıydı ve dış ağa erişim denemesi "Network is unreachable" sonucunu verdi.
+Android 11 ve 14 testlerinde uçak modu açıktı, Wi-Fi kapalıydı ve dış ağa erişim denemesi "Network is unreachable" sonucunu verdi. Android 8 ve 13 testlerinde Wi-Fi ve mobil veri kapatıldı, uçak modu açılmadı.
+
+### Android 14 ayrıntıları
+
+- `aosp_atd` imajında 21 test ve 3 kalıcılık adımı geçti. Kalıcılık adımları: veri yazma, zorla durdurma sonrası okuma, cihaz yeniden başlatma sonrası okuma.
+- Arayüz testleri 44 ekranı açık ve koyu temada açtı. Ekran görüntüleri örnekleme ile incelendi.
+- Release APK iki imajda (`aosp_atd`, `default`) açıldı. Karşılama ekranı görüntülendi, çökme kaydı yok.
+- `aosp_atd` imajında ekran görüntüsü siyah çıkıyor. Aynı APK `default` imajında normal görüntü verdi, yani sorun test imajına aittir.
+- Android 14'te ekran boyutu denemesi yalnızca 411 dp genişlikte yapıldı.
+- Daha önceki bir turda aynı imaj 10 dakikada açılmamıştı. Bu denemede 1 dakikanın altında açıldı. Önceki başarısızlığın nedeni belirlenemedi.
 
 ## 24 kabul maddesi
 
 | # | Madde | Sonuç | Not |
 |---|---|---|---|
-| 1 | Temiz kurulumda açılıyor | ✅ | Android 8, 11, 13 |
-| 2 | İnternetsiz çalışıyor | ✅ | Uçak modunda test edildi |
+| 1 | Temiz kurulumda açılıyor | ✅ | Android 8, 11, 13, 14 |
+| 2 | İnternetsiz çalışıyor | ✅ | Android 11 ve 14'te uçak modunda test edildi |
 | 3 | Ana ekran yükleniyor | ✅ | |
 | 4 | Menüler açılıyor | ✅ | Beş sekme ve 44 ekran |
 | 5 | TYT, AYT, YDT görünüyor | ✅ | |
@@ -44,10 +54,10 @@ Testler sırasında uçak modu açıktı, Wi-Fi kapalıydı ve dış ağa erişi
 | 15 | Grafikler gerçek veriyi gösteriyor | ⚠️ | Veri kaynakları test edildi. Grafikler ekran görüntüsünden örnekleme ile incelendi |
 | 16 | Koyu tema | ✅ | 44 ekran açıldı; görsel inceleme örneklemeyle yapıldı |
 | 17 | Açık tema | ✅ | 44 ekran açıldı ve incelendi |
-| 18 | Bildirimler internetsiz çalışıyor | ⚠️ | Bildirim Android 8, 11, 13'te anında üretildi. Saatinde gelmesi ve yeniden başlatma sonrası kurulması beklenerek test edilmedi; izin penceresi de tıklanmadı |
+| 18 | Bildirimler internetsiz çalışıyor | ⚠️ | Bildirim Android 8, 11, 13, 14'te anında üretildi. Saatinde gelmesi ve yeniden başlatma sonrası kurulması beklenerek test edilmedi; izin penceresi de tıklanmadı |
 | 19 | Yedekleme ve geri yükleme | ⚠️ | Dışa aktarma, değiştirme, birleştirme ve bozuk dosya reddi test edildi. Android dosya seçicisi elle denenmedi |
-| 20 | Yeniden başlatınca veriler korunuyor | ✅ | Zorla durdurma ve cihaz yeniden başlatma |
-| 21 | Farklı ekran boyutları | ✅ | 320, 411 ve 914 dp genişlik |
+| 20 | Yeniden başlatınca veriler korunuyor | ✅ | Android 11 ve 14'te zorla durdurma ve cihaz yeniden başlatma |
+| 21 | Farklı ekran boyutları | ✅ | 320, 411 ve 914 dp genişlik (Android 11) |
 | 22 | Geri tuşu doğru çalışıyor | ✅ | Soru ve deneme akışlarında test edildi |
 | 23 | İnternet izni yok | ✅ | |
 | 24 | İşlevsiz buton veya sahte ekran yok | ⚠️ | Ana düğmeler tıklandı. Dosya seçici açan düğmeler (PDF ekleme, yedek, içerik ve üniversite paketi) ve bazı küçük düğmeler otomatik olarak tıklanmadı |

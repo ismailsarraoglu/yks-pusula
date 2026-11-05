@@ -43,5 +43,5 @@ dışarıdan kurulum içindir; uygulama mağazada yayımlanacaksa yeni bir anaht
 
 ## Derleme
 
-`main` dalına yüklenen her değişiklik GitHub Actions ile derlenir. Commit mesajında `[emu]` varsa emülatör
-testleri de çalışır. Sonuçlar ve APK dosyaları `ci-results` dalına yazılır.
+`main` dalına yüklenen her değişiklik GitHub Actions ile derlenir. Commit mesajında `[emu]` varsa Android 8, 11
+ve 13 emülatör testleri, `[a14]` varsa Android 14 testleri çalışır. Sonuçlar ve APK dosyaları `ci-results` dalına yazılır.
