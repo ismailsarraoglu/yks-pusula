@@ -74,19 +74,28 @@ class UiFlowTest {
         r.generatePlan()
     }
 
+    /** Örnek veri: ekran denetimi ve mağaza görselleri için. Uygulamada değil, yalnızca testte bulunur. */
     private fun seedActivity() = runBlocking {
         val now = System.currentTimeMillis()
         val src = StudySource(id = "s1", name = "TYT Matematik Soru Bankası", publisher = "Örnek Yayın", subjectId = "tyt-mat", totalPages = 320, lastPage = 52, pagesDone = 52, lastUsedAt = now, createdAt = now, updatedAt = now)
         r.user.saveSource(src)
-        val topics = listOf("tyt-mat-kumeler" to "tyt-mat", "tyt-mat-uslu-sayilar" to "tyt-mat")
+        r.user.saveSource(StudySource(id = "s2", name = "Paragraf Denemeleri", publisher = "Örnek Yayın", type = "KITAP", subjectId = "tyt-tur", totalPages = 180, lastPage = 96, pagesDone = 96, favorite = true, lastUsedAt = now - 86_400_000L, createdAt = now, updatedAt = now))
+        r.user.saveSource(StudySource(id = "s3", name = "Biyoloji Ders Notlarım", type = "NOT", subjectId = "tyt-biy", totalPages = 60, lastPage = 21, pagesDone = 21, lastUsedAt = now - 2 * 86_400_000L, createdAt = now, updatedAt = now))
+        val topics = listOf("tyt-mat-kumeler" to "tyt-mat", "tyt-mat-uslu-sayilar" to "tyt-mat", "tyt-tur-paragraf" to "tyt-tur")
         (0..9).forEach { d ->
-            val (t, s) = topics[d % 2]
-            r.logStudy(StudyEntry(s, t, "s1", 40 + d, 41 + d, 8 + d, 3, 1, 30 + d * 12, at = now - d * 86_400_000L))
+            val (t, s) = topics[d % 3]
+            r.logStudy(StudyEntry(s, t, if (s == "tyt-mat") "s1" else "s2", 40 + d, 41 + d, 8 + d, 3, 1, 30 + d * 12, at = now - d * 86_400_000L))
         }
-        r.saveWrong(r.newWrong("tyt-mat", "tyt-mat-kumeler", "s1", src.name, 45, "12", "Dikkatsizlik", "Birleşimi yanlış aldım.", null, now - 1000))
-        listOf(62.0, 70.0, 75.0).forEachIndexed { i, _ ->
-            r.saveExternalExam("Deneme ${i + 1}", "Örnek", today().minusDays(20L - i * 7), "TYT", 165, listOf(SectionEntry("Türkçe", 28 + i, 8, 4 - i), SectionEntry("Temel Matematik", 20 + 2 * i, 10, 10 - 2 * i)))
+        r.setTopicStatus("tyt-mat-kumeler", 3); r.setTopicStatus("tyt-tur-paragraf", 2)
+        listOf(Triple("Kümelerde birleşim", "Dikkatsizlik", "12"), Triple("Üslü ifade işlemi", "İşlem hatası", "7"), Triple("Paragrafta ana düşünce", "İki seçenek arasında kalma", "21")).forEachIndexed { i, (n, why, q) ->
+            r.saveWrong(r.newWrong(if (i == 2) "tyt-tur" else "tyt-mat", topics[i].first, if (i == 2) "s2" else "s1", if (i == 2) "Paragraf Denemeleri" else src.name, 45 + i, q, why, n, null, now - 1000 + i * 86_400_000L))
         }
+        listOf(0, 1, 2, 3).forEach { i ->
+            r.saveExternalExam("TYT Deneme ${i + 1}", "Örnek Yayın", today().minusDays(21L - i * 7), "TYT", 150 + i * 5, listOf(SectionEntry("Türkçe", 26 + i * 2, 8, 6 - i * 2), SectionEntry("Sosyal Bilimler", 11 + i, 5, 4 - i), SectionEntry("Temel Matematik", 18 + 3 * i, 10, 12 - 3 * i), SectionEntry("Fen Bilimleri", 9 + 2 * i, 5, 6 - 2 * i)))
+        }
+        r.generatePlan(weekStart(today()))
+        r.user.tasksBetweenNow(weekStart(today()).toString(), today().toString()).take(5).forEach { r.toggleTask(it, true) }
+        r.user.saveRoute(emptyList())
         r.rebuildRoute()
     }
 
@@ -184,7 +193,7 @@ class UiFlowTest {
             "sources", "source/s1", "sourceEdit/new", "sourceEdit/s1", "sourceCompare", "log", "wrongs", "wrong/$wrong", "wrongEdit/new", "wrongEdit/$wrong", "wrongReview",
             "cards", "deck/Tarih", "review/_all", "cardEdit/Kartlarım", "formulas", "notes", "note/n1", "note/new", "library", "pomodoro", "plan", "planSettings", "planHistory", "taskEdit/${today()}",
             "examStart/ALL", "examStart/TYT", "examStart/AYT", "examStart/YDT", "examStart/BRANCH", "examStart/TOPIC", "examStart/PERSONAL", "examStart/CUSTOM", "examEntry/$exam", "result/$exam",
-            "examHistory", "examCompare/${mocks[0].id}/${mocks[1].id}", "examAnalysis", "netGoals", "external", "examSettings", "obp", "reports", "motivation", "removeAds", "privacy", "terms", "about", "info",
+            "examHistory", "examCompare/${mocks[0].id}/${mocks[3].id}", "examAnalysis", "netGoals", "external", "examSettings", "obp", "reports", "motivation", "removeAds", "privacy", "terms", "about", "info",
             "profileEdit", "settings", "reminders", "backup", "targets", "packs", "badges", "topic/ayt-biy-evrim",
         )
         listOf("DARK", "LIGHT").forEach { theme ->

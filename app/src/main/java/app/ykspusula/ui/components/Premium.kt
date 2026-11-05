@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.ripple
 import app.ykspusula.ui.theme.Gradients
 import app.ykspusula.ui.theme.NumberStyle
@@ -112,15 +113,15 @@ fun PrimaryGradientCard(title: String, subtitle: String, icon: ImageVector, modi
     val source = remember { MutableInteractionSource() }
     Row(
         modifier.fillMaxWidth().press(source).clip(shape).background(brush).border(1.dp, Color.White.copy(alpha = 0.14f), shape)
-            .clickable(source, ripple(), role = Role.Button, onClick = onClick).padding(horizontal = Space.l, vertical = 20.dp),
+            .clickable(source, ripple(), role = Role.Button, onClick = onClick).padding(horizontal = 14.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = Color(0xFF58B5FF), modifier = Modifier.size(52.dp))
-        Spacer(Modifier.width(Space.m))
+        Icon(icon, null, tint = Color(0xFF58B5FF), modifier = Modifier.size(46.dp))
+        Spacer(Modifier.width(10.dp))
         Box(Modifier.width(1.dp).height(44.dp).background(Color.White.copy(alpha = 0.25f)))
-        Spacer(Modifier.width(Space.m))
+        Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = Color.White)
+            Text(title, style = MaterialTheme.typography.titleLarge.copy(fontSize = 19.sp), color = Color.White)
             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFD5DDEC))
         }
         Spacer(Modifier.width(Space.s))
@@ -156,15 +157,15 @@ fun FeatureShortcutCard(title: String, subtitle: String, icon: ImageVector, tint
     Row(
         modifier.press(source).clip(shape).background(if (c.isDark) Brush.linearGradient(listOf(c.card2, c.card)) else Brush.linearGradient(listOf(c.card, c.card)))
             .border(1.dp, c.line.copy(alpha = 0.6f), shape).clickable(source, ripple(), role = Role.Button, onClick = onClick)
-            .padding(horizontal = Space.m, vertical = 14.dp),
+            .padding(start = 10.dp, end = 6.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(44.dp).clip(CircleShape).background(tint.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
+        Box(Modifier.size(38.dp).clip(CircleShape).background(tint.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = tint, modifier = Modifier.size(22.dp))
         }
-        Spacer(Modifier.width(Space.s + 2.dp))
+        Spacer(Modifier.width(Space.s))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(subtitle, style = MaterialTheme.typography.labelMedium, color = c.muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = c.muted)
