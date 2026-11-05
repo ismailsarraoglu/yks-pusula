@@ -40,7 +40,7 @@ private val WEEK = listOf("Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma
 fun PlanScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var week by rememberSaveable { mutableStateOf(weekStart(today()).toString()) }
     val start = LocalDate.parse(week)
     val end = start.plusDays(6)
@@ -121,7 +121,7 @@ fun PlanScreen() {
 fun TaskEditScreen(date: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     var day by rememberSaveable { mutableStateOf(date) }
@@ -167,7 +167,7 @@ fun PomodoroScreen() {
     val r = repo()
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val state by r.pomodoro.collectAsStateWithLifecycle(PomodoroState())
     val settings by r.settings.collectAsStateWithLifecycle(AppSettings())
     val profile by r.user.profile().collectAsStateWithLifecycle(null)

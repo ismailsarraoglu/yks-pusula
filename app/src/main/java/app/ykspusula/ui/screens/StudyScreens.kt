@@ -166,7 +166,7 @@ fun SubjectScreen(id: String) {
 fun TopicScreen(id: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val topic by r.content.topic(id).collectAsStateWithLifecycle(null)
     val progress by r.user.progress(id).collectAsStateWithLifecycle(null)
     val t = topic
@@ -348,7 +348,7 @@ data class Picked(val label: String, val checked: Boolean)
 fun SolveScreen(mode: String, exam: String, subject: String, topic: String, diff: Int, state: String, seed: Long, limit: Int, mix: Boolean) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var ids by remember { mutableStateOf<List<String>?>(null) }
     LaunchedEffect(Unit) {
         ids = if (mode == "REVIEW") r.user.wrongDueIds(System.currentTimeMillis())
@@ -544,7 +544,7 @@ fun SolutionCard(q: QuestionFull, onTopic: (() -> Unit)?) {
 @Composable
 fun ReasonPicker(questionId: String) {
     val r = repo()
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var reason by remember(questionId) { mutableStateOf("") }
     YCard {
         Text("Neden yanlış oldu?", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
@@ -598,7 +598,7 @@ fun WrongsScreen() {
 fun WrongDetailScreen(id: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var w by remember { mutableStateOf<WrongQuestion?>(null) }
     var q by remember { mutableStateOf<QuestionFull?>(null) }
     var note by remember { mutableStateOf("") }

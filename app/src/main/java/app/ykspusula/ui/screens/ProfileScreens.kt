@@ -88,7 +88,7 @@ fun ProfileScreen() {
 fun ProfileEditScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     var p by remember { mutableStateOf<UserProfile?>(null) }
     LaunchedEffect(Unit) { p = r.user.profileNow() }
@@ -125,7 +125,7 @@ fun ProfileEditScreen() {
 fun SettingsScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val s by r.settings.collectAsStateWithLifecycle(AppSettings())
     var askReset by remember { mutableStateOf(false) }
     var askReset2 by remember { mutableStateOf(false) }
@@ -168,7 +168,7 @@ fun RemindersScreen() {
     val r = repo()
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val rows by r.user.reminders().collectAsStateWithLifecycle(emptyList())
     var pendingEnable by remember { mutableStateOf<Reminder?>(null) }
     var denied by remember { mutableStateOf(false) }
@@ -215,7 +215,7 @@ fun BackupScreen() {
     val r = a.repo
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var status by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<BackupFile?>(null) }
@@ -285,7 +285,7 @@ fun TargetsScreen() {
     val r = repo()
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val unis by r.user.universities().collectAsStateWithLifecycle(emptyList())
     val depts by r.user.departments().collectAsStateWithLifecycle(emptyList())
     val records by r.user.universityRecords().collectAsStateWithLifecycle(emptyList())
@@ -398,7 +398,7 @@ fun PacksScreen() {
     val r = repo()
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val packs by r.content.packs().collectAsStateWithLifecycle(emptyList())
     val byExam by r.content.bankByExam().collectAsStateWithLifecycle(emptyList())
     var result by remember { mutableStateOf<List<String>>(emptyList()) }

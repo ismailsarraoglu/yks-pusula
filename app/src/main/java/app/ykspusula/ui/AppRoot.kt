@@ -44,6 +44,8 @@ import app.ykspusula.data.UserProfile
 import app.ykspusula.ui.components.Muted
 import app.ykspusula.ui.screens.*
 import app.ykspusula.ui.theme.Yks
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 
 /** Yalnızca otomatik testlerin ekranlara doğrudan gidebilmesi için. */
@@ -53,6 +55,12 @@ val LocalNav = staticCompositionLocalOf<NavController> { error("Nav yok") }
 
 @Composable fun app(): YksApp = LocalContext.current.applicationContext as YksApp
 @Composable fun repo(): Repository = app().repo
+
+/** Askıya alınan işlerden sonra gezinme her zaman ana iş parçacığında sürer. */
+@Composable fun rememberUiScope(): CoroutineScope {
+    val base = rememberCoroutineScope()
+    return remember(base) { CoroutineScope(base.coroutineContext + Dispatchers.Main.immediate) }
+}
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
 

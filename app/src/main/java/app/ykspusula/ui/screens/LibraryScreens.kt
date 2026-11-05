@@ -74,7 +74,7 @@ fun CardsScreen() {
 fun DeckScreen(deck: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val cards by remember(deck) { r.user.cardsOf(deck) }.collectAsStateWithLifecycle(emptyList())
     var filter by rememberSaveable { mutableStateOf("ALL") }
     val shown = when (filter) { "NEW" -> cards.filter { it.learned != true }; "DONE" -> cards.filter { it.learned == true }; else -> cards }
@@ -114,7 +114,7 @@ fun DeckScreen(deck: String) {
 fun CardReviewScreen(deck: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var queue by remember { mutableStateOf<List<CardWithProgress>?>(null) }
     var index by remember { mutableIntStateOf(0) }
     var flipped by remember { mutableStateOf(false) }
@@ -167,7 +167,7 @@ fun CardReviewScreen(deck: String) {
 fun CardEditScreen(deck: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var name by rememberSaveable { mutableStateOf(deck) }
     var subject by rememberSaveable { mutableStateOf("") }
     var front by rememberSaveable { mutableStateOf("") }
@@ -194,7 +194,7 @@ fun CardEditScreen(deck: String) {
 fun FormulasScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val all by r.content.formulas().collectAsStateWithLifecycle(emptyList())
     val favs by r.user.bookmarkIds("FORMULA").collectAsStateWithLifecycle(emptyList())
     var query by rememberSaveable { mutableStateOf("") }
@@ -271,7 +271,7 @@ fun NotesScreen() {
 fun NoteEditScreen(id: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     var title by rememberSaveable { mutableStateOf("") }
@@ -319,7 +319,7 @@ fun LibraryScreen() {
     val r = repo()
     val nav = LocalNav.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val files by r.user.library().collectAsStateWithLifecycle(emptyList())
     var message by remember { mutableStateOf("") }
     var removing by remember { mutableStateOf<LibraryFile?>(null) }

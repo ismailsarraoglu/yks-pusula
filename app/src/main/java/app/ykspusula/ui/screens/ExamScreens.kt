@@ -94,7 +94,7 @@ fun ExamsScreen() {
 fun ExamNewScreen(kind: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
@@ -216,7 +216,7 @@ fun ExamNewScreen(kind: String) {
 fun ExamRunScreen(id: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var exam by remember { mutableStateOf<MockExam?>(null) }
     val records = remember { mutableStateListOf<AnswerRecord>() }
     var questions by remember { mutableStateOf<Map<String, QuestionFull>>(emptyMap()) }
@@ -349,7 +349,7 @@ fun ExamRunScreen(id: String) {
 fun ResultScreen(id: String) {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     var exam by remember { mutableStateOf<MockExam?>(null) }
     var results by remember { mutableStateOf<List<MockExamResult>>(emptyList()) }
     var previous by remember { mutableStateOf<MockSummary?>(null) }
@@ -467,7 +467,7 @@ fun ExamReviewScreen(id: String) {
 fun ExternalExamScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
     var title by rememberSaveable { mutableStateOf("") }
     var publisher by rememberSaveable { mutableStateOf("") }
@@ -521,7 +521,7 @@ fun ExternalExamScreen() {
 fun ExamSettingsScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
     Screen("Sınav ayarları", { nav.popBackStack() }) {
         ScrollColumn {
@@ -555,7 +555,7 @@ fun ExamSettingsScreen() {
 fun ObpScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val s by r.settings.collectAsStateWithLifecycle(AppSettings())
     var diploma by remember(s.diploma) { mutableStateOf(s.diploma) }
     var placed by remember(s.placedLastYear) { mutableStateOf(s.placedLastYear) }

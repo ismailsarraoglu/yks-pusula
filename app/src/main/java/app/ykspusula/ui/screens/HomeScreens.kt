@@ -167,7 +167,7 @@ fun OnboardingScreen() {
 fun HomeScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val scope = rememberCoroutineScope()
+    val scope = app.ykspusula.ui.rememberUiScope()
     val date = remember { today() }
     val from = remember { startOf(date) }
     val to = remember { startOf(date.plusDays(1)) }

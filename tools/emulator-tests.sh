@@ -10,7 +10,10 @@ adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell svc wifi disable; adb shell svc data disable
 adb shell cmd connectivity airplane-mode enable
-echo "ag: $(adb shell dumpsys connectivity | grep -c 'state: CONNECTED')" >> $R
+sleep 8
+echo "ucak-modu: $(adb shell settings get global airplane_mode_on | tr -d '\r')" >> $R
+echo "wifi: $(adb shell settings get global wifi_on | tr -d '\r')" >> $R
+echo "ping: $(adb shell ping -c 1 -W 2 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" >> $R
 
 GR="./gradlew --no-daemon --console=plain"
 $GR :app:connectedDebugAndroidTest 2>&1 | tee ci/logs/connected.txt | tail -40
