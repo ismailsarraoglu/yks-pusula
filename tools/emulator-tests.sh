@@ -29,9 +29,10 @@ INST="$PKG.test/androidx.test.runner.AndroidJUnitRunner"
 run() { adb shell am instrument -w -e class "$1" $INST 2>&1 | tail -4 | tr '\n' ' '; echo; }
 
 # Akış ekranlarının görüntüleri (Gradle uygulamayı kaldırdığı için ayrıca çalıştırılır)
-echo "akislar: $(run $PKG.UiFlowTest#onboardingAndTabs) $(run $PKG.UiFlowTest#solveQuestionUpdatesStats) $(run $PKG.UiFlowTest#examResumesAfterRecreate)" >> $R
+echo "akislar: $(run $PKG.UiFlowTest#onboardingAndTabs) $(run $PKG.UiFlowTest#studyLogUpdatesStats) $(run $PKG.UiFlowTest#examSessionSurvivesRecreate)" >> $R
 # Küçük ve tablet ekran
 adb shell wm size 480x800; adb shell wm density 240
+adb shell settings put system font_scale 1.0
 echo "kucuk: $(run $PKG.UiFlowTest#allScreensOpenBothThemes)" >> $R
 adb shell wm size 1600x2560; adb shell wm density 280
 echo "tablet: $(run $PKG.UiFlowTest#allScreensOpenBothThemes)" >> $R

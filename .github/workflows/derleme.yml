@@ -28,29 +28,29 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest 2>&1 | tee ci/logs/gradle.txt
+          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:bundleRelease :app:assembleDebugAndroidTest 2>&1 | tee ci/logs/gradle.txt
       - name: Manifest denetimi
         if: steps.gradle.outcome == 'success'
         id: manifest
         continue-on-error: true
         run: |
-          M=$(find app/build/intermediates -path "*release*" -name AndroidManifest.xml | grep -E "merged_manifest|packaged_manifests" | head -1)
-          cp "$M" ci/logs/merged-manifest.xml
-          grep -E 'uses-permission|allowBackup' "$M" | tee ci/logs/permissions.txt
-          if grep -qE 'permission.INTERNET|ACCESS_NETWORK_STATE' "$M"; then echo "AG IZNI BULUNDU"; exit 1; fi
-          echo "AG IZNI YOK" >> ci/logs/permissions.txt
           AAPT=$(ls -d $ANDROID_HOME/build-tools/*/aapt2 | tail -1)
-          $AAPT dump permissions app/build/outputs/apk/release/app-release.apk | tee ci/logs/apk-permissions.txt
-          ! grep -qE 'INTERNET|ACCESS_NETWORK_STATE' ci/logs/apk-permissions.txt
+          APK=app/build/outputs/apk/release/app-release.apk
+          $AAPT dump badging $APK | grep -E "^(package|sdkVersion|targetSdkVersion|application-debuggable)" | tee ci/logs/apk-badging.txt
+          $AAPT dump permissions $APK | tee ci/logs/apk-permissions.txt
+          grep -E 'uses-permission' ci/logs/apk-permissions.txt | sed "s/.*name='//; s/'.*//" | sort > ci/logs/izinler.txt
+          ! grep -q application-debuggable ci/logs/apk-badging.txt
+          grep -q "targetSdkVersion:'36'" ci/logs/apk-badging.txt
           APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/*/apksigner | tail -1)
-          $APKSIGNER verify --verbose app/build/outputs/apk/release/app-release.apk | tee ci/logs/apk-signature.txt
+          $APKSIGNER verify --verbose $APK | tee ci/logs/apk-signature.txt
+          ls -la app/build/outputs/bundle/release/ | tee ci/logs/aab.txt
       - name: APK dosyalarini kopyala
         if: steps.gradle.outcome == 'success'
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk ci/apk/yks-pusula-debug.apk
           cp app/build/outputs/apk/release/app-release.apk ci/apk/yks-pusula-release.apk
+          cp app/build/outputs/bundle/release/app-release.aab ci/apk/yks-pusula-release.aab
           ls -la ci/apk > ci/logs/apk-sizes.txt
-          cp -r app/schemas ci/logs/schemas || true
       - name: KVM ayarla
         if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[a14]'))
         run: |

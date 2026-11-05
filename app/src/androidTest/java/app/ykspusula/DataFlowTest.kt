@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import app.ykspusula.data.*
 import app.ykspusula.domain.Repetition
+import app.ykspusula.monetize.AdPlacement
 import app.ykspusula.monetize.PurchaseQuery
 import app.ykspusula.monetize.REMOVE_ADS_PRODUCT
 import app.ykspusula.notify.Notifier
@@ -286,7 +287,7 @@ class DataFlowTest {
         Thread.sleep(200)
         assertFalse(m.ads.canRequestAds.value)
         var got = false
-        m.ads.nativeFor(app.ykspusula.monetize.AdPlacement.HOME) { got = it != null }
+        m.ads.nativeFor(AdPlacement.HOME) { got = it != null }
         assertFalse(got)
         m.entitlement.apply(PurchaseQuery.None)
         assertFalse(m.entitlement.hasAdsFreeEntitlement.value)
