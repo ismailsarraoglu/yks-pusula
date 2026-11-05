@@ -59,7 +59,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - name: Disk alani ac
         if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]'))
-        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup /usr/share/swift
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup /usr/share/swift /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL /opt/hostedtoolcache/go /opt/hostedtoolcache/PyPy /opt/hostedtoolcache/Python /opt/hostedtoolcache/Ruby /usr/local/share/chromium /usr/local/share/powershell /usr/local/lib/node_modules
+          df -h / | tail -1
       - name: Emulator testleri
         id: emu
         if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]'))

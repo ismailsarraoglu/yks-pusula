@@ -26,7 +26,13 @@ echo "ekran=$(ls ci/screens | wc -l)" >> $R
 
 ./gradlew --no-daemon --console=plain --offline :app:installDebug :app:installDebugAndroidTest 2>&1 | tail -3
 INST="$PKG.test/androidx.test.runner.AndroidJUnitRunner"
-run() { adb shell am instrument -w -e class "$1" $INST 2>&1 | tail -4 | tr '\n' ' '; echo; }
+run() {
+  for t in 1 2 3; do
+    o=$(adb shell am instrument -w -e class "$1" $INST 2>&1 | tail -4 | tr '\n' ' ')
+    case "$o" in *"at com.android"*) sleep 8;; *) break;; esac
+  done
+  echo "$o"
+}
 
 # Akış ekranlarının görüntüleri (Gradle uygulamayı kaldırdığı için ayrıca çalıştırılır)
 echo "akislar: $(run $PKG.UiFlowTest#onboardingAndTabs) $(run $PKG.UiFlowTest#studyLogUpdatesStats) $(run $PKG.UiFlowTest#examSessionSurvivesRecreate)" >> $R

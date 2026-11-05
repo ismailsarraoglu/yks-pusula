@@ -373,7 +373,9 @@ fun ExamEntryScreen(id: String) {
         ) { title, publisher, date, minutes, entries, hard, note ->
             scope.launch {
                 r.saveExamResults(id, title, publisher, date, minutes, entries, hard, note)
-                nav.navigate("result/$id") { popUpTo("exams") }
+                // Geri tuşu bitmiş denemenin formuna dönmesin.
+                nav.popBackStack()
+                nav.navigate("result/$id")
             }
         }
     }
@@ -395,7 +397,8 @@ fun ExternalExamScreen(kind: String, exam: String, subject: String, title: Strin
                 scope.launch {
                     val k = if (kind in listOf("BRANCH", "TOPIC", "PERSONAL", "CUSTOM")) kind else "EXTERNAL"
                     val id = r.saveExternalExam(t, publisher, date, e, minutes, rows, k, hard, note, subject.ifEmpty { null })
-                    nav.navigate("result/$id") { popUpTo("exams") }
+                    nav.popBackStack()
+                    nav.navigate("result/$id")
                 }
             }
         }

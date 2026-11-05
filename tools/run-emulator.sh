@@ -34,5 +34,8 @@ done
 echo "acilis: $B, deneme: $i"
 [ "$B" = "1" ] || { echo "ACILIS ZAMAN ASIMI"; tail -30 ci/logs/emulator.txt; exit 1; }
 bash tools/emulator-tests.sh
-"$ADB" emu kill
+"$ADB" emu kill; sleep 5
+pkill -f qemu-system; sleep 2
+"$SDK/avdmanager" delete avd -n test > /dev/null 2>&1
+rm -rf "$ANDROID_HOME/$(echo "$IMG" | tr ';' '/')" "$ANDROID_AVD_HOME/test.avd"
 true

@@ -31,6 +31,7 @@ if [ "$B" != "1" ]; then
   timeout 30 adb logcat -d 2>/dev/null | tail -300 | cut -c1-220 > "ci/logs/logcat-$NAME.txt"
   tail -40 "ci/logs/emulator-$NAME.txt" > "ci/logs/emulator-son-$NAME.txt"
   pkill -f qemu-system; sleep 5
+  rm -rf "$ANDROID_HOME/$(echo "$IMG" | tr ';' '/')" "$ANDROID_AVD_HOME/$NAME.avd"
   exit 0
 fi
 echo "android=$(adb shell getprop ro.build.version.release | tr -d '\r') api=$(adb shell getprop ro.build.version.sdk | tr -d '\r')" >> "$R"
@@ -85,5 +86,9 @@ adb shell uiautomator dump /sdcard/ekran.xml > /dev/null 2>&1
 echo "ekrandaki-yazilar: $(adb exec-out cat /sdcard/ekran.xml 2>/dev/null | grep -o 'text="[^"]*"' | grep -v 'text=""' | head -12 | tr '\n' ' ')" >> "$R"
 adb exec-out screencap -p > "ci/screens/uyum-$NAME.png"
 echo "release-crash: $(adb logcat -d | grep -cE 'FATAL EXCEPTION|E AndroidRuntime')" >> "$R"
-adb emu kill; sleep 3
+adb emu kill; sleep 5
+pkill -f qemu-system; sleep 2
+# Disk dolmasın: bu sürümün imajı ve sanal cihazı silinir.
+"$SDK/avdmanager" delete avd -n "$NAME" > /dev/null 2>&1
+rm -rf "$ANDROID_HOME/$(echo "$IMG" | tr ';' '/')" "$ANDROID_AVD_HOME/$NAME.avd"
 true
