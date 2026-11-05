@@ -66,6 +66,13 @@ jobs:
         continue-on-error: true
         timeout-minutes: 50
         run: bash tools/run-emulator.sh
+      - name: Android 8 ve 14 uyumluluk
+        if: steps.emu.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          bash tools/smoke.sh a8 "system-images;android-26;default;x86_64" app.ykspusula.DataFlowTest
+          bash tools/smoke.sh a14 "system-images;android-34;aosp_atd;x86_64" app.ykspusula.DataFlowTest
       - name: Rapor
         if: always()
         run: |

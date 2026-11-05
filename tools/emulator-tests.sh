@@ -25,6 +25,8 @@ echo "ekran=$(ls ci/screens | wc -l)" >> $R
 INST="$PKG.test/androidx.test.runner.AndroidJUnitRunner"
 run() { adb shell am instrument -w -e class "$1" $INST 2>&1 | tail -4 | tr '\n' ' '; echo; }
 
+# Akış ekranlarının görüntüleri (Gradle uygulamayı kaldırdığı için ayrıca çalıştırılır)
+echo "akislar: $(run $PKG.UiFlowTest#onboardingAndTabs) $(run $PKG.UiFlowTest#solveQuestionUpdatesStats) $(run $PKG.UiFlowTest#examResumesAfterRecreate)" >> $R
 # Küçük ve tablet ekran
 adb shell wm size 480x800; adb shell wm density 240
 echo "kucuk: $(run $PKG.UiFlowTest#allScreensOpenBothThemes)" >> $R
