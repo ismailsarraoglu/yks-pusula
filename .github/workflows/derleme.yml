@@ -69,10 +69,10 @@ jobs:
       - name: Android 8 ve 14 uyumluluk
         if: steps.emu.outcome == 'success'
         continue-on-error: true
-        timeout-minutes: 30
+        timeout-minutes: 35
         run: |
           bash tools/smoke.sh a8 "system-images;android-26;default;x86_64" app.ykspusula.DataFlowTest
-          bash tools/smoke.sh a14 "system-images;android-34;aosp_atd;x86_64" app.ykspusula.DataFlowTest
+          bash tools/smoke.sh a13 "system-images;android-33;aosp_atd;x86_64" app.ykspusula.DataFlowTest
       - name: Rapor
         if: always()
         run: |

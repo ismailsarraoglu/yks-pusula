@@ -196,7 +196,7 @@ fun HomeScreen() {
     ScrollColumn(Modifier.statusBarsPadding()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(if (p.name.isBlank()) greeting else "$greeting, ${p.name}", style = MaterialTheme.typography.headlineMedium, color = Yks.c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(if (p.name.isBlank()) greeting else "$greeting, ${p.name}", style = MaterialTheme.typography.titleLarge, color = Yks.c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 val target = listOf(p.targetDepartment, p.targetUniversity).filter { it.isNotBlank() }.joinToString(" • ")
                 Muted(target.ifBlank { "Hedefini Profil'den ekleyebilirsin" }, maxLines = 1)
             }

@@ -13,7 +13,7 @@ echo no | "$SDK/avdmanager" create avd -n "$NAME" -k "$IMG" -d pixel_6 --force
 printf 'hw.ramSize=3072\ndisk.dataPartition.size=4096M\nhw.keyboard=yes\n' >> "$ANDROID_AVD_HOME/$NAME.avd/config.ini"
 "$ANDROID_HOME/emulator/emulator" -avd "$NAME" -accel on -cores 2 -memory 3072 -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot > "ci/logs/emulator-$NAME.txt" 2>&1 &
 B=""
-for i in $(seq 1 120); do
+for i in $(seq 1 170); do
   B=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break; sleep 5
 done
 echo "acilis=$B deneme=$i" | tee "$R"

@@ -200,4 +200,57 @@ class UiFlowTest {
             scenario!!.close(); scenario = null
         }
     }
+
+    private fun go(route: String) { rule.runOnUiThread { DebugNav.nav!!.navigate(route) }; rule.waitForIdle() }
+    private fun type(label: String, text: String) { waitText(label); rule.onAllNodesWithText(label).onFirst().performTextInput(text); rule.waitForIdle() }
+    private fun until(what: String, block: suspend () -> Boolean) { rule.waitUntil(what, 10000) { runBlocking { block() } } }
+
+    @Test fun mainButtonsDoTheirJob() {
+        seedProfile()
+        launch()
+        waitText("Bugünkü ilerleme")
+
+        go("pomodoro"); clickText("Başlat"); waitText("Duraklat")
+        until("sayaç") { r.pomodoro.first().running }
+        clickText("Duraklat"); waitText("Devam et")
+        until("duraklatma") { !r.pomodoro.first().running }
+        clickText("Devam et"); waitText("Duraklat"); clickText("Sıfırla"); waitText("Başlat")
+        until("sıfırlama") { r.pomodoro.first().phase == "IDLE" }
+
+        go("note/new"); type("Başlık", "Limit özeti"); type("Açıklama", "Sağdan ve soldan limit eşit olmalı."); clickText("Kaydet")
+        until("not") { r.user.notesNow().any { it.title == "Limit özeti" } }
+        go("notes"); waitText("Limit özeti")
+
+        go("cardEdit/Kartlarım"); type("Ön yüz: soru veya kavram", "Hücre zarı"); type("Arka yüz: cevap", "Seçici geçirgen"); clickText("Kaydet")
+        until("kart") { r.user.userCardsNow().size == 1 }
+        go("review/Kartlarım"); clickText("Kartı çevir"); clickText("Biliyorum")
+        until("kart değerlendirme") { r.user.cardProgressNow().any { it.lastRating == 2 } }
+
+        go("taskEdit/${today()}"); type("Görev adı (isteğe bağlı)", "Paragraf tekrarı"); clickText("Kaydet")
+        until("görev") { r.user.allTasks().any { it.title == "Paragraf tekrarı" } }
+        val task = runBlocking { r.user.allTasks().first { it.title == "Paragraf tekrarı" } }
+        go("plan"); clickText("Otomatik program oluştur")
+        waitText("görev oluşturuldu", sub = true)
+        assertTrue(runBlocking { r.user.allTasks().any { it.id == task.id } })
+
+        go("external"); type("Deneme adı", "Yayın Denemesi"); type("Yayınevi veya kaynak", "Örnek Yayın")
+        rule.onAllNodesWithText("Doğru").onFirst().performTextInput("30"); rule.onAllNodesWithText("Yanlış").onFirst().performTextInput("8")
+        clickText("Kaydet"); waitText("Toplam net")
+        waitText("28,00", sub = true)
+
+        go("targets"); clickText("Üniversite ekle"); type("Üniversite adı", "Boğaziçi"); type("Şehir", "İstanbul"); clickText("Ekle")
+        until("üniversite") { r.user.universitiesNow().any { it.name == "Boğaziçi" } }
+
+        go("obp"); type("Diploma notu (50-100)", "85"); waitText("51,00"); clickText("Kaydet")
+        until("diploma") { r.settings.first().diploma == "85" }
+
+        go("settings"); clickText("Koyu")
+        until("tema") { r.settings.first().theme == "DARK" }
+        clickText("Çok büyük")
+        until("yazı") { r.settings.first().fontScale > 1.2f }
+        runBlocking { r.updateSettings { it[Keys.theme] = "LIGHT"; it[Keys.font] = 1f } }
+
+        go("search"); type("Ders, konu, soru, formül, not...", "turev"); waitText("Türev")
+        go("backup"); waitText("Dışa aktar")
+    }
 }
