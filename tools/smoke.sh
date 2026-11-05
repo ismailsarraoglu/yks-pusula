@@ -38,20 +38,39 @@ adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell svc wifi disable; adb shell svc data disable
+adb shell svc power stayon true
 if [ -n "$CLS" ]; then
   adb install -r -g app/build/outputs/apk/debug/app-debug.apk | tail -1 >> "$R"
   adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk | tail -1 >> "$R"
   timeout 1800 adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -60 > "ci/logs/uyum-$NAME-test.txt"
   echo "test: $(tail -4 ci/logs/uyum-$NAME-test.txt | tr '\n' ' ')" >> "$R"
+  if [ -n "$KALICILIK" ]; then
+    P=$PKG.PersistenceTest
+    calistir() { timeout 300 adb shell am instrument -w -e class "$1" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -3 | tr -d '\r' | tr '\n' ' '; }
+    echo "kalicilik-yaz: $(calistir "$P#writeData")" >> "$R"
+    adb shell am force-stop $PKG
+    echo "kalicilik-durdurma: $(calistir "$P#readData")" >> "$R"
+    adb reboot; sleep 20; timeout 300 adb wait-for-device
+    for i in $(seq 1 80); do [ "$(timeout 15 adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 3; done
+    sleep 10
+    adb shell svc power stayon true
+    echo "kalicilik-yeniden-baslatma: $(calistir "$P#readData")" >> "$R"
+  fi
   mkdir -p ci/screens-$NAME
   adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' 2>/dev/null | tar -x -C ci/screens-$NAME 2>/dev/null
   adb uninstall $PKG.test; adb uninstall $PKG
 fi
 echo "release-kurulum: $(adb install -r app/build/outputs/apk/release/app-release.apk 2>&1 | tail -1)" >> "$R"
 adb logcat -c
+adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard; sleep 2
 adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
 sleep 15
 echo "release-surec: $(adb shell pidof $PKG)" >> "$R"
+echo "ekran-durumu: $(adb shell dumpsys power | grep -m1 mWakefulness= | tr -d '\r ')" >> "$R"
+echo "ondeki-etkinlik: $(adb shell dumpsys activity activities | grep -m1 -E 'topResumedActivity|mResumedActivity' | tr -d '\r')" >> "$R"
+echo "ilk-cizim: $(adb logcat -d | grep -m1 'Displayed app.ykspusula' | cut -c1-140)" >> "$R"
+adb shell uiautomator dump /sdcard/ekran.xml > /dev/null 2>&1
+echo "ekrandaki-yazilar: $(adb exec-out cat /sdcard/ekran.xml 2>/dev/null | grep -o 'text="[^"]*"' | grep -v 'text=""' | head -12 | tr '\n' ' ')" >> "$R"
 adb exec-out screencap -p > "ci/screens/uyum-$NAME.png"
 echo "release-crash: $(adb logcat -d | grep -cE 'FATAL EXCEPTION|E AndroidRuntime')" >> "$R"
 adb emu kill; sleep 3
