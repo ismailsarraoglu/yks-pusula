@@ -39,6 +39,9 @@ adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell svc wifi disable; adb shell svc data disable
 adb shell svc power stayon true
+adb shell cmd connectivity airplane-mode enable 2>/dev/null
+sleep 6
+echo "ucak-modu: $(adb shell settings get global airplane_mode_on | tr -d '\r') ping: $(adb shell ping -c 1 -W 2 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" >> "$R"
 if [ -n "$CLS" ]; then
   adb install -r -g app/build/outputs/apk/debug/app-debug.apk | tail -1 >> "$R"
   adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk | tail -1 >> "$R"
