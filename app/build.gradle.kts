@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
+    id("androidx.room")
 }
 
 val localProps = Properties().apply {
@@ -75,10 +76,7 @@ android {
 
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-    arg("room.incremental", "true")
-}
+room { schemaDirectory("$projectDir/schemas") }
 
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.09.00")

@@ -81,6 +81,7 @@ jobs:
       - name: Rapor
         if: always()
         run: |
+          cp -r app/schemas ci/logs/schemas 2>/dev/null || true
           {
             echo "gradle=${{ steps.gradle.outcome }}"
             echo "manifest=${{ steps.manifest.outcome }}"
