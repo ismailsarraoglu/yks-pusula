@@ -4,16 +4,44 @@
 
 Depodaki `app/signing/yks-pusula-sideload.p12` yalnızca dışarıdan kurulum içindir ve parolası kodda yazılıdır. Play için kullanmayın.
 
-Android Studio > **Build > Generate Signed App Bundle > Create new** ile yükleme anahtarı oluşturun. Dosyayı ve parolaları proje dışında, güvenli iki ayrı yerde yedekleyin. Sonra `keystore.properties` dosyasına ekleyin:
+Yükleme anahtarını siz oluşturursunuz. Parolaları kimseyle paylaşmayın, sohbete yazmayın.
+
+**Anahtar oluşturma.** İki yoldan birini kullanın:
+
+- Android Studio: **Build > Generate Signed App Bundle > Create new**.
+- Komut satırı (JDK kurulu bilgisayarda):
+
+```
+keytool -genkeypair -v -keystore yks-upload.jks -alias yks-upload -keyalg RSA -keysize 4096 -validity 10000
+```
+
+**Yedek.** `.jks` dosyasını ve parolaları iki ayrı güvenli yerde saklayın (örneğin şifreli bir parola yöneticisi ve bilgisayar dışında bir disk). Play Uygulama İmzalama açıkken kaybolan yükleme anahtarı Play Console'dan sıfırlanabilir, ama bu Google onayı ister ve zaman alır.
+
+**AAB üretme, yol A: GitHub üzerinden (Android Studio gerekmez).** Deponun **Settings > Secrets and variables > Actions** bölümüne şu gizli değerleri ekleyin:
+
+| Gizli değer | İçerik |
+|---|---|
+| `UPLOAD_KEYSTORE_B64` | `.jks` dosyasının Base64 hali (`base64 -w0 yks-upload.jks`; Windows PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("yks-upload.jks"))`) |
+| `UPLOAD_STORE_PASSWORD` | Anahtar deposu parolası |
+| `UPLOAD_KEY_ALIAS` | `yks-upload` |
+| `UPLOAD_KEY_PASSWORD` | Anahtar parolası |
+| `ADMOB_APP_ID`, `ADMOB_NATIVE_ID` | AdMob panelinden (bkz. `admob-talimat.md`) |
+| `PLAY_PUBLIC_KEY` | Play Console > Para kazanma > Lisanslama |
+
+Sonra **Actions > yayin-aab > Run workflow**. Bitince çalışmanın **Artifacts** bölümünden `yks-pusula-play-aab` dosyasını indirin (3 gün saklanır). İçinde AAB ve kilitlenme raporlarını okunur yapan `mapping.txt` vardır. Eksik değer varsa iş, hangi değerin eksik olduğunu söyleyerek durur.
+
+**Yol B: kendi bilgisayarınızda.** Proje kökünde `keystore.properties` oluşturun (depoya eklenmez):
 
 ```
 UPLOAD_STORE_FILE=/guvenli/yol/yks-upload.jks
 UPLOAD_STORE_PASSWORD=...
-UPLOAD_KEY_ALIAS=...
+UPLOAD_KEY_ALIAS=yks-upload
 UPLOAD_KEY_PASSWORD=...
 ```
 
-Bu dosyayla `./gradlew bundleRelease` çalıştırıldığında AAB yükleme anahtarıyla imzalanır. Play Console'da **Play Uygulama İmzalama**yı açık tutun. Teslim edilen AAB depodaki anahtarla imzalıdır; ilk yüklemeden önce kendi anahtarınızla yeniden derleyin, aksi hâlde o anahtar yükleme anahtarınız olur.
+`./gradlew bundleRelease` komutu AAB'yi yükleme anahtarıyla imzalar.
+
+Play Console'da **Play Uygulama İmzalama**yı açık tutun. Bu teslimdeki AAB depodaki yan yükleme anahtarıyla imzalı ve test reklam kimlikleri içerir; Play'e yüklemeyin, yukarıdaki yollardan biriyle kendi anahtarınızla üretin.
 
 Not: Play'den kurulan uygulama farklı imzalı olur. Şu an dışarıdan kurulu sürüm Play sürümüyle güncellenemez. Önce yedek alın, kaldırın, Play'den kurun, yedeği geri yükleyin.
 

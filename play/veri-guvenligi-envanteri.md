@@ -25,13 +25,15 @@ Bu veriler cihazdan çıkmaz, Veri Güvenliği formunda "toplanıyor" sayılmaz:
 
 ## İzinler (APK'dan okunan gerçek liste CI çıktısında `logs/izinler.txt`)
 
-| İzin | Neden |
-|---|---|
-| INTERNET, ACCESS_NETWORK_STATE | Reklam, Play satın alma, rıza formu |
-| POST_NOTIFICATIONS | Yerel hatırlatıcılar |
-| RECEIVE_BOOT_COMPLETED | Yeniden başlatma sonrası hatırlatıcıları kurmak |
-| com.android.vending.BILLING | Play Billing (SDK ekler) |
-| com.google.android.gms.permission.AD_ID | Reklam kimliği (SDK ekler). Play Console'da "Reklam kimliği kullanılıyor" beyanı gerekir |
+| İzin | Kaynak | Neden |
+|---|---|---|
+| INTERNET, ACCESS_NETWORK_STATE | Uygulama | Reklam, Play satın alma, rıza formu |
+| POST_NOTIFICATIONS | Uygulama | Yerel hatırlatıcılar |
+| RECEIVE_BOOT_COMPLETED | Uygulama | Yeniden başlatma sonrası hatırlatıcıları kurmak |
+| com.android.vending.BILLING | Play Billing | Tek seferlik satın alma |
+| com.google.android.gms.permission.AD_ID | Reklam SDK'sı | Reklam kimliği. Play Console'da "Reklam kimliği kullanılıyor" beyanı gerekir |
+| FOREGROUND_SERVICE, WAKE_LOCK | Reklam SDK'sı bağımlılıkları | Uygulama kodu kullanmaz; SDK kütüphaneleri ekler |
+| app.ykspusula.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION | AndroidX | Uygulama içi yayın koruması |
 
 Geniş dosya izni, kamera izni veya konum izni istenmez. Fotoğraf ve PDF sistem seçicisiyle alınır.
 
