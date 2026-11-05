@@ -87,20 +87,21 @@ object SearchText {
         return b.toString().split(' ').filter { it.isNotEmpty() }.joinToString(" ")
     }
 
+    /** Yer değiştirmiş iki harfi tek hata sayan düzenleme uzaklığı. */
     fun distance(a: String, b: String): Int {
         if (a == b) return 0
         if (a.isEmpty()) return b.length
         if (b.isEmpty()) return a.length
-        var prev = IntArray(b.length + 1) { it }
-        var cur = IntArray(b.length + 1)
-        for (i in a.indices) {
-            cur[0] = i + 1
-            for (j in b.indices) {
-                cur[j + 1] = minOf(cur[j] + 1, prev[j + 1] + 1, prev[j] + if (a[i] == b[j]) 0 else 1)
-            }
-            val t = prev; prev = cur; cur = t
+        val d = Array(a.length + 1) { IntArray(b.length + 1) }
+        for (i in 0..a.length) d[i][0] = i
+        for (j in 0..b.length) d[0][j] = j
+        for (i in 1..a.length) for (j in 1..b.length) {
+            val cost = if (a[i - 1] == b[j - 1]) 0 else 1
+            var v = minOf(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+            if (i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1]) v = min(v, d[i - 2][j - 2] + 1)
+            d[i][j] = v
         }
-        return prev[b.length]
+        return d[a.length][b.length]
     }
 
     /** 0 eşleşme yok; yüksek puan daha iyi. */
