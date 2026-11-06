@@ -11,7 +11,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 170
+    timeout-minutes: 185
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -71,7 +71,7 @@ jobs:
       - name: Surum uyumlulugu
         if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[tam]')
         continue-on-error: true
-        timeout-minutes: 90
+        timeout-minutes: 105
         run: bash tools/matris.sh
       - name: Rapor
         if: always()

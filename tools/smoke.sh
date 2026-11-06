@@ -5,12 +5,23 @@ NAME=$1; IMG=$2; CLS=$3
 R=ci/logs/uyum-$NAME.txt
 PKG=app.ykspusula
 export PATH="$ANDROID_HOME/platform-tools:$PATH"
+# adb komutu cihaz yokken sonsuza dek bekleyebilir. Her çağrı süre sınırıyla çalışır,
+# emülatör düştüyse hemen hata döner. Böylece tek bir kayıp cihaz bütün turu kilitlemez.
+adb() {
+  local A="$ANDROID_HOME/platform-tools/adb"
+  case "$1" in
+    wait-for-device|emu|devices|start-server|kill-server) ;;
+    *) timeout 20 "$A" get-state > /dev/null 2>&1 || { echo "adb: cihaz yok ($1)" >&2; return 1; } ;;
+  esac
+  timeout 1200 "$A" "$@"
+}
 export ANDROID_AVD_HOME="$HOME/.android/avd"
 SDK="$ANDROID_HOME/cmdline-tools/latest/bin"
 S=ci/logs/kurulum-$NAME.txt
 mkdir -p "$ANDROID_AVD_HOME"
 yes | "$SDK/sdkmanager" --licenses > /dev/null 2>&1
-timeout 10 adb emu kill 2>/dev/null; sleep 4
+timeout 10 "$ANDROID_HOME/platform-tools/adb" emu kill 2>/dev/null; sleep 4
+pkill -f qemu-system; sleep 2
 "$SDK/sdkmanager" "$IMG" "emulator" "platform-tools" 2>&1 | tr '\r' '\n' | tail -3 > "$S"
 echo no | "$SDK/avdmanager" create avd -n "$NAME" -k "$IMG" -d pixel_6 --force >> "$S" 2>&1
 df -h / | tail -1 >> "$S"

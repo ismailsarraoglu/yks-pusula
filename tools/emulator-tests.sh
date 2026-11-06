@@ -1,10 +1,20 @@
 #!/bin/bash
 # Testlerde ağ kapalıdır. Sonuçlar ci/ klasörüne yazılır.
 set +e
+# adb komutu cihaz yokken sonsuza dek bekleyebilir. Her çağrı süre sınırıyla çalışır,
+# emülatör düştüyse hemen hata döner. Böylece tek bir kayıp cihaz bütün turu kilitlemez.
+adb() {
+  local A="$ANDROID_HOME/platform-tools/adb"
+  case "$1" in
+    wait-for-device|emu|devices|start-server|kill-server) ;;
+    *) timeout 20 "$A" get-state > /dev/null 2>&1 || { echo "adb: cihaz yok ($1)" >&2; return 1; } ;;
+  esac
+  timeout 1200 "$A" "$@"
+}
 R=ci/logs/kabul.txt
 : > $R
 PKG=app.ykspusula
-adb wait-for-device
+timeout 300 "$ANDROID_HOME/platform-tools/adb" wait-for-device
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
@@ -72,7 +82,14 @@ echo "ekran-toplam=$(ls ci/screens | wc -l)" >> $R
 echo "yaz: $(run $PKG.PersistenceTest#writeData)" >> $R
 adb shell am force-stop $PKG
 echo "durdurma-sonrasi: $(run $PKG.PersistenceTest#readData)" >> $R
-adb reboot; sleep 20; adb wait-for-device
+adb reboot; sleep 20
+if ! timeout 180 "$ANDROID_HOME/platform-tools/adb" wait-for-device; then
+  # Emülatör yeniden başlarken düşerse aynı veri diskiyle tekrar açılır, veri kalıcılığı yine ölçülür.
+  echo "yeniden-baslatma: emulator kapandi, ayni diskle aciliyor (qemu: $(pgrep -c -f qemu-system))" >> $R
+  pkill -f qemu-system; sleep 3
+  "$ANDROID_HOME/emulator/emulator" -avd test -accel on -cores 2 -memory 3072 -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -camera-front none >> ci/logs/emulator-ikinci.txt 2>&1 &
+  timeout 240 "$ANDROID_HOME/platform-tools/adb" wait-for-device
+fi
 for i in $(seq 1 60); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 3; done
 sleep 5
 echo "yeniden-baslatma-sonrasi: $(run $PKG.PersistenceTest#readData)" >> $R

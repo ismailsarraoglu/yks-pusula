@@ -33,7 +33,8 @@ for i in $(seq 1 180); do
 done
 echo "acilis: $B, deneme: $i"
 [ "$B" = "1" ] || { echo "ACILIS ZAMAN ASIMI"; tail -30 ci/logs/emulator.txt; exit 1; }
-bash tools/emulator-tests.sh
+# Süre aşılırsa betik yetim kalıp sonraki sürümün emülatörünü bozmasın.
+timeout -k 10 3900 bash tools/emulator-tests.sh || echo "emulator-tests bitis kodu: $?"
 "$ADB" emu kill; sleep 5
 pkill -f qemu-system; sleep 2
 "$SDK/avdmanager" delete avd -n test > /dev/null 2>&1
