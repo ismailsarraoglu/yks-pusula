@@ -121,3 +121,17 @@ FROM WrongQuestion w LEFT JOIN Question q ON q.id = w.questionId""",
         """DROP TABLE IF EXISTS AnswerOption""",
         """DROP TABLE IF EXISTS Question""",
 )
+
+
+/**
+ * 2.1.0: profilde çalışma bloğu, yanlış kaydında tür (yanlış, boş, tahminle doğru) ve deneme bağlantısı.
+ * Yalnızca sütun eklenir; mevcut kayıtlar güvenli varsayılanlarla korunur.
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `UserProfile` ADD COLUMN `blockMinutes` INTEGER NOT NULL DEFAULT 50")
+        db.execSQL("ALTER TABLE `WrongEntry` ADD COLUMN `kind` TEXT NOT NULL DEFAULT 'WRONG'")
+        db.execSQL("ALTER TABLE `WrongEntry` ADD COLUMN `mockExamId` TEXT")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_WrongEntry_mockExamId` ON `WrongEntry` (`mockExamId`)")
+    }
+}

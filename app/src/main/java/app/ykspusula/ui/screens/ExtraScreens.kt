@@ -107,7 +107,9 @@ fun RemoveAdsScreen() {
             Muted("Dikkatini dağıtmadan çalışmaya devam et.")
             PurchaseCard(adsFree)
             if (adsFree) InfoBanner("Reklamlar zaten kaldırılmış. Teşekkürler.", Icons.Rounded.CheckCircle, Yks.c.success)
-            else {
+            else if (!a.monetize.entitlement.purchasesEnabled) {
+                InfoBanner("Bu test sürümünde satın alma kapalı. Reklamsız sürüm yalnızca Google Play'den kurulan uygulamada satın alınabilir.", Icons.Rounded.Info, Yks.c.accentLight)
+            } else {
                 MainButton(if (ui.price != null) "REKLAMLARI KALDIR • ${ui.price}" else "REKLAMLARI KALDIR", Modifier.fillMaxWidth(), enabled = !ui.pending && ui.price != null, icon = Icons.Rounded.WorkspacePremium) {
                     (context as? android.app.Activity)?.let { a.monetize.billing.buy(it) }
                 }

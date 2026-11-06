@@ -414,7 +414,7 @@ interface UserDao {
 }
 
 @Database(
-    version = 2,
+    version = 3,
     exportSchema = true,
     entities = [
         UserProfile::class, ExamConfiguration::class, Subject::class, Topic::class,
@@ -432,6 +432,6 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         /** Şema değişiklikleri Migration ile yapılır; yıkıcı geçiş hiçbir zaman açılmaz. */
         fun build(context: Context): AppDatabase =
-            Room.databaseBuilder(context, AppDatabase::class.java, "yks_pusula.db").addMigrations(MIGRATION_1_2).build()
+            Room.databaseBuilder(context, AppDatabase::class.java, "yks_pusula.db").addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     }
 }

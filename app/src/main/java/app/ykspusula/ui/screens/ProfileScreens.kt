@@ -267,11 +267,14 @@ fun BackupScreen() {
         val f = (l.check as? BackupCheck.Ok)?.file ?: return
         scope.launch {
             try {
-                a.backup.restore(f.data, replace, BuildConfig.VERSION_NAME, l.attachments)
+                val rep = a.backup.restore(f.data, replace, BuildConfig.VERSION_NAME, l.attachments, l.warnings)
                 Notifier.rescheduleAll(context)
-                isError = false; status = if (replace) "Yedek geri yüklendi. Önceki verilerin cihazda güvenlik kopyası olarak saklandı." else "Yedek mevcut verilerle birleştirildi."
+                isError = false
+                status = (if (replace) "Yedek geri yüklendi. Önceki verilerin fotoğraf ve PDF'lerle birlikte cihazda güvenlik kopyası olarak saklandı." else "Yedek mevcut verilerle birleştirildi.") +
+                    " ${rep.records} kayıt ve ${rep.files} dosya aktarıldı." + rep.warnings.joinToString("") { " $it" }
                 pending = null; safety = a.backup.safetyCopies()
-            } catch (e: Exception) { isError = true; status = "Geri yükleme başarısız. Verilerin değiştirilmedi." }
+            } catch (e: app.ykspusula.data.BackupRejected) { isError = true; status = e.message ?: "Geri yükleme yapılamadı."
+            } catch (e: Exception) { isError = true; status = "Geri yükleme tamamlanamadı. Değiştirme seçtiysen önceki verilerin cihazdaki güvenlik kopyasında duruyor." }
         }
     }
     Screen("Veri yedekleme", { nav.popBackStack() }) {
@@ -296,6 +299,8 @@ fun BackupScreen() {
                     Text("Yedek doğrulandı", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
                     Muted("Tarih: ${shortDate(f.createdAt)} • Sürüm ${f.appVersion}")
                     Muted("${f.data.logs.size} çalışma kaydı, ${f.data.mocks.size} deneme, ${f.data.notes.size} not, ${f.data.wrongs.size} yanlış, ${f.data.sources.size} kaynak")
+                    pending?.let { l -> if (l.fileCount > 0) Muted("${l.fileCount} fotoğraf veya PDF dosyası" + if (f.files.isNotEmpty()) ", bütünlüğü doğrulandı" else "") }
+                    pending?.warnings?.forEach { w -> Muted(w) }
                     Spacer(Modifier.height(Space.s))
                     MainButton("Mevcut verilerle birleştir", Modifier.fillMaxWidth()) { restore(false) }
                     Spacer(Modifier.height(Space.s))

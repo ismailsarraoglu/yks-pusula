@@ -22,6 +22,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 val Context.settingsStore: DataStore<Preferences> by preferencesDataStore("settings")
 
@@ -451,17 +452,25 @@ class Repository(private val context: Context, val db: AppDatabase) {
         val cfg = user.examConfigsNow()
         val examCode = if (profile.field == "DIL") "YDT" else if (profile.field == "TYT") "TYT" else "AYT"
         val examDate = LocalDate.parse((cfg.firstOrNull { it.code == examCode } ?: cfg.first()).examDate)
-        val subjects = planSubjects(profile)
+        val subjects = withGaps(planSubjects(profile), cfg)
         val topics = content.allTopics().filter { t -> t.scope != "EXCLUDED" && subjects.any { it.id == t.subjectId } }
         val progress = user.progressAll().associateBy { it.topicId }
         val stats = user.topicStatsNow().associateBy { it.key }
         val now = System.currentTimeMillis()
+        val misses = mockMisses(now)
         val plan = topics.map { t ->
             val p = progress[t.id]
             val s = stats[t.id]
-            PlanTopic(t.id, t.subjectId, t.name, p?.status ?: 0, s?.takeIf { it.total > 0 }?.let { Scoring.percent(it.right, it.total) }, t.estimatedMinutes, p?.nextReviewAt?.let { it <= now } ?: false)
+            PlanTopic(
+                t.id, t.subjectId, t.name, p?.status ?: 0, s?.takeIf { it.total > 0 }?.let { Scoring.percent(it.right, it.total) }, t.estimatedMinutes,
+                p?.nextReviewAt?.let { it <= now } ?: false, misses[t.id] ?: 0,
+                p?.lastStudiedAt?.let { ChronoUnit.DAYS.between(dateOf(it), today()).toInt() },
+            )
         }
         val days = profile.studyDays.split(',').mapNotNull { it.toIntOrNull() }.toSet().ifEmpty { setOf(1, 2, 3, 4, 5, 6, 7) }
+        val end = start.plusDays(6).toString()
+        val kept = user.tasksBetweenNow(start.toString(), end).filter { it.done || it.planId == null }
+            .groupBy { LocalDate.parse(it.date) }.mapValues { (_, l) -> l.sumOf { it.minutes } }
         return PlanInput(
             start, examDate, profile.dailyMinutes, days, profile.startHour, subjects, plan,
             profile.weakSubjects.split(',').filter { it.isNotBlank() }.toSet(),
@@ -469,7 +478,38 @@ class Repository(private val context: Context, val db: AppDatabase) {
             user.wrongDueNow(now),
             profile.maxDailyMinutes, profile.breakMinutes, profile.endHour,
             profile.priorityTopics.split(',').filter { it.isNotBlank() }.toSet(),
+            blockMinutes = profile.blockMinutes,
+            weeklyMinutes = settings.first().weeklyGoalMinutes,
+            restDates = user.restDaysNow().mapNotNull { runCatching { LocalDate.parse(it.date) }.getOrNull() }.toSet(),
+            keptMinutes = kept,
         )
+    }
+
+    /** Son 60 gündeki denemelerde yanlış veya boş olarak işaretlenen konular ve zorlanılan konular. */
+    private suspend fun mockMisses(now: Long): Map<String, Int> {
+        val since = now - 60 * Repetition.DAY_MS
+        val out = HashMap<String, Int>()
+        user.wrongsNow().filter { it.origin == "MOCK" && !it.resolved && it.firstWrongAt >= since && it.topicId != null }
+            .forEach { out[it.topicId!!] = (out[it.topicId] ?: 0) + it.wrongCount }
+        user.mockSummariesNow().filter { it.createdAt >= since }.takeLast(3).forEach { m ->
+            user.mock(m.id)?.hardTopics.orEmpty().split(',').filter { it.isNotBlank() }.forEach { t -> if (t !in out) out[t] = 1 }
+        }
+        return out
+    }
+
+    /** Hedef netin altında kalan testlerin derslerine fark bilgisi eklenir. */
+    private suspend fun withGaps(subjects: List<PlanSubject>, cfg: List<ExamConfiguration>): List<PlanSubject> {
+        val goals = user.netGoalsNow()
+        if (goals.isEmpty()) return subjects
+        val mocks = user.mockSummariesNow()
+        val gaps = HashMap<String, Triple<Double, Double, Double>>()
+        goals.forEach { g ->
+            val c = cfg.firstOrNull { it.code == g.exam } ?: return@forEach
+            val last = mocks.lastOrNull { it.exam == g.exam }?.let { m -> user.results(m.id).firstOrNull { it.section == g.section }?.net } ?: return@forEach
+            val ids = sectionsOf(c).firstOrNull { it.name == g.section }?.parts?.map { it.subjectId }.orEmpty()
+            ids.forEach { id -> gaps[id] = Triple(g.target - last, last, g.target) }
+        }
+        return subjects.map { s -> gaps[s.id]?.let { (gap, last, target) -> s.copy(gap = gap, lastNet = last, targetNet = target) } ?: s }
     }
 
     suspend fun planSubjects(p: UserProfile): List<PlanSubject> {
@@ -485,9 +525,13 @@ class Repository(private val context: Context, val db: AppDatabase) {
         }
     }
 
-    suspend fun generatePlan(start: LocalDate = today()): Int {
-        val tasks = PlanGenerator.generate(planInput(start))
-        if (tasks.isEmpty()) return 0
+    suspend fun generatePlan(start: LocalDate = today()): Int = generatePlanDetailed(start).tasks.size
+
+    /** Plan, korunan görevler (tamamlanan ve elle eklenen) silinmeden oluşturulur; açıklamalar ekranda gösterilir. */
+    suspend fun generatePlanDetailed(start: LocalDate = today()): PlanResult {
+        val result = PlanGenerator.plan(planInput(start))
+        val tasks = result.tasks
+        if (tasks.isEmpty()) return result
         val now = System.currentTimeMillis()
         val plan = StudyPlan(title = "Otomatik plan", startDate = start.toString(), endDate = start.plusDays(6).toString(), isAuto = true, createdAt = now)
         db.withTransaction {
@@ -497,7 +541,7 @@ class Repository(private val context: Context, val db: AppDatabase) {
             user.saveTasks(tasks.map { StudyTask(planId = plan.id, date = it.date.toString(), time = it.time, subjectId = it.subjectId, topicId = it.topicId, title = it.title, kind = it.kind, minutes = it.minutes, questionGoal = it.questionGoal, reason = it.reason, priority = it.priority, originalDate = it.date.toString(), updatedAt = now) })
         }
         changed()
-        return tasks.size
+        return result
     }
 
     private suspend fun snapshotPlan(summary: String, from: LocalDate) {

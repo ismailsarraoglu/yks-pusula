@@ -8,11 +8,31 @@ plugins {
     id("androidx.room")
 }
 
+/*
+ * Gizli değerler depoya yazılmaz. Önce keystore.properties (Git'e eklenmez), sonra ortam değişkenleri okunur.
+ * Ayrıntı: play/play-yayin-talimat.md
+ */
 val localProps = Properties().apply {
     val f = rootProject.file("keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
-fun prop(name: String, default: String): String = localProps.getProperty(name) ?: default
+fun secret(name: String): String? =
+    localProps.getProperty(name)?.trim()?.takeIf { it.isNotEmpty() } ?: System.getenv(name)?.trim()?.takeIf { it.isNotEmpty() }
+
+/** Google'ın herkese açık test reklam kimlikleri. Yalnızca debug ve yan yükleme test derlemesinde kullanılır. */
+val testAdAppId = "ca-app-pub-3940256099942544~3347511713"
+val testAdBannerId = "ca-app-pub-3940256099942544/9214589741"
+val testAdNativeId = "ca-app-pub-3940256099942544/2247696110"
+val googleTestPublisher = "ca-app-pub-3940256099942544"
+
+/**
+ * Yalnızca debug derlemesinde satın alma doğrulamasını test etmek için üretilmiş anahtar.
+ * Google Play'in anahtarı değildir; bununla imzalanmış satın alma Play'den gelemez.
+ */
+val debugPurchaseTestKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtDzyyx+zbAlYZLvhYjiXXhD9lRLcblfR2riQfB247gbF6tT83BD2lsByu9it838OVUPGezsjJ6fuiU0PX1neIXm8x1von+83olQZFiK8ygstNjFR0FxkPgy6X6v/LPFlRIA7a0R5biQNo9sjaeDcWw6C3rRs6xdTIiwojiqiuFO1jNxtkyF49jtULYOGc6tS2J9XYmiix8JpQLMwNNFZ/fh0Jya3qSuvWiDouROe0irvVy6VS+dzQp8W34l2RHbGYBCAkWznrccQdKyJSyo2MrcUwKtrJVlJqHbEWisOorJexPK3lf5THAZ/hxOYSdwfWUbYgOIJIkyqZOSwHgPDVwIDAQAB"
+
+val uploadStore = secret("UPLOAD_STORE_FILE")
+val sideloadStore = secret("SIDELOAD_STORE_FILE")
 
 android {
     namespace = "app.ykspusula"
@@ -22,47 +42,69 @@ android {
         applicationId = "app.ykspusula"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0.0"
+        versionCode = 3
+        versionName = "2.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Bu test internet ister; bağlantılı emülatörde ayrıca çalıştırılır.
         testInstrumentationRunnerArguments["notClass"] = "app.ykspusula.AdOnlineTest,app.ykspusula.StresTest"
         vectorDrawables { useSupportLibrary = true }
-
-        // Varsayılanlar Google'ın test kimlikleridir. Üretim değerleri keystore.properties dosyasından gelir.
-        val testAppId = "ca-app-pub-3940256099942544~3347511713"
-        manifestPlaceholders["admobAppId"] = prop("ADMOB_APP_ID", testAppId)
-        buildConfigField("String", "ADMOB_APP_ID", "\"${prop("ADMOB_APP_ID", testAppId)}\"")
-        buildConfigField("String", "ADMOB_BANNER_ID", "\"${prop("ADMOB_BANNER_ID", "ca-app-pub-3940256099942544/9214589741")}\"")
-        buildConfigField("String", "ADMOB_NATIVE_ID", "\"${prop("ADMOB_NATIVE_ID", "ca-app-pub-3940256099942544/2247696110")}\"")
-        buildConfigField("String", "PLAY_PUBLIC_KEY", "\"${prop("PLAY_PUBLIC_KEY", "")}\"")
     }
 
     signingConfigs {
-        create("sideload") {
-            storeFile = file("signing/yks-pusula-sideload.p12")
-            storeType = "PKCS12"
-            storePassword = "KALDIRILDI"
-            keyAlias = "ykspusula"
-            keyPassword = "KALDIRILDI"
+        // Yan yükleme test anahtarı depoda değildir. Verilmezse yan yükleme derlemesi debug anahtarıyla imzalanır.
+        if (sideloadStore != null) {
+            create("sideload") {
+                storeFile = rootProject.file(sideloadStore)
+                storeType = "PKCS12"
+                storePassword = secret("SIDELOAD_STORE_PASSWORD")
+                keyAlias = secret("SIDELOAD_KEY_ALIAS") ?: "ykspusula"
+                keyPassword = secret("SIDELOAD_KEY_PASSWORD") ?: secret("SIDELOAD_STORE_PASSWORD")
+            }
         }
-        // Google Play yükleme anahtarı keystore.properties ile verilir; depoya konmaz.
-        if (localProps.getProperty("UPLOAD_STORE_FILE") != null) {
+        // Google Play yükleme anahtarı. Yoksa release derlemesi durur; başka anahtara dönülmez.
+        if (uploadStore != null) {
             create("upload") {
-                storeFile = rootProject.file(localProps.getProperty("UPLOAD_STORE_FILE"))
-                storePassword = localProps.getProperty("UPLOAD_STORE_PASSWORD")
-                keyAlias = localProps.getProperty("UPLOAD_KEY_ALIAS")
-                keyPassword = localProps.getProperty("UPLOAD_KEY_PASSWORD")
+                storeFile = rootProject.file(uploadStore)
+                storePassword = secret("UPLOAD_STORE_PASSWORD")
+                keyAlias = secret("UPLOAD_KEY_ALIAS")
+                keyPassword = secret("UPLOAD_KEY_PASSWORD")
             }
         }
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["admobAppId"] = testAdAppId
+            buildConfigField("String", "ADMOB_APP_ID", "\"$testAdAppId\"")
+            buildConfigField("String", "ADMOB_BANNER_ID", "\"$testAdBannerId\"")
+            buildConfigField("String", "ADMOB_NATIVE_ID", "\"$testAdNativeId\"")
+            buildConfigField("String", "PLAY_PUBLIC_KEY", "\"$debugPurchaseTestKey\"")
+            buildConfigField("String", "DISTRIBUTION", "\"DEBUG\"")
+        }
+        // Google Play'e yüklenecek tek derleme. Gerçek kimlikler ve yükleme anahtarı olmadan üretilemez.
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("sideload")
+            signingConfig = signingConfigs.findByName("upload")
+            manifestPlaceholders["admobAppId"] = secret("ADMOB_APP_ID") ?: "EKSIK"
+            buildConfigField("String", "ADMOB_APP_ID", "\"${secret("ADMOB_APP_ID").orEmpty()}\"")
+            buildConfigField("String", "ADMOB_BANNER_ID", "\"${secret("ADMOB_BANNER_ID").orEmpty()}\"")
+            buildConfigField("String", "ADMOB_NATIVE_ID", "\"${secret("ADMOB_NATIVE_ID").orEmpty()}\"")
+            buildConfigField("String", "PLAY_PUBLIC_KEY", "\"${secret("PLAY_PUBLIC_KEY").orEmpty()}\"")
+            buildConfigField("String", "DISTRIBUTION", "\"PLAY\"")
+        }
+        // Telefona doğrudan kurulan test sürümü: release ile aynı küçültme ayarları, Google test reklamları, satın alma kapalı.
+        create("sideload") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            signingConfig = signingConfigs.findByName("sideload") ?: signingConfigs.getByName("debug")
+            manifestPlaceholders["admobAppId"] = testAdAppId
+            buildConfigField("String", "ADMOB_APP_ID", "\"$testAdAppId\"")
+            buildConfigField("String", "ADMOB_BANNER_ID", "\"$testAdBannerId\"")
+            buildConfigField("String", "ADMOB_NATIVE_ID", "\"$testAdNativeId\"")
+            buildConfigField("String", "PLAY_PUBLIC_KEY", "\"\"")
+            buildConfigField("String", "DISTRIBUTION", "\"SIDELOAD\"")
         }
     }
 
@@ -75,6 +117,30 @@ android {
     testOptions { animationsDisabled = true }
     sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
 }
+
+/** Play derlemesi eksik veya test yapılandırmasıyla üretilmesin diye derleme başında denetlenir. */
+val releaseDenetimi = tasks.register("releaseYapilandirmasiniDenetle") {
+    val values = mapOf(
+        "UPLOAD_STORE_FILE" to uploadStore, "UPLOAD_STORE_PASSWORD" to secret("UPLOAD_STORE_PASSWORD"),
+        "UPLOAD_KEY_ALIAS" to secret("UPLOAD_KEY_ALIAS"), "UPLOAD_KEY_PASSWORD" to secret("UPLOAD_KEY_PASSWORD"),
+        "ADMOB_APP_ID" to secret("ADMOB_APP_ID"), "ADMOB_NATIVE_ID" to secret("ADMOB_NATIVE_ID"), "PLAY_PUBLIC_KEY" to secret("PLAY_PUBLIC_KEY"),
+    )
+    val storeExists = uploadStore?.let { rootProject.file(it).exists() } ?: false
+    doLast {
+        val problems = ArrayList<String>()
+        values.filterValues { it == null }.keys.forEach { problems += "$it tanımlı değil" }
+        if (uploadStore != null && !storeExists) problems += "UPLOAD_STORE_FILE dosyası bulunamadı: $uploadStore"
+        listOf("ADMOB_APP_ID", "ADMOB_NATIVE_ID").forEach { k ->
+            if (values[k]?.startsWith(googleTestPublisher) == true) problems += "$k Google test kimliği; Play derlemesinde gerçek AdMob kimliği gerekir"
+        }
+        if (problems.isNotEmpty()) throw GradleException(
+            "Google Play derlemesi durduruldu. Eksik yapılandırma:\n- " + problems.joinToString("\n- ") +
+                "\nDeğerleri keystore.properties dosyasına veya ortam değişkenlerine girin (play/play-yayin-talimat.md). " +
+                "Telefonda denemek için assembleSideload kullanın.",
+        )
+    }
+}
+tasks.configureEach { if (name == "preReleaseBuild") dependsOn(releaseDenetimi) }
 
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 

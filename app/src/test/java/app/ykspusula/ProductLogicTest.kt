@@ -4,6 +4,7 @@ import app.ykspusula.data.*
 import app.ykspusula.domain.*
 import app.ykspusula.monetize.CachedPurchase
 import app.ykspusula.monetize.EntitlementLogic
+import app.ykspusula.monetize.PurchaseCheck
 import app.ykspusula.monetize.PurchaseQuery
 import app.ykspusula.monetize.REMOVE_ADS_PRODUCT
 import kotlinx.serialization.builtins.ListSerializer
@@ -109,7 +110,10 @@ class ProductLogicTest {
         val t = PlanGenerator.generate(i)
         assertEquals("b", t.first().topicId)
         assertTrue(t.first().reason.isNotBlank())
-        t.groupBy { it.date }.values.forEach { d -> assertTrue(d.sumOf { it.minutes } <= 200); assertTrue(d.all { it.time < "13:00" }) }
+        t.groupBy { it.date }.values.forEach { d ->
+            assertTrue(d.sumOf { it.minutes } <= 200)
+            d.forEach { x -> val end = x.time.substringBefore(':').toInt() * 60 + x.time.substringAfter(':').toInt() + x.minutes; assertTrue("${x.time}+${x.minutes}", end <= 13 * 60) }
+        }
     }
 
     @Test fun wrongReviewChangesInterval() {
@@ -180,13 +184,44 @@ class ProductLogicTest {
 
     private val json = "{\"productId\":\"$REMOVE_ADS_PRODUCT\"}"
 
+    private val keys = java.security.KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+    private val pub = java.util.Base64.getEncoder().encodeToString(keys.public.encoded)
+    private fun sign(text: String, k: java.security.PrivateKey = keys.private) =
+        java.security.Signature.getInstance("SHA1withRSA").run { initSign(k); update(text.toByteArray()); java.util.Base64.getEncoder().encodeToString(sign()) }
+    private fun play(product: String = REMOVE_ADS_PRODUCT, state: Int = 0, pkg: String = "app.ykspusula") =
+        "{\"orderId\":\"GPA.1\",\"packageName\":\"$pkg\",\"productId\":\"$product\",\"purchaseState\":$state,\"purchaseToken\":\"t\"}"
+
     @Test fun entitlementOnlyFromVerifiedPurchase() {
-        assertFalse(EntitlementLogic.isValid(null, ""))
-        assertFalse(EntitlementLogic.isValid(EntitlementLogic.next(null, PurchaseQuery.Pending, now), ""))
-        assertFalse(EntitlementLogic.isValid(EntitlementLogic.next(null, PurchaseQuery.None, now), ""))
-        val c = EntitlementLogic.next(null, PurchaseQuery.Purchased("tok", json, "sig"), now)
-        assertTrue(EntitlementLogic.isValid(c, ""))
-        assertFalse(EntitlementLogic.isValid(CachedPurchase("x", "{}", "", 1), ""))
+        assertFalse(EntitlementLogic.isValid(null, pub))
+        assertFalse(EntitlementLogic.isValid(EntitlementLogic.next(null, PurchaseQuery.Pending, now), pub))
+        assertFalse(EntitlementLogic.isValid(EntitlementLogic.next(null, PurchaseQuery.None, now), pub))
+        val good = play()
+        val c = EntitlementLogic.next(null, PurchaseQuery.Purchased("tok", good, sign(good)), now)
+        assertTrue(EntitlementLogic.isValid(c, pub))
+        assertFalse(EntitlementLogic.isValid(CachedPurchase("x", "{}", "", 1), pub))
+    }
+
+    /** 2.0.0'daki açık: anahtar boşken imzasız kayıt geçerli sayılıyordu. */
+    @Test fun missingPublicKeyNeverGrants() {
+        val good = play()
+        assertEquals(PurchaseCheck.NO_KEY, EntitlementLogic.check(good, sign(good), ""))
+        assertFalse(EntitlementLogic.isValid(CachedPurchase("h", good, sign(good), 1), ""))
+        assertFalse(EntitlementLogic.isValid(CachedPurchase("h", json, "sig", 1), ""))
+    }
+
+    @Test fun purchaseChecksProductStateAndPackage() {
+        fun chk(t: String) = EntitlementLogic.check(t, sign(t), pub)
+        assertEquals(PurchaseCheck.OK, chk(play()))
+        assertEquals(PurchaseCheck.WRONG_PRODUCT, chk(play(product = "x_remove_ads_lifetime")))
+        assertEquals(PurchaseCheck.WRONG_PRODUCT, chk("{\"productId\":\"baska\",\"note\":\"$REMOVE_ADS_PRODUCT\"}"))
+        assertEquals(PurchaseCheck.NOT_PURCHASED, chk(play(state = 4)))
+        assertEquals(PurchaseCheck.NOT_PURCHASED, chk(play(state = 1)))
+        assertEquals(PurchaseCheck.WRONG_PACKAGE, chk(play(pkg = "com.baska")))
+        assertEquals(PurchaseCheck.MALFORMED, chk("bozuk"))
+        val other = java.security.KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        assertEquals(PurchaseCheck.BAD_SIGNATURE, EntitlementLogic.check(play(), sign(play(), other.private), pub))
+        assertEquals(PurchaseCheck.BAD_SIGNATURE, EntitlementLogic.check(play(), "", pub))
+        assertEquals(PurchaseCheck.OK, EntitlementLogic.check("{\"productIds\":[\"$REMOVE_ADS_PRODUCT\"],\"purchaseState\":0}", sign("{\"productIds\":[\"$REMOVE_ADS_PRODUCT\"],\"purchaseState\":0}"), pub))
     }
 
     @Test fun entitlementSurvivesOfflineAndRevokesOnNone() {
@@ -196,12 +231,11 @@ class ProductLogicTest {
         assertNull(EntitlementLogic.next(c, PurchaseQuery.None, now + day))
     }
 
-    @Test fun signatureMustMatchWhenKeySet() {
-        val kp = java.security.KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
-        val pub = java.util.Base64.getEncoder().encodeToString(kp.public.encoded)
-        val sig = java.security.Signature.getInstance("SHA1withRSA").run { initSign(kp.private); update(json.toByteArray()); java.util.Base64.getEncoder().encodeToString(sign()) }
-        assertTrue(EntitlementLogic.isValid(CachedPurchase("h", json, sig, 1), pub))
-        assertFalse(EntitlementLogic.isValid(CachedPurchase("h", json.replace("remove", "x_remove"), sig, 1), pub))
+    @Test fun signatureMustMatch() {
+        val good = play()
+        val sig = sign(good)
+        assertTrue(EntitlementLogic.isValid(CachedPurchase("h", good, sig, 1), pub))
+        assertFalse(EntitlementLogic.isValid(CachedPurchase("h", good.replace("GPA.1", "GPA.2"), sig, 1), pub))
     }
 
     /* ---------- Yedek ---------- */

@@ -103,7 +103,7 @@ adb shell dumpsys alarm | grep -c ykspusula | sed 's/^/alarm: /' >> $R
 # Bağımsız release APK: temiz kurulum ve açılış
 adb uninstall $PKG
 adb uninstall $PKG.test
-adb install -r app/build/outputs/apk/release/app-release.apk 2>&1 | tail -1 | sed 's/^/release-kurulum: /' >> $R
+adb install -r app/build/outputs/apk/sideload/app-sideload.apk 2>&1 | tail -1 | sed 's/^/release-kurulum: /' >> $R
 adb logcat -c
 adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
 sleep 12

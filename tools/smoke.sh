@@ -152,7 +152,7 @@ if [ -n "$CLS" ]; then
   adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens' 2>/dev/null | tar -x -C ci/screens-$NAME 2>/dev/null
   adb uninstall $PKG.test; adb uninstall $PKG
 fi
-echo "release-kurulum: $(adb install -r app/build/outputs/apk/release/app-release.apk 2>&1 | tail -1)" >> "$R"
+echo "release-kurulum: $(adb install -r app/build/outputs/apk/sideload/app-sideload.apk 2>&1 | tail -1)" >> "$R"
 adb logcat -c
 adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard; sleep 2
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1
@@ -176,7 +176,7 @@ if [ -n "$TEKRAR" ]; then
   ok=0
   for n in $(seq 1 "$TEKRAR"); do
     adb uninstall $PKG > /dev/null 2>&1
-    adb install -r app/build/outputs/apk/release/app-release.apk > /dev/null 2>&1
+    adb install -r app/build/outputs/apk/sideload/app-sideload.apk > /dev/null 2>&1
     adb logcat -c
     adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
     sleep 15

@@ -1,7 +1,7 @@
 name: derleme
 on:
   push:
-    branches: [main]
+    branches: [main, surum-2.1]
   workflow_dispatch:
 permissions:
   contents: write
@@ -23,19 +23,42 @@ jobs:
         run: |
           mkdir -p ci/logs ci/apk ci/screens
           git log -1 --format='%h %s' > ci/logs/commit.txt
+      - name: Yan yukleme anahtarini hazirla
+        env:
+          SIDELOAD_P12_B64: ${{ secrets.SIDELOAD_P12_B64 }}
+          SIDELOAD_STORE_PASSWORD: ${{ secrets.SIDELOAD_STORE_PASSWORD }}
+        run: |
+          # Anahtar depoda tutulmaz. GitHub Secrets'ta yoksa test APK'si debug anahtariyla imzalanir.
+          if [ -n "$SIDELOAD_P12_B64" ] && [ -n "$SIDELOAD_STORE_PASSWORD" ]; then
+            printf '%s' "$SIDELOAD_P12_B64" | base64 -d > "$RUNNER_TEMP/sideload.p12"
+            { echo "SIDELOAD_STORE_FILE=$RUNNER_TEMP/sideload.p12"; echo "SIDELOAD_STORE_PASSWORD=$SIDELOAD_STORE_PASSWORD"; } > keystore.properties
+            echo "imza=yan-yukleme-anahtari" > ci/logs/imza-turu.txt
+          else
+            echo "imza=debug-anahtari (SIDELOAD_P12_B64 tanimli degil)" > ci/logs/imza-turu.txt
+          fi
       - name: Derle ve birim testleri calistir
         id: gradle
         continue-on-error: true
         run: |
           set -o pipefail
-          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:bundleRelease :app:assembleDebugAndroidTest 2>&1 | tee ci/logs/gradle.txt
+          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:assembleDebug :app:assembleSideload :app:assembleDebugAndroidTest 2>&1 | tee ci/logs/gradle.txt
+          rm -f keystore.properties
+      - name: Play derlemesi anahtarsiz durmali
+        if: steps.gradle.outcome == 'success'
+        run: |
+          # Yukleme anahtari ve gercek kimlikler yokken bundleRelease hata vermeli; sessizce baska anahtarla imzalanmamali.
+          if ./gradlew --no-daemon --console=plain :app:bundleRelease > ci/logs/release-denetimi.txt 2>&1; then
+            echo "release-denetimi: HATA, anahtarsiz AAB uretildi" | tee -a ci/logs/release-denetimi.txt; exit 1
+          fi
+          grep -A12 "Google Play derlemesi durduruldu" ci/logs/release-denetimi.txt | head -14 > ci/logs/release-denetimi-ozet.txt
+          grep -q "UPLOAD_STORE_FILE" ci/logs/release-denetimi-ozet.txt && echo "release-denetimi: beklenen hatayla durdu" | tee -a ci/logs/release-denetimi-ozet.txt
       - name: Manifest denetimi
         if: steps.gradle.outcome == 'success'
         id: manifest
         continue-on-error: true
         run: |
           AAPT=$(ls -d $ANDROID_HOME/build-tools/*/aapt2 | tail -1)
-          APK=app/build/outputs/apk/release/app-release.apk
+          APK=app/build/outputs/apk/sideload/app-sideload.apk
           $AAPT dump badging $APK | grep -E "^(package|sdkVersion|targetSdkVersion|application-debuggable)" | tee ci/logs/apk-badging.txt
           $AAPT dump permissions $APK | tee ci/logs/apk-permissions.txt
           grep -E 'uses-permission' ci/logs/apk-permissions.txt | sed "s/.*name='//; s/'.*//" | sort > ci/logs/izinler.txt
@@ -43,13 +66,11 @@ jobs:
           grep -q "targetSdkVersion:'36'" ci/logs/apk-badging.txt
           APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/*/apksigner | tail -1)
           $APKSIGNER verify --verbose $APK | tee ci/logs/apk-signature.txt
-          ls -la app/build/outputs/bundle/release/ | tee ci/logs/aab.txt
       - name: APK dosyalarini kopyala
         if: steps.gradle.outcome == 'success'
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk ci/apk/yks-pusula-debug.apk
-          cp app/build/outputs/apk/release/app-release.apk ci/apk/yks-pusula-release.apk
-          cp app/build/outputs/bundle/release/app-release.aab ci/apk/yks-pusula-release.aab
+          cp app/build/outputs/apk/sideload/app-sideload.apk ci/apk/yks-pusula-sideload.apk
           ls -la ci/apk > ci/logs/apk-sizes.txt
       - name: KVM ayarla
         if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]') || contains(github.event.head_commit.message, '[reklam]'))

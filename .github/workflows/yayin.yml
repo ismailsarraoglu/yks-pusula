@@ -44,7 +44,7 @@ jobs:
             echo "PLAY_PUBLIC_KEY=$PLAY_PUBLIC_KEY"
           } > keystore.properties
       - name: AAB derle
-        run: ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:bundleRelease
+        run: ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:bundleRelease :app:assembleRelease
       - name: Imzayi dogrula
         run: jarsigner -verify app/build/outputs/bundle/release/app-release.aab | tail -2
       - name: Anahtari sil
@@ -55,6 +55,7 @@ jobs:
           name: yks-pusula-play-aab
           path: |
             app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/apk/release/app-release.apk
             app/build/outputs/mapping/release/mapping.txt
           retention-days: 3
           if-no-files-found: error

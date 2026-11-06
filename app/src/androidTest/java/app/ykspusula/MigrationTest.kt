@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import app.ykspusula.data.AppDatabase
 import app.ykspusula.data.MIGRATION_1_2
+import app.ykspusula.data.MIGRATION_2_3
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -74,6 +75,46 @@ class MigrationTest {
         assertEquals(1, int("SELECT COUNT(*) FROM LibraryFile"))
         assertEquals(0, int("SELECT COUNT(*) FROM sqlite_master WHERE name IN ('Question','AnswerOption','QuestionAttempt','AnswerRecord','WrongQuestion')"))
         assertEquals(0, db.query("PRAGMA foreign_key_check").use { it.count })
+        db.close()
+    }
+
+    /** 2.0.0 kullanıcısı: veriler 2.1.0 şemasına taşınır, yeni alanlar güvenli varsayılan alır. */
+    @Test fun v2UserDataSurvivesV3() {
+        val n = "goc-testi-2"
+        helper.createDatabase(n, 2).apply {
+            execSQL("INSERT INTO UserProfile (id,name,grade,examYear,field,ydtLanguage,targetUniversity,targetDepartment,dailyMinutes,studyDays,dailyQuestions,strongSubjects,weakSubjects,startHour,onboarded,maxDailyMinutes,breakMinutes,endHour,priorityTopics) VALUES (1,'İki','12',2027,'EA','İngilizce','','',180,'1,2,3',50,'','',8,1,300,15,21,'')")
+            execSQL("INSERT INTO StudySource (id,name,publisher,type,subjectId,topicId,description,totalPages,startDate,endDate,lastPage,pagesDone,favorite,archived,note,libraryFileId,lastUsedAt,createdAt,updatedAt) VALUES ('src','Kitap','','SORU_BANKASI',NULL,NULL,'',100,'','',10,10,0,0,'',NULL,0,1,1)")
+            execSQL("INSERT INTO WrongEntry (id,subjectId,topicId,sourceId,sourceLabel,page,questionNo,reason,note,photoFile,questionText,givenAnswer,correctAnswer,firstWrongAt,lastWrongAt,nextReviewAt,stage,wrongCount,resolved,origin,updatedAt) VALUES ('w','tyt-mat','tyt-mat-kumeler','src','Kitap',5,'3','Dikkatsizlik','not','f.jpg','','','',1,2,3,1,1,0,'MANUAL',2)")
+            execSQL("INSERT INTO WrongReview (id,wrongId,at,result,stageAfter) VALUES ('r','w',5,2,1)")
+            execSQL("INSERT INTO StudySession (id,subjectId,topicId,label,startedAt,minutes,kind,note,sourceId,plannedMinutes,activity) VALUES ('s','tyt-mat',NULL,'Odak',1,45,'POMODORO','',NULL,50,'')")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(n, 3, true, MIGRATION_2_3)
+        fun int(sql: String): Int = db.query(sql).use { it.moveToFirst(); it.getInt(0) }
+        fun str(sql: String): String? = db.query(sql).use { it.moveToFirst(); it.getString(0) }
+        assertEquals("İki", str("SELECT name FROM UserProfile"))
+        assertEquals(50, int("SELECT blockMinutes FROM UserProfile"))
+        assertEquals(15, int("SELECT breakMinutes FROM UserProfile"))
+        assertEquals("WRONG", str("SELECT kind FROM WrongEntry"))
+        assertNull(str("SELECT mockExamId FROM WrongEntry"))
+        assertEquals("f.jpg", str("SELECT photoFile FROM WrongEntry"))
+        assertEquals(1, int("SELECT COUNT(*) FROM WrongReview"))
+        assertEquals(45, int("SELECT minutes FROM StudySession"))
+        assertEquals(0, db.query("PRAGMA foreign_key_check").use { it.count })
+        db.close()
+    }
+
+    /** 1.0.0'dan doğrudan 2.1.0'a geçiş. */
+    @Test fun v1ToV3Chain() {
+        val n = "goc-testi-zincir"
+        helper.createDatabase(n, 1).apply {
+            execSQL("INSERT INTO UserProfile (id,name,grade,examYear,field,ydtLanguage,targetUniversity,targetDepartment,dailyMinutes,studyDays,dailyQuestions,strongSubjects,weakSubjects,startHour,onboarded) VALUES (1,'Bir','12',2027,'SAY','İngilizce','','',240,'1,2',60,'','',9,1)")
+            execSQL("INSERT INTO UserNote (id,title,body,subjectId,topicId,createdAt,updatedAt,favorite) VALUES ('n','Not','x',NULL,NULL,1,1,0)")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(n, 3, true, MIGRATION_1_2, MIGRATION_2_3)
+        db.query("SELECT name, blockMinutes FROM UserProfile").use { it.moveToFirst(); assertEquals("Bir", it.getString(0)); assertEquals(50, it.getInt(1)) }
+        db.query("SELECT COUNT(*) FROM UserNote").use { it.moveToFirst(); assertEquals(1, it.getInt(0)) }
         db.close()
     }
 }

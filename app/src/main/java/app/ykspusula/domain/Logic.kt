@@ -191,9 +191,14 @@ object Timers {
 
 /* ---------- PLAN ÜRETİCİ ---------- */
 
-data class PlanSubject(val id: String, val name: String, val weight: Double)
+/** gap: hedef net eksi son net; pozitifse ders hedefin altındadır. */
+data class PlanSubject(val id: String, val name: String, val weight: Double, val gap: Double? = null, val lastNet: Double? = null, val targetNet: Double? = null)
 data class PlanTopic(
     val id: String, val subjectId: String, val name: String, val status: Int, val success: Int?, val minutes: Int, val reviewDue: Boolean,
+    /** Son denemelerde bu konuda işaretlenen yanlış ve boş sayısı. */
+    val mockMisses: Int = 0,
+    /** Konunun son çalışıldığı günden bu yana geçen gün; hiç çalışılmadıysa null. */
+    val daysSinceStudy: Int? = null,
 )
 data class PlanInput(
     val start: LocalDate,
@@ -211,17 +216,30 @@ data class PlanInput(
     val endHour: Int = 23,
     val priorityTopics: Set<String> = emptySet(),
     val blockMinutes: Int = PlanGenerator.BLOCK,
+    /** Haftalık çalışma hedefi; 0 ise yalnızca günlük hedef uygulanır. */
+    val weeklyMinutes: Int = 0,
+    /** Öğrencinin işaretlediği dinlenme günleri. */
+    val restDates: Set<LocalDate> = emptySet(),
+    /** Korunan görevlerin (tamamlanmış veya elle eklenmiş) gün bazında süresi; hedeften düşülür. */
+    val keptMinutes: Map<LocalDate, Int> = emptyMap(),
 )
+/** minutes yalnızca çalışma süresidir; mola ayrı tutulur. */
 data class PlannedTask(
     val date: LocalDate, val time: String, val subjectId: String?, val topicId: String?, val title: String,
-    val kind: String, val minutes: Int, val questionGoal: Int, val reason: String = "", val priority: Int = 2,
+    val kind: String, val minutes: Int, val questionGoal: Int, val reason: String = "", val priority: Int = 2, val breakAfter: Int = 0,
 )
+data class PlanDay(val date: LocalDate, val targetMinutes: Int, val plannedMinutes: Int, val breakMinutes: Int, val note: String = "")
+data class PlanResult(val tasks: List<PlannedTask>, val days: List<PlanDay>, val notes: List<String>) {
+    val studyMinutes: Int get() = tasks.sumOf { it.minutes }
+}
 
 object PlanGenerator {
     const val BLOCK = 50
-    const val MAX_BLOCKS_PER_DAY = 7
+    const val MIN_BLOCK = 15
+    /** Sınava bu kadar gün kala yeni konu yerine tekrar öne alınır. */
+    const val FINAL_DAYS = 21
 
-    /** Zayıf ders ağırlığı artar, güçlü dersler azaltılır ama hiçbir zaman sıfırlanmaz. */
+    /** Zayıf ders ve hedefin altındaki ders ağırlığı artar, güçlü dersler azaltılır ama hiçbir zaman sıfırlanmaz. */
     fun subjectWeights(input: PlanInput): Map<String, Double> {
         val bySubject = input.topics.groupBy { it.subjectId }
         return input.subjects.associate { s ->
@@ -233,78 +251,153 @@ object PlanGenerator {
             if (topics.isNotEmpty()) w *= 0.6 + 0.4 * open.toDouble() / topics.size
             if (s.id in input.weakSubjectIds) w *= 1.5
             if (s.id in input.strongSubjectIds) w *= 0.7
+            s.gap?.let { g -> if (g > 0) w *= 1.0 + min(g / 10.0, 1.0) }
+            if (topics.any { it.mockMisses > 0 }) w *= 1.2
             s.id to max(w, 0.2)
         }
     }
 
-    private fun reasonFor(t: PlanTopic?, subject: PlanSubject, input: PlanInput): Pair<String, Int> = when {
-        t == null -> "${subject.name} dersinin haftalık payı." to 3
-        t.id in input.priorityTopics -> "Bu konuyu öncelikli olarak seçtin." to 1
-        t.reviewDue -> "Tekrar zamanı geldi." to 1
-        t.success != null && t.success < 60 -> "Kayıtlarında doğru oranı %${t.success}." to 1
-        subject.id in input.weakSubjectIds -> "Zorlandığını belirttiğin ders." to 2
-        t.status == 0 -> "Henüz başlamadığın bir konu." to 2
-        else -> "Konuyu güçlendirmek için." to 3
-    }
-
-    fun generate(input: PlanInput, days: Int = 7): List<PlannedTask> {
-        val daysLeft = ChronoUnit.DAYS.between(input.start, input.examDate)
-        val out = ArrayList<PlannedTask>()
-        if (daysLeft <= 0 || input.subjects.isEmpty()) return out
-        val weights = subjectWeights(input)
-        val pool = input.topics.groupBy { it.subjectId }.mapValues { (_, list) ->
-            ArrayDeque(list.sortedWith(compareBy<PlanTopic>({ it.id !in input.priorityTopics }, { !it.reviewDue }, { it.status >= 3 }, { it.success ?: 101 }, { it.status })))
-        }
-        val credit = HashMap<String, Double>()
-        var wrongBudget = input.wrongsDue
-        var lastSubject: String? = null
-        val block = input.blockMinutes.coerceIn(15, 120)
-        val perDay = min(input.dailyMinutes, input.maxDailyMinutes)
-        val priority = input.topics.filter { it.id in input.priorityTopics }.toMutableList()
-        for (offset in 0 until min(days.toLong(), daysLeft).toInt()) {
-            val date = input.start.plusDays(offset.toLong())
-            if (date.dayOfWeek.value !in input.studyDays) continue
-            val blocks = (perDay / block).coerceIn(1, MAX_BLOCKS_PER_DAY)
-            var minute = input.startHour * 60
-            val review = wrongBudget > 0 && blocks >= 2
-            val studyBlocks = if (review) blocks - 1 else blocks
-            var i = 0
-            while (i < studyBlocks) {
-                if (minute + block > input.endHour * 60) break
-                val first = priority.removeFirstOrNull()
-                val pick = first?.subjectId ?: run {
-                    val total = weights.values.sum()
-                    weights.forEach { (k, v) -> credit[k] = (credit[k] ?: 0.0) + v / total }
-                    val p = credit.entries.filter { it.key != lastSubject || weights.size == 1 }.maxBy { it.value }.key
-                    credit[p] = (credit[p] ?: 0.0) - 1.0
-                    p
-                }
-                lastSubject = pick
-                val subject = input.subjects.firstOrNull { it.id == pick } ?: input.subjects.first()
-                val queue = pool[pick]
-                val topic = first ?: queue?.removeFirstOrNull()
-                if (first != null) queue?.remove(first)
-                if (topic != null) queue?.addLast(topic)
-                val goal = if (topic != null && topic.status >= 1) 20 else 10
-                val (reason, prio) = reasonFor(topic, subject, input)
-                out += PlannedTask(
-                    date, clock(minute), pick, topic?.id,
-                    if (topic != null) "${subject.name} / ${topic.name}" else subject.name,
-                    if (topic?.reviewDue == true) "REVIEW" else "STUDY", block, goal, reason, prio,
-                )
-                minute += block + breakAfter(i, input.breakMinutes)
-                i++
-            }
-            if (review && minute + block <= input.endHour * 60) {
-                val goal = min(wrongBudget, 20)
-                wrongBudget -= goal
-                out += PlannedTask(date, clock(minute), null, null, "Yanlışların tekrarı", "WRONGS", block, goal, "Tekrar bekleyen yanlışların var.", 1)
-            }
-        }
+    /**
+     * Hedef dakika bloklara bölünür; toplam her zaman hedefe eşittir.
+     * Son blok kalan dakikadır; 15 dakikadan kısa artık önceki bloğa eklenir.
+     */
+    fun split(target: Int, block: Int): List<Int> {
+        if (target <= 0) return emptyList()
+        val b = block.coerceIn(MIN_BLOCK, 120)
+        val out = MutableList(target / b) { b }
+        val rest = target % b
+        if (rest > 0) { if (rest < MIN_BLOCK && out.isNotEmpty()) out[out.lastIndex] += rest else out += rest }
         return out
     }
 
-    private fun breakAfter(i: Int, base: Int) = if ((i + 1) % 3 == 0) base * 4 else base
+    /** Üç bloktan sonra uzun mola verilir. Molalar çalışma süresine eklenmez. */
+    fun breakAfter(i: Int, base: Int) = if ((i + 1) % 3 == 0) min(base * 3, 30) else base
+
+    private fun topicRank(t: PlanTopic, input: PlanInput, final: Boolean): Int = when {
+        t.id in input.priorityTopics -> 0
+        t.mockMisses > 0 -> 1
+        t.reviewDue -> 2
+        t.success != null && t.success < 60 -> 3
+        final && t.status == 0 -> 9
+        t.status in 1..2 -> 4
+        t.status == 0 -> 5
+        else -> 6
+    }
+
+    private fun reasonFor(t: PlanTopic?, subject: PlanSubject, input: PlanInput, final: Boolean, daysLeft: Long): Pair<String, Int> {
+        if (t == null) return "${subject.name} dersinin haftalık payı." to 3
+        val gap = subject.gap?.takeIf { it > 0 }?.let { g ->
+            " ${subject.name} dersinde son netin ${Scoring.formatNet(subject.lastNet ?: 0.0)}, hedefin ${Scoring.formatNet(subject.targetNet ?: 0.0)}; bu derse ayrılan süre artırıldı."
+        }.orEmpty()
+        val (text, prio) = when {
+            t.id in input.priorityTopics -> "Bu konuyu öncelikli olarak seçtin." to 1
+            t.mockMisses > 0 -> "Son denemelerde bu konudan ${t.mockMisses} yanlış veya boş var; tekrar öne alındı." to 1
+            t.reviewDue && (t.daysSinceStudy ?: 0) >= 14 -> "Bu konuyu ${t.daysSinceStudy} gündür çalışmadın ve tekrar zamanı geldi." to 1
+            t.reviewDue -> "Tekrar zamanı geldi." to 1
+            t.success != null && t.success < 60 -> "Kayıtlarında bu konudaki doğru oranın %${t.success}." to 1
+            final && t.status > 0 -> "Sınava $daysLeft gün kaldığı için yeni konu yerine bildiğin konuların tekrarı öne alındı." to 2
+            subject.id in input.weakSubjectIds -> "Zorlandığını belirttiğin ders." to 2
+            t.status == 0 -> "Henüz başlamadığın bir konu." to 2
+            else -> "Konuyu güçlendirmek için." to 3
+        }
+        return (text + gap) to prio
+    }
+
+    fun generate(input: PlanInput, days: Int = 7): List<PlannedTask> = plan(input, days).tasks
+
+    fun plan(input: PlanInput, days: Int = 7): PlanResult {
+        val daysLeft = ChronoUnit.DAYS.between(input.start, input.examDate)
+        val out = ArrayList<PlannedTask>()
+        val dayInfo = ArrayList<PlanDay>()
+        val notes = ArrayList<String>()
+        if (daysLeft <= 0) return PlanResult(out, dayInfo, listOf("Sınav tarihi geçmiş veya bugün. Sınav ayarlarından yeni tarihi gir."))
+        if (input.subjects.isEmpty()) return PlanResult(out, dayInfo, listOf("Plan için ders bulunamadı. Profilinde alanını kontrol et."))
+        val final = daysLeft <= FINAL_DAYS
+        if (final) notes += "Sınava $daysLeft gün kaldı: plan yeni konu yerine tekrar, eksik konu ve yanlışlara ağırlık veriyor."
+        val weights = subjectWeights(input)
+        val pool = input.topics.filter { it.status < 4 || it.reviewDue || it.mockMisses > 0 }.groupBy { it.subjectId }.mapValues { (_, list) ->
+            list.sortedWith(compareBy<PlanTopic>({ topicRank(it, input, final) }, { it.success ?: 101 }, { -(it.daysSinceStudy ?: 0) }))
+        }
+        val used = HashMap<String, Int>()
+        val credit = HashMap<String, Double>()
+        var wrongBudget = input.wrongsDue
+        var lastSubject: String? = null
+        val priority = input.topics.filter { it.id in input.priorityTopics }.toMutableList()
+        val daily = min(input.dailyMinutes, input.maxDailyMinutes).coerceAtLeast(0)
+        if (input.dailyMinutes > input.maxDailyMinutes) notes += "Günlük hedefin ${input.dailyMinutes} dk, en fazla ${input.maxDailyMinutes} dk olarak belirlediğin sınır uygulandı."
+        var weekLeft = if (input.weeklyMinutes > 0) input.weeklyMinutes else Int.MAX_VALUE
+        val window = (input.endHour - input.startHour) * 60
+        if (window <= 0) return PlanResult(out, dayInfo, listOf("Bitiş saatin başlangıç saatinden sonra olmalı. Profilden çalışma saatlerini düzelt."))
+
+        for (offset in 0 until min(days.toLong(), daysLeft).toInt()) {
+            val date = input.start.plusDays(offset.toLong())
+            if (date.dayOfWeek.value !in input.studyDays || date in input.restDates) continue
+            val kept = input.keptMinutes[date] ?: 0
+            var target = (daily - kept).coerceAtLeast(0)
+            if (target > weekLeft) target = weekLeft
+            if (target <= 0) { dayInfo += PlanDay(date, 0, 0, 0, if (kept > 0) "Bu günün hedefi mevcut görevlerle dolu." else "Haftalık hedefe ulaşıldı."); continue }
+            // Pencereye sığdır: bloklar ve aralarındaki molalar başlangıç-bitiş saatleri içinde kalır.
+            val blocks = split(target, input.blockMinutes).toMutableList()
+            var used0 = 0
+            var fitted = 0
+            val sized = ArrayList<Int>()
+            for ((i, m) in blocks.withIndex()) {
+                val room = window - used0
+                if (room < MIN_BLOCK) break
+                val take = min(m, room)
+                if (take < MIN_BLOCK) break
+                sized += take; fitted += take
+                used0 += take + breakAfter(i, input.breakMinutes)
+                if (take < m) break
+            }
+            var note = ""
+            if (fitted < target) {
+                note = "Hedefin $target dk; ${clock(input.startHour * 60)}-${clock(input.endHour * 60)} arasında molalarla en fazla $fitted dk sığıyor."
+                notes += "${date}: $note"
+            }
+            weekLeft -= fitted
+            var minute = input.startHour * 60
+            val review = wrongBudget > 0 && sized.size >= 2
+            val today = HashSet<String>()
+            var breaks = 0
+            sized.forEachIndexed { i, m ->
+                val brk = if (i < sized.lastIndex) breakAfter(i, input.breakMinutes) else 0
+                if (review && i == sized.lastIndex) {
+                    val goal = min(wrongBudget, max(5, m / 3))
+                    wrongBudget -= goal
+                    out += PlannedTask(date, clock(minute), null, null, "Yanlışların tekrarı", "WRONGS", m, goal, "Tekrar zamanı gelmiş $goal yanlışın var.", 1, brk)
+                } else {
+                    val first = priority.removeFirstOrNull()
+                    val pick = first?.subjectId ?: run {
+                        val total = weights.values.sum()
+                        weights.forEach { (k, v) -> credit[k] = (credit[k] ?: 0.0) + v / total }
+                        val p = credit.entries.filter { it.key != lastSubject || weights.size == 1 }.maxBy { it.value }.key
+                        credit[p] = (credit[p] ?: 0.0) - 1.0
+                        p
+                    }
+                    lastSubject = pick
+                    val subject = input.subjects.firstOrNull { it.id == pick } ?: input.subjects.first()
+                    // Aynı gün aynı konu verilmez; hafta içinde en az kullanılan ve en öncelikli konu seçilir.
+                    val topic = first ?: pool[pick].orEmpty().filter { it.id !in today }.minWithOrNull(
+                        compareBy<PlanTopic>({ used[it.id] ?: 0 }, { topicRank(it, input, final) }, { it.success ?: 101 }),
+                    )
+                    topic?.let { today += it.id; used[it.id] = (used[it.id] ?: 0) + 1 }
+                    val goal = if (topic != null && topic.status >= 1) max(10, m * 2 / 5) else max(5, m / 5)
+                    val (reason, prio) = reasonFor(topic, subject, input, final, daysLeft)
+                    out += PlannedTask(
+                        date, clock(minute), pick, topic?.id,
+                        if (topic != null) "${subject.name} / ${topic.name}" else subject.name,
+                        if (topic?.reviewDue == true || topic?.mockMisses?.let { it > 0 } == true) "REVIEW" else "STUDY", m, goal, reason, prio, brk,
+                    )
+                }
+                minute += m + brk
+                breaks += brk
+            }
+            dayInfo += PlanDay(date, target, fitted, breaks, note)
+        }
+        if (input.weeklyMinutes > 0 && weekLeft == 0) notes += "Haftalık hedefin (${input.weeklyMinutes} dk) dolduğu için kalan günlere görev eklenmedi."
+        return PlanResult(out, dayInfo, notes.distinct())
+    }
 
     fun clock(m: Int) = "%02d:%02d".format(java.util.Locale.US, (m / 60) % 24, m % 60)
 }

@@ -48,7 +48,7 @@ class AdOnlineTest {
         InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { b ->
             File(app.filesDir, "reklam-yerel.png").outputStream().use { o -> b.compress(Bitmap.CompressFormat.PNG, 90, o) }
         }
-        runBlocking { m.entitlement.apply(PurchaseQuery.Purchased("test", "{\"productId\":\"$REMOVE_ADS_PRODUCT\"}", "")) }
+        runBlocking { m.entitlement.apply(TestPurchase.purchased()) }
         rule.waitForIdle()
         Thread.sleep(1000)
         onView(withId(R.id.ad_label)).check(doesNotExist())

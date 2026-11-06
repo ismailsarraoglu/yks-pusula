@@ -1,7 +1,6 @@
 package app.ykspusula.monetize
 
 import android.content.Context
-import android.util.Base64
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -29,8 +28,22 @@ sealed interface PurchaseQuery {
 
 data class CachedPurchase(val tokenHash: String, val json: String, val signature: String, val verifiedAt: Long)
 
-/** Android'e bağımlı olmayan karar mantığı; birim testleriyle doğrulanır. */
+/** Satın alma kaydının JSON içinden okunan alanları. */
+data class PurchaseFields(val products: List<String>, val state: Int?, val packageName: String?)
+
+/** Doğrulama sonucu. Kullanıcıya gösterilecek açıklamalar için ayrıntılı tutulur. */
+enum class PurchaseCheck { OK, NO_KEY, BAD_SIGNATURE, WRONG_PRODUCT, NOT_PURCHASED, WRONG_PACKAGE, MALFORMED }
+
+/**
+ * Android'e bağımlı olmayan karar mantığı; birim testleriyle doğrulanır.
+ *
+ * Güvenlik sınırı: sunucu kullanılmadığı için doğrulama cihazda yapılır. Google Play'in imzası ve ürün
+ * kimliği denetlenir; ancak root'lu veya değiştirilmiş bir cihazda uygulama kodu atlatılabilir.
+ * Sunucu tarafı doğrulama olmadan tam sahtekârlık koruması yoktur.
+ */
 object EntitlementLogic {
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
     fun hash(token: String): String = MessageDigest.getInstance("SHA-256").digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
 
     /** Hak yalnızca doğrulanmış PURCHASED kaydıyla verilir. Yalnızca Play açıkça "satın alma yok" derse geri alınır. */
@@ -41,11 +54,31 @@ object EntitlementLogic {
         PurchaseQuery.Unavailable -> cached
     }
 
-    /** Önbellek boş bir true/false değildir: kayıt ürünü içermeli ve anahtar tanımlıysa imzası tutmalıdır. */
-    fun isValid(c: CachedPurchase?, publicKey: String): Boolean {
-        if (c == null || c.tokenHash.isBlank() || !c.json.contains(REMOVE_ADS_PRODUCT)) return false
-        return publicKey.isBlank() || verifySignature(c.json, c.signature, publicKey)
+    fun fields(text: String): PurchaseFields? = try {
+        val o = json.parseToJsonElement(text) as kotlinx.serialization.json.JsonObject
+        fun str(k: String) = (o[k] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+        val list = (o["productIds"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
+        val products = list ?: listOfNotNull(str("productId"))
+        val state = (o["purchaseState"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
+        PurchaseFields(products, state, str("packageName"))
+    } catch (e: Exception) { null }
+
+    /**
+     * Açık anahtar boşsa satın alma hiçbir zaman geçerli sayılmaz. İmza, ürün kimliği, paket adı ve
+     * satın alma durumu (0 = tamamlandı) birlikte denetlenir.
+     */
+    fun check(jsonText: String, signature: String, publicKey: String, packageName: String = APP_PACKAGE): PurchaseCheck {
+        if (publicKey.isBlank()) return PurchaseCheck.NO_KEY
+        if (signature.isBlank() || !verifySignature(jsonText, signature, publicKey)) return PurchaseCheck.BAD_SIGNATURE
+        val f = fields(jsonText) ?: return PurchaseCheck.MALFORMED
+        if (REMOVE_ADS_PRODUCT !in f.products) return PurchaseCheck.WRONG_PRODUCT
+        if (f.packageName != null && f.packageName != packageName) return PurchaseCheck.WRONG_PACKAGE
+        if (f.state != null && f.state != 0) return PurchaseCheck.NOT_PURCHASED
+        return PurchaseCheck.OK
     }
+
+    fun isValid(c: CachedPurchase?, publicKey: String): Boolean =
+        c != null && c.tokenHash.isNotBlank() && check(c.json, c.signature, publicKey) == PurchaseCheck.OK
 
     fun verifySignature(json: String, signature: String, publicKey: String): Boolean = try {
         val key = KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(java.util.Base64.getDecoder().decode(publicKey)))
@@ -55,10 +88,22 @@ object EntitlementLogic {
             verify(java.util.Base64.getDecoder().decode(signature))
         }
     } catch (e: Exception) { false }
+
+    fun message(c: PurchaseCheck): String = when (c) {
+        PurchaseCheck.OK -> ""
+        PurchaseCheck.NO_KEY -> "Bu sürümde satın alma doğrulaması yapılandırılmamış. Uygulamayı Google Play'den kurarak satın alabilirsin."
+        PurchaseCheck.BAD_SIGNATURE, PurchaseCheck.MALFORMED -> "Satın alma kaydı doğrulanamadı. Reklamlar kaldırılmadı."
+        PurchaseCheck.WRONG_PRODUCT, PurchaseCheck.WRONG_PACKAGE -> "Bu satın alma bu uygulamanın reklamsız ürününe ait değil."
+        PurchaseCheck.NOT_PURCHASED -> "Ödeme henüz tamamlanmamış."
+    }
 }
 
+const val APP_PACKAGE = "app.ykspusula"
+
 /** Reklamsız hakkın tek merkezi. Bütün ekranlar ve reklam kodu bu akışı dinler. */
-class EntitlementStore(private val context: Context, private val scope: CoroutineScope, private val publicKey: String) {
+class EntitlementStore(private val context: Context, private val scope: CoroutineScope, val publicKey: String) {
+    /** Bu derlemede satın alma doğrulanabiliyor mu? Yan yükleme sürümünde anahtar yoktur. */
+    val purchasesEnabled: Boolean get() = publicKey.isNotBlank()
     private val hashKey = stringPreferencesKey("ent_hash")
     private val jsonKey = stringPreferencesKey("ent_json")
     private val sigKey = stringPreferencesKey("ent_sig")

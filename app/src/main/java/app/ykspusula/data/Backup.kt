@@ -18,9 +18,25 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 const val BACKUP_FORMAT = "yks-pusula-yedek"
-const val BACKUP_VERSION = 2
+/** 3: ZIP içindeki her ek dosyanın boyutu ve SHA-256 özeti yedek dosyasına yazılır. */
+const val BACKUP_VERSION = 3
 private const val ZIP_JSON = "yedek.json"
-private const val MAX_FILE_BYTES = 200L * 1024 * 1024
+private val ATTACHMENT_DIRS = listOf("photos", "library")
+
+/** Kötü niyetli veya bozuk dosyaya karşı sınırlar. Gerçek bir öğrenci yedeği bunların çok altında kalır. */
+object BackupLimits {
+    const val MAX_INPUT_BYTES = 700L * 1024 * 1024
+    const val MAX_JSON_BYTES = 32L * 1024 * 1024
+    const val MAX_FILE_BYTES = 150L * 1024 * 1024
+    const val MAX_TOTAL_BYTES = 1024L * 1024 * 1024
+    const val MAX_ENTRIES = 5_000
+}
+
+/** Sınır aşıldığında veya bütünlük bozulduğunda atılır; mesaj kullanıcıya gösterilir. */
+class BackupRejected(message: String) : Exception(message)
+
+@Serializable
+data class BackupFileEntry(val folder: String, val name: String, val size: Long, val sha256: String)
 
 @Serializable
 data class BackupData(
@@ -62,6 +78,7 @@ data class BackupFile(
     val appVersion: String,
     val checksum: String,
     val data: BackupData,
+    val files: List<BackupFileEntry> = emptyList(),
 )
 
 /* Sürüm 1 yedekleri soru bankalı uygulamadan gelir; okunup yeni biçime çevrilir. */
@@ -105,9 +122,9 @@ object BackupCodec {
 
     private fun sha(text: String) = MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
 
-    fun encode(data: BackupData, createdAt: Long, appVersion: String): String {
+    fun encode(data: BackupData, createdAt: Long, appVersion: String, files: List<BackupFileEntry> = emptyList()): String {
         val body = json.encodeToString(BackupData.serializer(), data)
-        return json.encodeToString(BackupFile.serializer(), BackupFile(BACKUP_FORMAT, BACKUP_VERSION, createdAt, appVersion, sha(body), data))
+        return json.encodeToString(BackupFile.serializer(), BackupFile(BACKUP_FORMAT, BACKUP_VERSION, createdAt, appVersion, sha(body), data, files))
     }
 
     /** Biçim, sürüm ve bütünlük denetimi. Geçmezse hiçbir veri değiştirilmez. */
@@ -128,11 +145,17 @@ object BackupCodec {
             val appVersion = root["appVersion"]?.jsonPrimitive?.content.orEmpty()
             val data = if (version >= 2) json.decodeFromJsonElement(BackupData.serializer(), body)
             else fromV1(json.decodeFromJsonElement(BackupDataV1.serializer(), body))
-            return BackupCheck.Ok(BackupFile(BACKUP_FORMAT, version, createdAt, appVersion, "", data))
+            val files = root["files"]?.let { json.decodeFromJsonElement(kotlinx.serialization.builtins.ListSerializer(BackupFileEntry.serializer()), it) }.orEmpty()
+            if (files.any { it.folder !in ATTACHMENT_DIRS || !safeName(it.name) }) return BackupCheck.Bad("Yedekteki dosya listesi geçersiz.")
+            return BackupCheck.Ok(BackupFile(BACKUP_FORMAT, version, createdAt, appVersion, "", data, files))
         } catch (e: Exception) {
             return BackupCheck.Bad("Dosya bozuk veya bu uygulamanın yedeği değil.")
         }
     }
+
+    /** Yalnızca düz dosya adı: klasör ayracı, üst klasör ve gizli ad kabul edilmez. */
+    fun safeName(n: String): Boolean =
+        n.isNotEmpty() && n.length <= 200 && n != "." && n != ".." && !n.startsWith(".") && n.none { it == '/' || it == '\\' || it == '\u0000' }
 
     /** Eski soru kayıtları gün ve konu bazında performans kaydına, eski yanlışlar defter kaydına dönüşür. */
     fun fromV1(d: BackupDataV1): BackupData {
@@ -161,8 +184,11 @@ object BackupCodec {
     }
 }
 
-/** Okunan yedek ve varsa ZIP içindeki dosyaların geçici konumu. */
-data class LoadedBackup(val check: BackupCheck, val attachments: File?)
+/** Okunan yedek, ZIP içindeki dosyaların geçici konumu ve kullanıcıya gösterilecek uyarılar. */
+data class LoadedBackup(val check: BackupCheck, val attachments: File?, val warnings: List<String> = emptyList(), val fileCount: Int = 0)
+
+/** Geri yükleme sonucu: kaç kayıt ve dosyanın aktarıldığı. */
+data class RestoreReport(val records: Int, val files: Int, val warnings: List<String>, val safetyCopy: File?)
 
 class BackupManager(private val repo: Repository, private val filesDir: File, private val cacheDir: File) {
     private val u get() = repo.user
@@ -188,82 +214,191 @@ class BackupManager(private val repo: Repository, private val filesDir: File, pr
 
     suspend fun export(appVersion: String): String = BackupCodec.encode(snapshot(), System.currentTimeMillis(), appVersion)
 
-    /** ZIP yedek: JSON verisi, fotoğraflar ve isteğe bağlı olarak PDF'ler. */
-    suspend fun exportZip(out: OutputStream, appVersion: String, includePdf: Boolean) = withContext(Dispatchers.IO) {
-        val text = export(appVersion)
-        ZipOutputStream(out.buffered()).use { z ->
-            z.putNextEntry(ZipEntry(ZIP_JSON)); z.write(text.toByteArray()); z.closeEntry()
-            val dirs = if (includePdf) listOf("photos", "library") else listOf("photos")
-            dirs.forEach { d ->
-                filesDir.resolve(d).listFiles()?.filter { it.isFile }?.forEach { f ->
-                    z.putNextEntry(ZipEntry("files/$d/${f.name}"))
-                    f.inputStream().use { it.copyTo(z) }
-                    z.closeEntry()
-                }
-            }
+    private fun attachmentFiles(includePdf: Boolean): List<Pair<String, File>> =
+        (if (includePdf) ATTACHMENT_DIRS else listOf("photos")).flatMap { d ->
+            filesDir.resolve(d).listFiles()?.filter { it.isFile && BackupCodec.safeName(it.name) }.orEmpty().sortedBy { it.name }.map { d to it }
         }
+
+    /** ZIP yedek: JSON verisi, fotoğraflar ve isteğe bağlı olarak PDF'ler. Her ekin boyutu ve SHA-256 özeti JSON'a yazılır. */
+    suspend fun exportZip(out: OutputStream, appVersion: String, includePdf: Boolean) = withContext(Dispatchers.IO) {
+        writeZip(out, appVersion, includePdf)
         repo.updateSettings { it[Keys.lastBackupAt] = System.currentTimeMillis() }
     }
 
-    /** Hem düz JSON hem ZIP yedeği okur. Bozuk dosya uygulamayı etkilemez. */
+    private suspend fun writeZip(out: OutputStream, appVersion: String, includePdf: Boolean) {
+        val files = attachmentFiles(includePdf)
+        val manifest = files.map { (d, f) -> BackupFileEntry(d, f.name, f.length(), sha256(f)) }
+        val text = BackupCodec.encode(snapshot(), System.currentTimeMillis(), appVersion, manifest)
+        ZipOutputStream(out.buffered()).use { z ->
+            z.putNextEntry(ZipEntry(ZIP_JSON)); z.write(text.toByteArray()); z.closeEntry()
+            files.forEach { (d, f) ->
+                z.putNextEntry(ZipEntry("files/$d/${f.name}"))
+                f.inputStream().use { it.copyTo(z) }
+                z.closeEntry()
+            }
+        }
+    }
+
+    /**
+     * Hem düz JSON hem ZIP yedeği okur. Boyut, dosya sayısı, yol ve bütünlük denetlenir.
+     * Bu aşamada uygulamanın verisine dokunulmaz; dosyalar geçici klasöre açılır.
+     */
     suspend fun load(input: InputStream): LoadedBackup = withContext(Dispatchers.IO) {
         val temp = cacheDir.resolve("gelen-yedek-${System.nanoTime()}")
+        var dir: File? = null
         try {
-            input.use { i -> temp.outputStream().use { o -> i.copyTo(o) } }
+            input.use { i -> temp.outputStream().use { o -> copyLimited(i, o, BackupLimits.MAX_INPUT_BYTES, "Yedek dosyası çok büyük.") } }
             val zip = temp.inputStream().use { val h = ByteArray(2); it.read(h) == 2 && h[0] == 'P'.code.toByte() && h[1] == 'K'.code.toByte() }
-            if (!zip) return@withContext LoadedBackup(BackupCodec.decode(temp.readText()), null)
-            val dir = cacheDir.resolve("gelen-ekler-${System.nanoTime()}").apply { mkdirs() }
+            if (!zip) {
+                if (temp.length() > BackupLimits.MAX_JSON_BYTES) throw BackupRejected("Yedek dosyası çok büyük.")
+                return@withContext LoadedBackup(BackupCodec.decode(temp.readText()), null)
+            }
+            val target = cacheDir.resolve("gelen-ekler-${System.nanoTime()}").apply { mkdirs() }
+            dir = target
             var text: String? = null
+            var entries = 0
+            var total = 0L
+            val seen = HashSet<String>()
             ZipInputStream(temp.inputStream().buffered()).use { z ->
                 var e = z.nextEntry
                 while (e != null) {
+                    if (++entries > BackupLimits.MAX_ENTRIES) throw BackupRejected("Yedekte çok fazla dosya var.")
                     val n = e.name
-                    if (n == ZIP_JSON) text = z.readBytes().toString(Charsets.UTF_8)
-                    else if (!e.isDirectory && safeEntry(n)) {
-                        val target = dir.resolve(n.removePrefix("files/")).apply { parentFile?.mkdirs() }
-                        target.outputStream().use { o -> copyLimited(z, o) }
+                    if (!seen.add(n)) throw BackupRejected("Yedekte aynı adlı iki dosya var; dosya bozulmuş olabilir.")
+                    if (n == ZIP_JSON) {
+                        // Belleğe değil dosyaya açılır; sınır aşılırsa okunmadan reddedilir.
+                        val jf = target.resolve("yedek.json.tmp")
+                        total += jf.outputStream().use { o -> copyLimited(z, o, BackupLimits.MAX_JSON_BYTES, "Yedek verisi çok büyük.") }
+                        text = jf.readText(); jf.delete()
+                    } else if (!e.isDirectory) {
+                        val (folder, name) = entryPath(n) ?: throw BackupRejected("Yedekte beklenmeyen dosya yolu var: $n")
+                        val out = target.resolve(folder).apply { mkdirs() }.resolve(name)
+                        if (!out.canonicalPath.startsWith(target.canonicalPath + File.separator)) throw BackupRejected("Yedekte geçersiz dosya yolu var.")
+                        total += out.outputStream().use { o -> copyLimited(z, o, BackupLimits.MAX_FILE_BYTES, "Yedekteki bir dosya çok büyük.") }
                     }
+                    if (total > BackupLimits.MAX_TOTAL_BYTES) throw BackupRejected("Yedeğin açılmış boyutu çok büyük.")
                     e = z.nextEntry
                 }
             }
-            val t = text ?: return@withContext LoadedBackup(BackupCheck.Bad("ZIP dosyasında yedek bulunamadı."), null)
-            LoadedBackup(BackupCodec.decode(t), dir)
+            val t = text ?: throw BackupRejected("ZIP dosyasında yedek bulunamadı.")
+            val check = BackupCodec.decode(t)
+            if (check !is BackupCheck.Ok) { target.deleteRecursively(); return@withContext LoadedBackup(check, null) }
+            val warnings = verifyAttachments(check.file, target)
+            LoadedBackup(check, target, warnings, check.file.files.size.takeIf { it > 0 } ?: countFiles(target))
+        } catch (e: BackupRejected) {
+            dir?.deleteRecursively()
+            LoadedBackup(BackupCheck.Bad(e.message ?: "Yedek reddedildi."), null)
         } catch (e: Exception) {
+            dir?.deleteRecursively()
             LoadedBackup(BackupCheck.Bad("Dosya bozuk veya bu uygulamanın yedeği değil."), null)
         } finally {
             temp.delete()
         }
     }
 
-    private fun copyLimited(i: InputStream, o: OutputStream) {
+    /** Sürüm 3 yedeklerinde her ek listedeki boyut ve özetle karşılaştırılır; uyuşmayan yedek reddedilir. */
+    private fun verifyAttachments(f: BackupFile, dir: File): List<String> {
+        val warnings = ArrayList<String>()
+        if (f.files.isNotEmpty()) {
+            f.files.forEach { e ->
+                val file = dir.resolve(e.folder).resolve(e.name)
+                if (!file.isFile) throw BackupRejected("Yedekte eksik dosya var: ${e.name}")
+                if (file.length() != e.size || sha256(file) != e.sha256) throw BackupRejected("Yedekteki bir dosya bozulmuş: ${e.name}")
+            }
+            val listed = f.files.map { "${it.folder}/${it.name}" }.toSet()
+            ATTACHMENT_DIRS.forEach { d -> dir.resolve(d).listFiles()?.filter { "$d/${it.name}" !in listed }?.forEach { it.delete() } }
+        } else if (countFiles(dir) > 0) {
+            warnings += "Bu yedek eski biçimde; ek dosyaların bütünlüğü doğrulanamadı."
+        }
+        val photos = f.data.wrongs.mapNotNull { it.photoFile }.filter { it.isNotBlank() }
+        val missing = photos.count { p -> !dir.resolve("photos").resolve(p).isFile && !filesDir.resolve("photos").resolve(p).isFile }
+        if (missing > 0) warnings += "$missing yanlış kaydının fotoğrafı yedekte yok. Kayıtlar fotoğrafsız aktarılır."
+        val pdfs = f.data.library.count { l -> !dir.resolve("library").resolve(l.fileName).isFile && !filesDir.resolve("library").resolve(l.fileName).isFile }
+        if (pdfs > 0) warnings += "$pdfs PDF dosyası yedekte yok; bunlar kitaplığa eklenmez."
+        return warnings
+    }
+
+    private fun countFiles(dir: File) = ATTACHMENT_DIRS.sumOf { dir.resolve(it).listFiles()?.size ?: 0 }
+
+    private fun entryPath(name: String): Pair<String, String>? {
+        val parts = name.split('/')
+        if (parts.size != 3 || parts[0] != "files" || parts[1] !in ATTACHMENT_DIRS || !BackupCodec.safeName(parts[2])) return null
+        return parts[1] to parts[2]
+    }
+
+    private fun copyLimited(i: InputStream, o: OutputStream, limit: Long, message: String): Long {
         val buf = ByteArray(16 * 1024)
         var total = 0L
         while (true) {
             val n = i.read(buf)
             if (n < 0) break
             total += n
-            require(total <= MAX_FILE_BYTES) { "Dosya çok büyük" }
+            if (total > limit) throw BackupRejected(message)
             o.write(buf, 0, n)
+        }
+        return total
+    }
+
+    /** Değiştirme öncesinde veritabanı, fotoğraflar ve PDF'ler cihaz içine tam güvenlik kopyası olarak yazılır. */
+    suspend fun safetyCopy(appVersion: String): File = withContext(Dispatchers.IO) {
+        val dir = filesDir.resolve("safety").apply { mkdirs() }
+        val target = dir.resolve("once-yedek-${System.currentTimeMillis()}.zip")
+        val part = File(target.path + ".yaziliyor")
+        part.outputStream().use { writeZip(it, appVersion, includePdf = true) }
+        // Yazılan kopya okunup doğrulanmadan eski kopyalar silinmez.
+        val check = load(part.inputStream())
+        check.attachments?.deleteRecursively()
+        if (check.check !is BackupCheck.Ok) { part.delete(); throw BackupRejected("Güvenlik kopyası doğrulanamadı; geri yükleme yapılmadı.") }
+        if (!part.renameTo(target)) { part.delete(); throw BackupRejected("Güvenlik kopyası kaydedilemedi; geri yükleme yapılmadı.") }
+        dir.listFiles()?.filter { it != target && !it.name.endsWith(".yaziliyor") }?.sortedBy { it.lastModified() }?.dropLast(2)?.forEach { it.delete() }
+        dir.listFiles()?.filter { it.name.endsWith(".yaziliyor") }?.forEach { it.delete() }
+        target
+    }
+
+    fun safetyCopies(): List<File> = filesDir.resolve("safety").listFiles()?.filter { !it.name.endsWith(".yaziliyor") }?.sortedByDescending { it.lastModified() }.orEmpty()
+
+    /**
+     * Aşamalı geri yükleme:
+     * 1. Ekler uygulama klasöründe geçici alana kopyalanır.
+     * 2. Değiştirme seçildiyse tam güvenlik kopyası alınır ve doğrulanır.
+     * 3. Veritabanı tek işlemde yazılır; hata olursa Room işlemi geri alır.
+     * 4. Ekler yerine taşınır. Bu adım başarısız olursa güvenlik kopyasından eski hâle dönülür.
+     * 5. Kayıt sayısı denetlenir, geçici dosyalar silinir.
+     */
+    suspend fun restore(d: BackupData, replace: Boolean, appVersion: String, attachments: File? = null, warnings: List<String> = emptyList()): RestoreReport = withContext(Dispatchers.IO) {
+        val staging = filesDir.resolve("geri-yukleme-${System.nanoTime()}")
+        try {
+            var staged = 0
+            attachments?.let { a ->
+                ATTACHMENT_DIRS.forEach { sub ->
+                    a.resolve(sub).listFiles()?.filter { it.isFile && BackupCodec.safeName(it.name) }?.forEach { f ->
+                        val t = staging.resolve(sub).apply { mkdirs() }.resolve(f.name)
+                        f.copyTo(t, overwrite = true)
+                        if (t.length() != f.length()) throw BackupRejected("Dosya kopyalanamadı: ${f.name}")
+                        staged++
+                    }
+                }
+            }
+            val safety = if (replace) safetyCopy(appVersion) else null
+            writeDatabase(d, replace, staging)
+            try {
+                moveStaged(staging)
+            } catch (e: Exception) {
+                if (safety != null) rollback(safety, appVersion)
+                throw BackupRejected("Dosyalar aktarılamadı. Veriler geri yükleme öncesindeki hâline döndürüldü.")
+            }
+            if (replace) applySettings(d.settings)
+            val records = d.logs.size + d.sessions.size + d.mocks.size + d.wrongs.size + d.notes.size + d.tasks.size + d.sources.size + d.progress.size
+            val after = u.wrongsNow().size
+            val extra = if (after < d.wrongs.size) listOf("Bazı yanlış kayıtları aktarılamadı (${d.wrongs.size - after}).") else emptyList()
+            RestoreReport(records, staged, warnings + extra, safety)
+        } finally {
+            staging.deleteRecursively()
+            attachments?.deleteRecursively()
         }
     }
 
-    /** Yalnızca beklenen klasörlerdeki düz dosya adları kabul edilir. */
-    private fun safeEntry(name: String): Boolean {
-        val parts = name.split('/')
-        return parts.size == 3 && parts[0] == "files" && parts[1] in setOf("photos", "library") && parts[2].isNotEmpty() && parts[2] != ".." && !parts[2].contains('\\')
-    }
-
-    /** Değiştirme öncesinde mevcut veriler cihaz içine güvenlik kopyası olarak yazılır. */
-    suspend fun safetyCopy(appVersion: String): File = withContext(Dispatchers.IO) {
-        val dir = filesDir.resolve("safety").apply { mkdirs() }
-        dir.listFiles()?.sortedBy { it.lastModified() }?.dropLast(2)?.forEach { it.delete() }
-        dir.resolve("once-yedek-${System.currentTimeMillis()}.json").apply { writeText(export(appVersion)) }
-    }
-
-    fun safetyCopies(): List<File> = filesDir.resolve("safety").listFiles()?.sortedByDescending { it.lastModified() }.orEmpty()
-
-    suspend fun restore(d: BackupData, replace: Boolean, appVersion: String, attachments: File? = null) = withContext(Dispatchers.IO) {
-        if (replace) safetyCopy(appVersion)
+    private suspend fun writeDatabase(d: BackupData, replace: Boolean, staging: File) {
         val cards = d.userCards.map { Flashcard(it.id, it.deck, it.subjectName, it.front, it.back, it.partOfSpeech, it.example, true, "user") }
         repo.db.withTransaction {
             if (replace) {
@@ -282,28 +417,54 @@ class BackupManager(private val repo: Repository, private val filesDir: File, pr
             u.mergeCardProgress(d.cardProgress); u.mergeCardReviews(d.cardReviews); u.mergeCards(cards); u.mergeNotes(d.notes); u.mergeItemNotes(d.itemNotes)
             u.mergeBookmarks(d.bookmarks); u.mergeReminders(d.reminders); u.mergeUniversities(d.universities)
             u.mergeDepartments(d.departments); u.mergeUniversityRecords(d.universityRecords); u.mergeNetGoals(d.netGoals); u.mergeRestDays(d.restDays)
-            val hasFile: (LibraryFile) -> Boolean = { f -> filesDir.resolve("library/${f.fileName}").exists() || attachments?.resolve("library/${f.fileName}")?.exists() == true }
+            val hasFile: (LibraryFile) -> Boolean = { f -> filesDir.resolve("library/${f.fileName}").exists() || staging.resolve("library/${f.fileName}").exists() }
             u.mergeLibrary(d.library.filter(hasFile))
         }
-        attachments?.let { a ->
-            listOf("photos", "library").forEach { sub ->
-                val target = filesDir.resolve(sub).apply { mkdirs() }
-                a.resolve(sub).listFiles()?.forEach { f -> f.copyTo(target.resolve(f.name), overwrite = true) }
+    }
+
+    private fun moveStaged(staging: File) {
+        ATTACHMENT_DIRS.forEach { sub ->
+            val target = filesDir.resolve(sub).apply { mkdirs() }
+            staging.resolve(sub).listFiles()?.forEach { f ->
+                val dest = target.resolve(f.name)
+                if (dest.exists()) dest.delete()
+                if (!f.renameTo(dest)) { f.copyTo(dest, overwrite = true); f.delete() }
             }
-            a.deleteRecursively()
         }
-        if (replace) {
-            val s = d.settings
-            repo.updateSettings { p ->
-                s["theme"]?.let { p[Keys.theme] = it }
-                s["fontScale"]?.toFloatOrNull()?.let { p[Keys.font] = it }
-                s["pomodoroWork"]?.toIntOrNull()?.let { p[Keys.pWork] = it }
-                s["pomodoroBreak"]?.toIntOrNull()?.let { p[Keys.pBreak] = it }
-                s["weeklyGoalMinutes"]?.toIntOrNull()?.let { p[Keys.weekly] = it }
-                s["monthlyGoalQuestions"]?.toIntOrNull()?.let { p[Keys.monthly] = it }
-                s["diploma"]?.let { p[Keys.diploma] = it }
-                s["placedLastYear"]?.toBooleanStrictOrNull()?.let { p[Keys.placed] = it }
-            }
+    }
+
+    /** Güvenlik kopyasından veritabanını ve ekleri eski hâline döndürür. */
+    private suspend fun rollback(safety: File, appVersion: String) {
+        val l = load(safety.inputStream())
+        val ok = l.check as? BackupCheck.Ok ?: return
+        val staging = filesDir.resolve("geri-donus-${System.nanoTime()}")
+        try {
+            l.attachments?.let { a -> ATTACHMENT_DIRS.forEach { sub -> a.resolve(sub).listFiles()?.forEach { it.copyTo(staging.resolve(sub).apply { mkdirs() }.resolve(it.name), true) } } }
+            writeDatabase(ok.file.data, replace = true, staging)
+            moveStaged(staging)
+        } finally {
+            staging.deleteRecursively(); l.attachments?.deleteRecursively()
+        }
+    }
+
+    private suspend fun applySettings(s: Map<String, String>) {
+        repo.updateSettings { p ->
+            s["theme"]?.let { p[Keys.theme] = it }
+            s["fontScale"]?.toFloatOrNull()?.let { p[Keys.font] = it }
+            s["pomodoroWork"]?.toIntOrNull()?.let { p[Keys.pWork] = it }
+            s["pomodoroBreak"]?.toIntOrNull()?.let { p[Keys.pBreak] = it }
+            s["weeklyGoalMinutes"]?.toIntOrNull()?.let { p[Keys.weekly] = it }
+            s["monthlyGoalQuestions"]?.toIntOrNull()?.let { p[Keys.monthly] = it }
+            s["diploma"]?.let { p[Keys.diploma] = it }
+            s["placedLastYear"]?.toBooleanStrictOrNull()?.let { p[Keys.placed] = it }
+        }
+    }
+
+    companion object {
+        fun sha256(f: File): String {
+            val md = MessageDigest.getInstance("SHA-256")
+            f.inputStream().use { i -> val b = ByteArray(16 * 1024); while (true) { val n = i.read(b); if (n < 0) break; md.update(b, 0, n) } }
+            return md.digest().joinToString("") { "%02x".format(it) }
         }
     }
 }

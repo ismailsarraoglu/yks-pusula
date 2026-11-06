@@ -34,6 +34,8 @@ data class UserProfile(
     val breakMinutes: Int = 10,
     val endHour: Int = 22,
     val priorityTopics: String = "",
+    /** Tercih edilen çalışma bloğu (dakika). Son blok kalan süreye göre kısalır. */
+    val blockMinutes: Int = 50,
 )
 
 @Serializable
@@ -295,7 +297,7 @@ data class TopicProgress(
 @Serializable
 @Entity(
     foreignKeys = [ForeignKey(StudySource::class, ["id"], ["sourceId"], ForeignKey.SET_NULL)],
-    indices = [Index("nextReviewAt"), Index("topicId"), Index("subjectId"), Index("sourceId")],
+    indices = [Index("nextReviewAt"), Index("topicId"), Index("subjectId"), Index("sourceId"), Index("mockExamId")],
 )
 data class WrongEntry(
     @PrimaryKey val id: String = newId(),
@@ -319,6 +321,10 @@ data class WrongEntry(
     val resolved: Boolean = false,
     val origin: String = "MANUAL",
     val updatedAt: Long = firstWrongAt,
+    /** WRONG yanlış, BLANK boş, GUESS tahminle doğru. */
+    val kind: String = "WRONG",
+    /** Denemeden açıldıysa ilgili deneme. */
+    val mockExamId: String? = null,
 )
 
 /** Tekrar geçmişi. Sonuç: 0 hatırlayamadım, 1 kısmen, 2 hatırladım. */

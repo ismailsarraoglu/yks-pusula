@@ -124,8 +124,7 @@ class LogicTest {
         assertTrue(tasks.isNotEmpty())
         assertTrue(tasks.all { it.date.dayOfWeek != DayOfWeek.SATURDAY && it.date.dayOfWeek != DayOfWeek.SUNDAY })
         tasks.groupBy { it.date }.forEach { (_, list) ->
-            assertTrue(list.sumOf { it.minutes } <= 240)
-            assertTrue(list.size <= PlanGenerator.MAX_BLOCKS_PER_DAY)
+            assertEquals(240, list.sumOf { it.minutes })
         }
     }
 

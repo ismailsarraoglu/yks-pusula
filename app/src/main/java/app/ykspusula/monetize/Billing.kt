@@ -93,6 +93,7 @@ class BillingManager(context: Context, private val scope: CoroutineScope, privat
     }
 
     fun buy(activity: Activity) {
+        if (!store.purchasesEnabled) { _ui.value = _ui.value.copy(message = EntitlementLogic.message(PurchaseCheck.NO_KEY)); return }
         val d = details
         val offer = d?.oneTimePurchaseOfferDetailsList?.firstOrNull()
         if (d == null || offer == null) { _ui.value = _ui.value.copy(message = "Ürün bilgisi henüz alınamadı. Bağlantını kontrol edip yeniden dene."); connect(); return }
@@ -125,6 +126,13 @@ class BillingManager(context: Context, private val scope: CoroutineScope, privat
         _ui.value = _ui.value.copy(pending = waiting && done == null)
         when {
             done != null -> {
+                // Önce Google Play imzası ve ürün denetlenir; geçmeyen kayıt onaylanmaz ve hak açmaz.
+                val check = EntitlementLogic.check(done.originalJson, done.signature, store.publicKey)
+                if (check != PurchaseCheck.OK) {
+                    store.apply(PurchaseQuery.Unavailable)
+                    _ui.value = _ui.value.copy(message = EntitlementLogic.message(check))
+                    return
+                }
                 val ok = done.isAcknowledged || acknowledge(done)
                 if (ok) {
                     store.apply(PurchaseQuery.Purchased(done.purchaseToken, done.originalJson, done.signature))
