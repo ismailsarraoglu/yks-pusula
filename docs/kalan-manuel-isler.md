@@ -25,6 +25,7 @@ Bunlar otomatik testlerde denenemedi. Dahili test kanalında lisans test hesabı
 - [ ] Uçak modunda reklamsız hak korunuyor
 - [ ] Avrupa Ekonomik Alanı konumunda rıza formu çıkıyor, Profil'den yeniden açılıyor
 - [ ] Gerçek reklam kimlikleriyle reklam görünüyor (kendi reklamınıza tıklamayın)
+- [ ] Test reklamı görünürken parmağınızı reklamın üstüne koyup sayfayı hızlıca kaydırın, reklam açılmamalı. Bunu Google test kimlikli sürümle yapın, gerçek reklamda denemeyin
 - [ ] Yanlış defterinde fotoğraf seçme, PDF ekleme, yedeği dosyaya kaydetme ve dosyadan geri yükleme (Android dosya seçicisi)
 - [ ] Ana ekrana dört bileşeni ekleme
 - [ ] Bildirimlerin seçilen saatte gelmesi, telefon yeniden başlayınca da devam etmesi
