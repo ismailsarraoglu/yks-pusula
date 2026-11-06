@@ -296,7 +296,11 @@ class DataFlowTest {
     @Test fun resetClearsUserDataOnly() = runBlocking {
         val s = source()
         r.logStudy(StudyEntry("tyt-mat", null, s.id, null, null, 1, 0, 0, 5))
+        r.updateSettings { it[Keys.diploma] = "85"; it[Keys.theme] = "LIGHT" }
         r.clearUserData()
+        assertEquals("", r.settings.first().diploma)
+        assertEquals("LIGHT", r.settings.first().theme)
+        r.updateSettings { it[Keys.theme] = "DARK" }
         assertEquals(0, r.user.solvedTotal().first())
         assertTrue(r.user.sourcesNow().isEmpty())
         assertEquals(261, r.content.topicCountNow())

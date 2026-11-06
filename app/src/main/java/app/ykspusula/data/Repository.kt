@@ -773,7 +773,10 @@ class Repository(private val context: Context, val db: AppDatabase) {
         }
         context.filesDir.resolve("library").deleteRecursively()
         context.filesDir.resolve("photos").deleteRecursively()
+        context.cacheDir.resolve("paylasim").deleteRecursively()
         savePomodoro(PomodoroState())
+        // Kişisel değerler de silinir. Tema, yazı boyutu ve süre tercihleri ayar olduğu için kalır.
+        updateSettings { it.remove(Keys.diploma); it.remove(Keys.placed); it.remove(Keys.weekly); it.remove(Keys.monthly); it.remove(Keys.lastBackupAt) }
         changed()
     }
 }

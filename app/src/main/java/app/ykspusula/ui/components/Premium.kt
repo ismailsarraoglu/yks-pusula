@@ -165,7 +165,7 @@ fun FeatureShortcutCard(title: String, subtitle: String, icon: ImageVector, tint
         }
         Spacer(Modifier.width(Space.s))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp, lineHeight = 18.sp), color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(subtitle, style = MaterialTheme.typography.labelMedium, color = c.muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = c.muted)

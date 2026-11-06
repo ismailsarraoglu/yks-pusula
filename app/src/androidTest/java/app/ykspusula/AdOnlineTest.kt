@@ -2,11 +2,7 @@ package app.ykspusula
 
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
@@ -55,7 +51,7 @@ class AdOnlineTest {
         Thread.sleep(3000)
         onView(withId(R.id.ad_label)).check { v, e -> assertNull(e); assertNotNull(v) }
         // Yalnızca görsel kayıt içindir; kaydırma başarısız olsa da testi etkilemez.
-        runCatching { rule.onAllNodes(isRoot()).onFirst().performTouchInput { swipeUp() } }
+        repeat(3) { InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("input swipe 500 1800 500 500 300").close(); Thread.sleep(700) }
         Thread.sleep(1200)
         InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { b ->
             File(app.filesDir, "reklam-yerel.png").outputStream().use { o -> b.compress(Bitmap.CompressFormat.PNG, 90, o) }
