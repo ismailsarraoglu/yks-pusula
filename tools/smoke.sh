@@ -60,21 +60,13 @@ if [ -n "$CLS" ]; then
   fi
   if [ -n "$CEVRIMICI" ]; then
     adb shell cmd connectivity airplane-mode disable; adb shell svc wifi enable; adb shell svc data enable
-    for i in $(seq 1 12); do
+    for i in $(seq 1 3); do
       PING=$(timeout 10 adb shell ping -c 1 -W 3 8.8.8.8 2>&1 | tail -2 | tr -d '\r' | tr '\n' ' ')
       echo "$PING" | grep -q ' 0% packet loss' && break
       sleep 5
     done
     echo "ping-cevrimici: $PING" >> "$R"
     echo "dns-cevrimici: $(timeout 20 adb shell ping -c 1 -W 3 googleads.g.doubleclick.net 2>&1 | head -1 | tr -d '\r' | cut -c1-90)" >> "$R"
-    if [ -n "$TANI" ]; then
-      adb shell setprop log.tag.GoogleMobileAds VERBOSE; adb shell setprop log.tag.Ads VERBOSE
-      adb logcat -c
-      timeout 280 adb shell am instrument -w -e class $PKG.AdDiagTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/tani-$NAME.txt"
-      adb logcat -d 2>/dev/null > /tmp/tani.txt
-      grep -E 'YksTani' /tmp/tani.txt | cut -c1-900 > "ci/logs/tani-sonuc-$NAME.txt"
-      grep -vE 'GoogleMobileAdsNetwork|BillingClient|EmojiCompat|AppsFilter' /tmp/tani.txt | grep -E ' (W|E) |GoogleMobileAds|Ads  ' | tail -700 | cut -c1-500 > "ci/logs/tani-logcat-$NAME.txt"
-    fi
     for d in 1 2 3; do
       adb logcat -c
       timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
@@ -85,7 +77,7 @@ if [ -n "$CLS" ]; then
     echo "reklam-denemesi: $d" >> "$R"
     echo "reklam-testi: $(tail -4 ci/logs/reklam-$NAME.txt | tr '\n' ' ' | cut -c1-200)" >> "$R"
     grep -m1 'yüklenemedi' "ci/logs/reklam-$NAME.txt" | cut -c1-300 >> "$R"
-    adb exec-out screencap -p > "ci/screens/reklam-$NAME.png"
+    adb exec-out run-as $PKG cat files/reklam-yerel.png > "ci/screens/reklam-$NAME.png" 2>/dev/null
     adb shell cmd connectivity airplane-mode enable; sleep 5
   fi
   if [ -n "$KALICILIK" ]; then

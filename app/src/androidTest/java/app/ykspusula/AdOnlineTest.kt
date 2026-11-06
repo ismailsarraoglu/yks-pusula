@@ -1,6 +1,7 @@
 package app.ykspusula
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -8,6 +9,7 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import app.ykspusula.data.UserProfile
 import app.ykspusula.monetize.AdPlacement
 import app.ykspusula.monetize.PurchaseQuery
@@ -19,6 +21,7 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -47,6 +50,11 @@ class AdOnlineTest {
         rule.waitForIdle()
         Thread.sleep(3000)
         onView(withId(R.id.ad_label)).check { v, e -> assertNull(e); assertNotNull(v) }
+        onView(withId(R.id.ad_label)).perform(androidx.test.espresso.action.ViewActions.scrollTo())
+        Thread.sleep(800)
+        InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { b ->
+            File(app.filesDir, "reklam-yerel.png").outputStream().use { o -> b.compress(Bitmap.CompressFormat.PNG, 90, o) }
+        }
         runBlocking { m.entitlement.apply(PurchaseQuery.Purchased("test", "{\"productId\":\"$REMOVE_ADS_PRODUCT\"}", "")) }
         rule.waitForIdle()
         Thread.sleep(1000)

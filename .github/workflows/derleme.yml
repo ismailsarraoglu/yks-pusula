@@ -52,13 +52,13 @@ jobs:
           cp app/build/outputs/bundle/release/app-release.aab ci/apk/yks-pusula-release.aab
           ls -la ci/apk > ci/logs/apk-sizes.txt
       - name: KVM ayarla
-        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]') || contains(github.event.head_commit.message, '[rk]'))
+        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]'))
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Disk alani ac
-        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]') || contains(github.event.head_commit.message, '[rk]'))
+        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]'))
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup /usr/share/swift /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL /opt/hostedtoolcache/go /opt/hostedtoolcache/PyPy /opt/hostedtoolcache/Python /opt/hostedtoolcache/Ruby /usr/local/share/chromium /usr/local/share/powershell /usr/local/lib/node_modules
           df -h / | tail -1
@@ -71,13 +71,8 @@ jobs:
       - name: Surum uyumlulugu
         if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[tam]')
         continue-on-error: true
-        timeout-minutes: 70
+        timeout-minutes: 90
         run: bash tools/matris.sh
-      - name: Reklam denemesi
-        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[rk]')
-        continue-on-error: true
-        timeout-minutes: 45
-        run: bash tools/reklam.sh
       - name: Rapor
         if: always()
         run: |
