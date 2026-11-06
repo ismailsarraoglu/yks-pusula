@@ -1,131 +1,120 @@
-# YKS Pusula teslim raporu
+# YKS Pusula: Plan ve Takip, teslim raporu
 
-Sürüm 1.0.0. Test edilen uygulama kodu: `9ce13fd` (5 Kasım 2026). Android 14 denemesi `ea7dddd` ile yapıldı. Bu iki sürüm arasında uygulama kodu ve içerik değişmedi, yalnızca test betikleri ve belgeler değişti.
+Sürüm 2.0.0 (versionCode 2). Teslim edilen APK ve AAB: `8217857`, tam tur `42211930760`, 6 Kasım 2026.
 
 ## Özet
 
-Uygulama Kotlin, Jetpack Compose, Material 3, Room ve DataStore ile yazıldı. APK dosyaları derlendi,
-Android 8, 11, 13 ve 14 emülatörlerinde kuruldu ve açıldı. Tüm otomatik testler geçti.
+Uygulama yeni sürüme taşındı: soru bankası kaldırıldı, yeni özellikler eklendi, tüm ekranlar Premium Dark tasarıma geçti, reklam ve reklamsız satın alma kodu yazıldı. Otomatik testler Android 8, 11, 13, 14 ve 16 emülatörlerinde geçti.
 
-**Gerçek bir telefonda denenmedi.** Android 15 ve üzeri de denenmedi.
+**Google Play'e bugün yüklenemez.** Gerçek reklam kimlikleri, yükleme anahtarı ve Play ürünü sizin hesaplarınıza bağlıdır. Satın alma, satın alma geri yükleme ve Avrupa rıza formu bu yüzden gerçek Google Play ile denenmedi. Gerçek telefonda da test yapılmadı.
 
-## Testler
+Ayrıntılı sonuçlar: `docs/test-raporu.md`. Size kalan işler: `docs/kalan-manuel-isler.md`.
 
-| Test | Ortam | Sonuç |
+## Sorularınızın cevapları
+
+| Soru | Cevap |
+|---|---|
+| Hangi mevcut özellikler korundu? | Profil, 26 ders ve 261 konu, 236 formül, 411 bilgi kartı, kronometre, Pomodoro, plan, notlar, PDF kitaplığı, üniversite hedefleri, net hesabı, OBP, istatistik, rozetler, seri, bildirimler, yedekleme, açık tema, içerik paketi, arama |
+| Hangileri geliştirildi? | Konu takibi, plan, denemeler, yanlış defteri, Pomodoro, yedekleme, bildirimler, görünüm, veri sıfırlama. Ayrıntı: `docs/degisiklik-raporu.md` |
+| Hangi özellikler kaldırıldı? | 778 soruluk gömülü soru bankası, uygulama içi soru çözme, soru tabanlı deneme, otomatik yanlış ekranları, "İnternet izni yok" beyanı |
+| Hangi yenilikler eklendi? | Kişisel Kaynak Merkezi, Pusula Koç, Akıllı Plan 2.0, kaçırılan programı düzenleme, manuel soru performansı, hedef netler, dinlenme günleri, haftalık ve aylık rapor, 4 ana ekran bileşeni, 100 özgün söz, reklam, reklamsız satın alma, rıza akışı, mağaza paketi |
+| Veritabanında ne değişti? | Room şema 1 → 2. 5 soru tablosu kaldırıldı, 10 yeni tablo eklendi, eski denemeler ve yanlışlar yeni tablolara taşındı. Ayrıntı: `docs/veritabani-gecisi.md` |
+| Kullanıcı verileri korundu mu? | Evet, testte profil, notlar, denemeler, yanlış kayıtları ve soru sayıları korundu. **Bilinen kayıplar:** eski yanlış kayıtlarında soru metni ve açıklama gelir ama sorunun şekli gelmez. Soru bankasına bağlı yer imleri silinir. "Soru çözüldü" konu durumu "çalışıldı" durumuna iner |
+| Migration testleri yapıldı mı? | Evet, 7 emülatör kurulumunda geçti. Gerçek 1.0.0 APK'sının üstüne kurarak denenmedi |
+| 100 motivasyon sözü var mı? | Evet, tam 100 benzersiz söz, test ile doğrulandı |
+| Reklamlar çalışıyor mu? | Google test kimlikleriyle evet, Android 14 ve 16 Play imajlarında. Gerçek kimlikler yok, gerçek reklam denenmedi |
+| Satın alma çalışıyor mu? | **Gerçek Play ile denenmedi.** Kod yazıldı, sonuç işleme benzetilmiş sonuçlarla test edildi |
+| Satın alma geri yükleniyor mu? | **Gerçek Play ile denenmedi.** Kod yazıldı, Play ürünü olmadan çalıştırılamaz |
+| Reklamsız kullanıcı reklam görüyor mu? | Hayır. Reklamsız hak açılınca reklam ekrandan kalktı, yeni istek yapılmadı. Hak benzetimle açıldı |
+| İnternetsiz temel işlevler çalışıyor mu? | Evet, veri ve arayüz testleri çevrimdışı çalıştı |
+| Bütün ekranlar yeni tasarıma geçti mi? | Evet. Tüm ekranlar 5 yapılandırmada iki temada açıldı, görüntüler örnekleme ile incelendi |
+| Hangi testler başarılı? | Birim 44/44, Android 11 29/29, Android 8 ve 13 21/21, Android 14 ve 16 27/27, stres 3/3, düğme 5/5, kalıcılık 3 sürümde, release kurulum 5 sürümde |
+| Hangi testler başarısız? | <!-- REKLAM-SONUC --> |
+| Release APK oluştu mu? | Evet, 4,8 MB. Yan yükleme anahtarıyla imzalı, test reklam kimlikli |
+| AAB oluştu mu? | Evet, 10,6 MB. **Bu dosya Play'e yüklenmemeli:** yan yükleme anahtarı ve test kimlikleri içerir. Play için kendi anahtarınızla üretin |
+| Google Play için ne eksik? | Geliştirici hesabı, yükleme anahtarı, AdMob kimlikleri, Play ürünü, herkese açık gizlilik politikası adresi ve e-postası, Console beyanları, gerçek cihaz testi, 12 kişilik 14 günlük kapalı test |
+
+## Nihai kabul listesi (Bölüm 41)
+
+✅ tamam · ⚠ kısmen, not var · ❌ yapılamadı
+
+| Madde | Sonuç | Not |
 |---|---|---|
-| Hesap testleri (net, tekrar, plan, arama, seri, süre) | Bilgisayar | 20/20 geçti |
-| Tam uygulama testleri | Android 11 | 23/23 geçti |
-| Veri ve iş akışı testleri | Android 8.0 | 16/16 geçti |
-| Veri ve iş akışı testleri | Android 13 | 16/16 geçti |
-| Veri, arayüz ve kalıcılık testleri | Android 14 | 21/21 ve 3/3 geçti |
-| Release APK temiz kurulum ve açılış | Android 8, 11, 13, 14 | Kuruldu, açıldı, çökme yok |
-| Ağ izni denetimi | Birleşik manifest ve APK | INTERNET ve ACCESS_NETWORK_STATE yok |
-| APK imza denetimi | Release APK | v2 imzası doğrulandı |
+| Orijinal kaynak kod üzerinde çalışıldı | ✅ | |
+| Mevcut uygulama incelendi | ✅ | |
+| Marka adı korundu | ✅ | |
+| Soru bankası kaldırıldı | ✅ | |
+| Kullanıcı verileri korundu | ✅ | Eski soruların şekilleri ve soru yer imleri gelmez |
+| Manuel soru performans takibi | ✅ | |
+| Kaynak yönetim sistemi | ✅ | |
+| Pusula Koç | ✅ | Yerel kural motoru, yapay zekâ değil |
+| Günlük çalışma rotası | ✅ | |
+| Akıllı program oluşturma | ✅ | |
+| Kaçırılan program düzenleme | ✅ | |
+| Konu ustalığı haritası | ✅ | |
+| Yanlış defteri | ⚠ | Fotoğraf seçici denenmedi |
+| Aralıklı tekrar | ✅ | |
+| Deneme yönetimi | ✅ | |
+| Deneme analizi | ✅ | |
+| OBP | ✅ | Diploma ×5 katsayısı yalnızca ikincil kaynakta bulundu |
+| Üniversite hedefleri | ✅ | |
+| Formüller korundu | ✅ | |
+| Bilgi kartları korundu | ✅ | |
+| PDF kaynakları | ⚠ | Dosya seçiciyle ekleme denenmedi |
+| Notlar | ✅ | |
+| Haftalık rapor | ✅ | |
+| Android widget'ları | ⚠ | Çizim test edildi, gerçek ana ekrana eklenmedi |
+| Bildirimler | ⚠ | Gösterim test edildi, saatinde gelmesi beklenmedi |
+| Tam 100 söz | ✅ | |
+| Günün sözü değişimi | ✅ | |
+| Favoriler | ✅ | |
+| Paylaşım | ⚠ | Dosya üretiliyor, gerçek uygulamaya gönderilmedi |
+| Premium Dark tüm ekranlar | ✅ | |
+| Denemeler ekranı referansa uygun | ✅ | Başlık görseldeki gibi "Denemeler" |
+| Alt navigasyon | ✅ | |
+| Ücretsiz kullanıcı reklam görüyor | ⚠ | Test kimliğiyle. Üretim kimliği yok |
+| Satın alma sistemi | ❌ | Kod hazır, gerçek Play ile denenmedi |
+| Satın alma geri yükleme | ❌ | Kod hazır, gerçek Play ile denenmedi |
+| Reklamsız kullanıcı reklam görmüyor | ✅ | Hak benzetimle açıldı |
+| UMP ve rıza yönetimi | ⚠ | Avrupa formu denenmedi |
+| Temel veriler cihazda | ✅ | Sunucu ve hesap yok |
+| İnternetsiz temel özellikler | ✅ | |
+| Yedekleme ve geri yükleme | ⚠ | Dosya seçiciyle denenmedi |
+| Room migration testleri | ✅ | |
+| API 36 hedefi | ✅ | |
+| Release derlemesi | ✅ | |
+| AAB oluşturuldu | ✅ | Üretim için yeniden üretilmeli |
+| Gerçek test raporu | ✅ | |
+| Kalan manuel işlemler | ✅ | |
 
-Android 11 ve 14 testlerinde uçak modu açıktı, Wi-Fi kapalıydı ve dış ağa erişim denemesi "Network is unreachable" sonucunu verdi. Android 8 ve 13 testlerinde Wi-Fi ve mobil veri kapatıldı, uçak modu açılmadı.
+## Teslim dosyaları
 
-### Android 14 ayrıntıları
+| # | Çıktı | Yer |
+|---|---|---|
+| 1 | Android Studio kaynak kodu | Kaynak ZIP |
+| 2-3 | Release AAB ve APK | Ayrı dosyalar |
+| 4 | Geçiş dosyaları | `app/.../data/Migrations.kt`, `app/schemas/`, `docs/veritabani-gecisi.md` |
+| 5 | Tasarım sistemi | `docs/tasarim-sistemi.md` |
+| 6 | Uygulama simgesi | `play/gorseller/simge-512.png` |
+| 7 | 8 mağaza ekran görseli | `play/gorseller/` (gerçek ekranlar, örnek veriyle) |
+| 8 | Tanıtım görseli | `play/gorseller/tanitim-1024x500.png` |
+| 9-10 | Kısa ve uzun açıklama | `play/magaza-metinleri.md` |
+| 11 | Gizlilik politikası | `play/gizlilik-politikasi.html` (e-posta alanını doldurun) |
+| 12 | Veri güvenliği envanteri | `play/veri-guvenligi-envanteri.md` |
+| 13 | AdMob talimatı | `play/admob-talimat.md` |
+| 14 | Play ürün talimatı | `play/play-yayin-talimat.md` |
+| 15 | Test raporu | `docs/test-raporu.md` |
+| 16 | Değişiklik raporu | `docs/degisiklik-raporu.md` |
+| 17 | Kalan manuel işler | `docs/kalan-manuel-isler.md` |
 
-- `aosp_atd` imajında 21 test ve 3 kalıcılık adımı geçti. Kalıcılık adımları: veri yazma, zorla durdurma sonrası okuma, cihaz yeniden başlatma sonrası okuma.
-- Arayüz testleri 44 ekranı açık ve koyu temada açtı. Ekran görüntüleri örnekleme ile incelendi.
-- Release APK iki imajda (`aosp_atd`, `default`) açıldı. Karşılama ekranı görüntülendi, çökme kaydı yok.
-- `aosp_atd` imajında ekran görüntüsü siyah çıkıyor. Aynı APK `default` imajında normal görüntü verdi, yani sorun test imajına aittir.
-- Android 14'te ekran boyutu denemesi yalnızca 411 dp genişlikte yapıldı.
-- Daha önceki bir turda aynı imaj 10 dakikada açılmamıştı. Bu denemede 1 dakikanın altında açıldı. Önceki başarısızlığın nedeni belirlenemedi.
+Rakip özellik matrisi: `play/rakip-analizi.md`.
 
-## 24 kabul maddesi
+## Bilmeniz gereken sınırlar
 
-| # | Madde | Sonuç | Not |
-|---|---|---|---|
-| 1 | Temiz kurulumda açılıyor | ✅ | Android 8, 11, 13, 14 |
-| 2 | İnternetsiz çalışıyor | ✅ | Android 11 ve 14'te uçak modunda test edildi |
-| 3 | Ana ekran yükleniyor | ✅ | |
-| 4 | Menüler açılıyor | ✅ | Beş sekme ve 44 ekran |
-| 5 | TYT, AYT, YDT görünüyor | ✅ | |
-| 6 | Soru çözme çalışıyor | ✅ | |
-| 7 | Doğru ve yanlış doğru hesaplanıyor | ✅ | 4 doğru, 2 yanlış, 2 boş = 3,50 net; 30 doğru, 8 yanlış = 28,00 net |
-| 8 | Deneme cevapları otomatik kaydediliyor | ✅ | |
-| 9 | Deneme süresi doğru işliyor | ⚠️ | Geri sayım ekranda görüldü. Otomatik bitiş, süresi geçmiş denemeyle test edildi; tam 165 dakika beklenmedi |
-| 10 | Uygulama kapanınca deneme sürüyor | ✅ | Ekran yeniden oluşturuldu, uygulama kapatılıp açıldı |
-| 11 | Yanlışlar defteri kaydediyor | ✅ | 1-3-7-14-30 gün aralıkları dahil |
-| 12 | Çalışma süresi kaydediliyor | ✅ | |
-| 13 | Pomodoro çalışıyor | ⚠️ | Başlat, duraklat, devam et, sıfırla tıklandı. Kapalı uygulama senaryosu zaman ileri alınarak test edildi; tam süre beklenmedi |
-| 14 | Haftalık plan güncelleniyor | ✅ | |
-| 15 | Grafikler gerçek veriyi gösteriyor | ⚠️ | Veri kaynakları test edildi. Grafikler ekran görüntüsünden örnekleme ile incelendi |
-| 16 | Koyu tema | ✅ | 44 ekran açıldı; görsel inceleme örneklemeyle yapıldı |
-| 17 | Açık tema | ✅ | 44 ekran açıldı ve incelendi |
-| 18 | Bildirimler internetsiz çalışıyor | ⚠️ | Bildirim Android 8, 11, 13, 14'te anında üretildi. Saatinde gelmesi ve yeniden başlatma sonrası kurulması beklenerek test edilmedi; izin penceresi de tıklanmadı |
-| 19 | Yedekleme ve geri yükleme | ⚠️ | Dışa aktarma, değiştirme, birleştirme ve bozuk dosya reddi test edildi. Android dosya seçicisi elle denenmedi |
-| 20 | Yeniden başlatınca veriler korunuyor | ✅ | Android 11 ve 14'te zorla durdurma ve cihaz yeniden başlatma |
-| 21 | Farklı ekran boyutları | ✅ | 320, 411 ve 914 dp genişlik (Android 11) |
-| 22 | Geri tuşu doğru çalışıyor | ✅ | Soru ve deneme akışlarında test edildi |
-| 23 | İnternet izni yok | ✅ | |
-| 24 | İşlevsiz buton veya sahte ekran yok | ⚠️ | Ana düğmeler tıklandı. Dosya seçici açan düğmeler (PDF ekleme, yedek, içerik ve üniversite paketi) ve bazı küçük düğmeler otomatik olarak tıklanmadı |
-
-⚠️ işareti maddenin başarısız olduğu anlamına gelmez; testin kapsamının sınırlı olduğunu gösterir.
-
-Testlerin yakaladığı ve düzeltilen gerçek hatalar: ilk kurulumda otomatik programın oluşmaması, Ana Sayfa'dan
-açılan denemede geri tuşunun bitmiş denemeye dönmesi, küçük ekranda alt menü yazılarının kesilmesi, koyu temada
-sistem çubuğunun açık renkte kalması.
-
-## İçerik paketi
-
-Sürüm 1.0.0, `2027-YKS-cerceve`, geçerlilik yılı 2027.
-
-| İçerik | Miktar |
-|---|---|
-| Toplam soru | 778 (416 TYT, 281 AYT, 81 YDT) |
-| Elle yazılan soru | 335 |
-| Hesaplanarak üretilen soru | 443 |
-| Zorluk | 360 kolay, 385 orta, 33 zor |
-| Konu ve alt konu | 261 |
-| Anlatımı olan konu | 236 |
-| Örnek çözümü olan konu | 221 |
-| Formül ve bilgi kaydı | 236 |
-| Kart | 411 (135'i İngilizce kelime) |
-
-Bilmeniz gerekenler:
-
-- Hesaplanan 443 soruda cevabı program hesaplar, ama birçoğu aynı kalıbın farklı sayılı hâlidir. Yani 778 soru, 778 farklı kalıp demek değildir.
-- Elle yazılan soruların cevaplarını ben kontrol ettim. **Bir öğretmen veya alan uzmanı incelemedi.** Öğrencilere yaygın olarak dağıtılmadan önce bu inceleme yapılmalıdır.
-- Soru sayıları dersler arasında dengeli değildir. Matematik ve fizik güçlü, sözel derslerde soru sayısı azdır. Örneğin Din Kültürü'nde 6-10 soru vardır.
-- Konu anlatımları kısa özet düzeyindedir, ders kitabının yerini tutmaz.
-- Kartların bir bölümü konu notlarından otomatik çıkarıldı. Bazıları kısa ve yüzeyseldir.
-- Almanca, Fransızca, Rusça ve Arapça için soru yoktur, yalnızca soru türü başlıkları vardır. Bu 24 başlık ve kapsamı belirsiz Elektrostatik sorusuzdur.
-- TYT ve YDT genel denemeleri tam soru sayısıyla oluşur. AYT Sosyal Bilimler-2 testinde Coğrafya-2 sorusu 1 eksiktir (39/40); uygulama bunu deneme başlamadan gösterir. Soru bankası küçük olduğu için aynı sorular birkaç denemeden sonra tekrar eder.
-
-## Doğrulanması gereken bilgiler
-
-- **Müfredat:** Konu listesi resmî MEB öğretim programlarıyla satır satır karşılaştırılmadı. Bilgime göre üç başlık işaretlendi: Polinomlar (listede yoktu, eklendi), Elektrostatik (TYT kapsamı belirsiz), Evrim (2018 programında bulunmuyor, kapsam dışı bırakıldı).
-- **Maarif Modeli:** İçerik 2027 YKS çerçevesine göre hazırlandı. Sınav yılı 2028 ve sonrası seçilirse uygulama uyarı gösterir. Bu yıllar için ÖSYM ve MEB kapsamı netleşince yeni içerik paketi gerekir.
-- **Takvim:** 2027 tarihleri haberlerde ÖSYM takvimine dayandırılıyor. Resmî takvim osym.gov.tr adresinden kontrol edilmelidir. Tarihler Sınav ayarlarından değiştirilebilir.
-- **Ders dağılımı:** Deneme içindeki ders başına soru sayıları uygulamanın kullandığı değerlerdir, kılavuzla karşılaştırılmalıdır.
-- **OBP:** Kural (diploma notu × 5, katsayı 0,12 veya 0,06) resmî olmayan bir kaynaktan alındı. Kılavuzla karşılaştırılmalıdır.
-
-## Bilerek eklenmeyenler
-
-- Puan ve sıralama tahmini: Resmî yıl verileri uygulamada yok.
-- Üniversite taban puanı, kontenjan ve YÖK Atlas verisi: Doğrulanmış veri seti yok. Kullanıcı kaynağı ve sürümü belli bir dosyayı içe aktarabilir.
-
-## Diğer sınırlar
-
-- Yedek dosyası ZIP değil, tek JSON dosyasıdır. Eklenen PDF'ler yedeğe dahil değildir.
-- Release APK, depoda duran bir anahtarla imzalıdır. Yalnızca dışarıdan kurulum içindir. Play Store için yeni anahtar gerekir ve depo herkese açık yapılmamalıdır.
-- Sınav süresi uygulama kapalıyken de işlemeye devam eder.
-
-## Teslim edilen dosyalar
-
-| Dosya | Açıklama |
-|---|---|
-| `yks-pusula-release.apk` | Telefona kurulacak sürüm (yaklaşık 2 MB) |
-| `yks-pusula-debug.apk` | Test sürümü (yaklaşık 18 MB) |
-| `yks-pusula-kaynak.zip` | Android Studio projesi |
-| `README.md` | Kurulum talimatı |
-| `TESLIM-RAPORU.md` | Bu rapor |
-
-## Kaynaklar
-
-- [Yeni Asır: 2027 YKS tarihleri](https://www.yeniasir.com.tr/yasam/2026/10/28/son-dakika-osym-baskani-duyurdu-2027-yks-tarihi-aciklandi)
-- [Ekonomist: 2026 YKS soru sayıları ve süreleri](https://www.ekonomist.com.tr/egitim/2026-yks-ne-zaman-saat-kacta-basliyor-tyt-ayt-ydt-soru-sayilari-ve-sureleri-75753)
-- [Unikazan: Maarif Modeli ve YKS](https://unikazan.com/blog/turkiye-yuzyili-maarif-modeli-yksyi-nasil-etkileyecek/)
-- [HemenHesap: YKS puan ve OBP rehberi](https://www.hemenhesap.com/blog/yks-puan-nasil-hesaplanir-2026)
+- **Yayın işi denenmedi.** Play için imzalı AAB üreten `yayin-aab` işi hazır ama çalıştırılmadı, çünkü sizin anahtarınız ve kimlikleriniz gerekiyor.
+- **İmza farkı.** Dışarıdan kurulan APK, Play sürümüyle güncellenemez. Yedek alıp kaldırın, Play'den kurup yedeği geri yükleyin.
+- **Şifreli yedekleme eklenmedi.** İstek isteğe bağlıydı. Yedek ZIP'i sağlama toplamıyla korunur, şifreli değildir.
+- **Banner ve geçiş reklamı yok.** Yalnızca yerel reklam kullanıldı.
+- **Tarih ve katsayılar.** 2027 YKS tarihleri haberlerden alındı. ÖSYM kılavuzu çıkınca karşılaştırın.
+- **Rakip analizi.** Mağaza yorumlarının yazılı içeriğine erişilemedi. İndirme veya sıralama garantisi verilmez.
+- **Teknik seçimler.** Bileşenler Glance yerine RemoteViews, zamanlama WorkManager yerine AlarmManager ile yapıldı.
