@@ -5,13 +5,14 @@ Bu işler hesabınıza, kimliğinize veya gerçek cihaza bağlı olduğu için t
 ## Yayın öncesi
 
 1. **Google Play Geliştirici hesabı** açın ve kimlik doğrulamasını tamamlayın.
-2. **Yükleme anahtarı** oluşturun ve iki ayrı yerde yedekleyin. Adımlar: `play/play-yayin-talimat.md`.
+2. **Yükleme anahtarı** oluşturun ve iki ayrı yerde yedekleyin. Adımlar: `play/play-yayin-talimat.md`. 2.1.0'dan itibaren Play derlemesi bu anahtar olmadan üretilemez.
+   - İsteğe bağlı: size gönderilen `yks-pusula-sideload-YEDEK.p12` dosyasını güvenli bir yerde saklayın. Telefonunuzdaki eski test sürümünün üstüne kurulum için GitHub'a `SIDELOAD_P12_B64` ve `SIDELOAD_STORE_PASSWORD` gizli değerlerini ekleyebilirsiniz (aynı belgede).
 3. **AdMob hesabı** açın; uygulama, yerel reklam birimi ve GDPR iletisi oluşturun. Adımlar: `play/admob-talimat.md`. Gerçek reklam kimlikleri bu teslimde yoktur.
-4. **Gizlilik politikası:** `play/gizlilik-politikasi.html` içindeki `[GELİŞTİRİCİ E-POSTA ADRESİ]` alanını doldurun, herkese açık bir adreste yayımlayın, adresi Play Console'a girin.
-5. **Kendi anahtarınızla AAB üretin.** GitHub'daki `yayin-aab` işi veya kendi bilgisayarınız. Teslimdeki AAB test kimlikleri ve yan yükleme anahtarı içerir, Play'e yüklenmez.
+4. **Gizlilik politikası:** `play/gizlilik-politikasi.html` içindeki `[GELİŞTİRİCİ ADI]` ve `[GELİŞTİRİCİ E-POSTA ADRESİ]` alanlarını doldurun, herkese açık bir adreste yayımlayın, adresi Play Console'a girin.
+5. **Kendi anahtarınızla AAB üretin.** GitHub'daki `yayin-aab` işi veya kendi bilgisayarınız. Gereken yedi değer: yükleme anahtarı dosyası ve üç parola/ad, `ADMOB_APP_ID`, `ADMOB_NATIVE_ID`, `PLAY_PUBLIC_KEY`. Bu teslimde Play'e yüklenecek AAB yoktur; anahtarınız olmadan üretilemez.
 6. **Play Console'da uygulama oluşturun.** Mağaza metinleri `play/magaza-metinleri.md`, görseller `play/gorseller/`. Ekran görselleri örnek veriyle hazırlandı.
 7. **`remove_ads_lifetime` ürününü** oluşturun ve fiyatını belirleyin.
-8. **Beyanları doldurun:** veri güvenliği, reklam kimliği, hedef kitle, içerik derecelendirmesi. Dayanak: `play/veri-guvenligi-envanteri.md`.
+8. **Beyanları doldurun:** veri güvenliği, reklam kimliği, hedef kitle (öneri: 16-17 ve 18+), içerik derecelendirmesi. Dayanak: `play/veri-guvenligi-envanteri.md`.
 
 ## Gerçek cihaz ve Play ile denenmesi gerekenler
 
@@ -33,6 +34,10 @@ Bunlar otomatik testlerde denenemedi. Dahili test kanalında lisans test hesabı
 - [ ] Bildirim izni reddedildiğinde uygulama normal çalışıyor
 - [ ] Sürüm 1.0.0 kurulu telefonda sürüm 2 APK'sı üstüne kuruluyor, veriler duruyor
 - [ ] Android 15 veya başka denenmemiş sürümlerde genel kullanım
+- [ ] Sürüm 2.0.0 kurulu telefonda 2.1.0 üstüne kuruluyor, veriler duruyor (aynı imzayla kurulmuşsa)
+- [ ] Telefonun saat dilimini değiştirince hatırlatma yeni saatte geliyor
+- [ ] Uygulama gece açık kalıp sabah açıldığında yeni günün görevleri görünüyor
+- [ ] Denemede yanlış konu girince yanlış defterinde görünüyor
 
 ## Yayın kuralı
 

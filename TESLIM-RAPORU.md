@@ -1,121 +1,135 @@
-# YKS Pusula: Plan ve Takip, teslim raporu
+# YKS Pusula 2.1.0 teslim raporu
 
-Sürüm 2.0.0 (versionCode 2). Teslim edilen APK ve AAB: `e6f4882`, tam tur `42242504720`, 6 Kasım 2026.
+Sürüm 2.1.0 (versionCode 3). Uygulama kodu: `__COMMIT__`, tam test turu `__RUN__`, 6 Kasım 2026. Çalışma dalı `surum-2.1`; 2.0.0 hâli `yedek-2.0.0` etiketiyle korunuyor.
 
-## Özet
+Durum etiketleri: **Tamamlandı** · **Kısmen tamamlandı** · **Test edilmesi gerekiyor** · **Kullanıcı işlemi gerekiyor** · **Bu sürüme alınmadı**
 
-Uygulama yeni sürüme taşındı: soru bankası kaldırıldı, yeni özellikler eklendi, tüm ekranlar Premium Dark tasarıma geçti, reklam ve reklamsız satın alma kodu yazıldı. Otomatik testler Android 8, 11, 13, 14 ve 16 emülatörlerinde geçti.
+**Google Play'e yüklenecek imzalı AAB bu teslimde yok.** Yükleme anahtarınız ortamda olmadığı için üretilemedi; sahte anahtarla da üretilmedi. Derleme anahtar olmadan durur. Kendi anahtarınızla üretme adımları: `play/play-yayin-talimat.md`.
 
-**Google Play'e bugün yüklenemez.** Gerçek reklam kimlikleri, yükleme anahtarı ve Play ürünü sizin hesaplarınıza bağlıdır. Satın alma, satın alma geri yükleme ve Avrupa rıza formu bu yüzden gerçek Google Play ile denenmedi. Gerçek telefonda da test yapılmadı.
+## 1. Rakip araştırması sonucu
 
-Ayrıntılı sonuçlar: `docs/test-raporu.md`. Size kalan işler: `docs/kalan-manuel-isler.md`.
+Ayrıntı: `docs/COMPETITOR_RESEARCH.md` (6 Kasım 2026).
 
-## Sorularınızın cevapları
+- 9 rakip ve 2 ek uygulama incelendi. **Google Play sayfaları bu tarihte okunamadı** (araştırma aracı ilgisiz sayfalar getirdi). İndirme ve güncelleme bilgisi AppGoblin'in tahminlerinden, puan ve yorumlar App Store'dan alındı. Yorum incelemesi her uygulamada en fazla 4 görünen yorumla sınırlı.
+- Ortak özellikler (sayaç, konu takibi, deneme kaydı, Pomodoro, bileşen, seri) artık fark yaratmıyor.
+- Rakiplerin ücretli kısmı genelde yapay zekâ koç, sıralama tahmini veya içerik. Çoğu haftalık, aylık veya yıllık abonelik kullanıyor.
+- YKS Pusula'nın farkı: gerekçeli plan, denemeden yanlış defterine bağlantı, gerçek süre ile görev ayrımı, kaynak bağımsız takip, cihazda kalan veri ve güvenilir yedek, tek seferlik reklamsız ödeme.
+- Görünen yorumlarda kullanıcıların en çok şikâyet ettiği konular: hatalı cevap anahtarları, YDT desteği eksikliği, plan görevlerinin işaretlenememesi. Bu yüzden doğrulanmamış soru eklenmedi, YDT desteği dürüstçe belirtildi, plan işaretleme testlerle korunuyor.
 
-| Soru | Cevap |
+## 2. Eski projedeki problemler
+
+Kod üzerinde yeniden doğrulandı (`docs/denetim-2.1.md`). Prompttaki eski bulguların hepsi kodda hâlâ vardı:
+
+- Release derlemesi anahtar yoksa yan yükleme anahtarına dönüyordu; anahtar ve parolası depodaydı; release test reklam kimliğine dönüyordu.
+- Play açık anahtarı boşken satın alma imzasız geçerli sayılıyordu. Ürün kimliği metin içinde aranıyordu.
+- Plan 240 dk hedefe 200 dk, 30 dk hedefe 50 dk koyuyordu.
+- Ana sayfa süreyi `maxOf(gerçek, görev tahmini)` ile gösteriyordu.
+- Ekranlar tarihi bir kez alıyordu; gece açık kalan uygulama dünü gösteriyordu. Saat dilimi değişince hatırlatmalar yeniden kurulmuyordu.
+- Yedek: sınırsız girdi okuma, ZIP dosya sayısı ve toplam boyut sınırı yok, eklerin bütünlüğü yok, güvenlik kopyası fotoğraf ve PDF'leri içermiyordu, eklerin kopyalanması başarısız olursa geri dönüş yoktu.
+- Denemedeki zorlanılan konular yanlış defterine girmiyordu.
+- İçerik: 25 boş anlatım, 204 anlatım 150 karakterden kısa, İngilizce dışındaki YDT dillerinde not yok.
+
+## 3. Düzeltilen problemler
+
+| Problem | Durum |
 |---|---|
-| Hangi mevcut özellikler korundu? | Profil, 26 ders ve 261 konu, 236 formül, 411 bilgi kartı, kronometre, Pomodoro, plan, notlar, PDF kitaplığı, üniversite hedefleri, net hesabı, OBP, istatistik, rozetler, seri, bildirimler, yedekleme, açık tema, içerik paketi, arama |
-| Hangileri geliştirildi? | Konu takibi, plan, denemeler, yanlış defteri, Pomodoro, yedekleme, bildirimler, görünüm, veri sıfırlama. Ayrıntı: `docs/degisiklik-raporu.md` |
-| Hangi özellikler kaldırıldı? | 778 soruluk gömülü soru bankası, uygulama içi soru çözme, soru tabanlı deneme, otomatik yanlış ekranları, "İnternet izni yok" beyanı |
-| Hangi yenilikler eklendi? | Kişisel Kaynak Merkezi, Pusula Koç, Akıllı Plan 2.0, kaçırılan programı düzenleme, manuel soru performansı, hedef netler, dinlenme günleri, haftalık ve aylık rapor, 4 ana ekran bileşeni, 100 özgün söz, reklam, reklamsız satın alma, rıza akışı, mağaza paketi |
-| Veritabanında ne değişti? | Room şema 1 → 2. 5 soru tablosu kaldırıldı, 10 yeni tablo eklendi, eski denemeler ve yanlışlar yeni tablolara taşındı. Ayrıntı: `docs/veritabani-gecisi.md` |
-| Kullanıcı verileri korundu mu? | Evet, testte profil, notlar, denemeler, yanlış kayıtları ve soru sayıları korundu. **Bilinen kayıplar:** eski yanlış kayıtlarında soru metni ve açıklama gelir ama sorunun şekli gelmez. Soru bankasına bağlı yer imleri silinir. "Soru çözüldü" konu durumu "çalışıldı" durumuna iner |
-| Migration testleri yapıldı mı? | Evet, 7 emülatör kurulumunda geçti. Gerçek 1.0.0 APK'sının üstüne kurarak denenmedi |
-| 100 motivasyon sözü var mı? | Evet, tam 100 benzersiz söz, test ile doğrulandı |
-| Reklamlar çalışıyor mu? | Google test kimlikleriyle evet, Android 14 ve 16 Play imajlarında. Reklamın üstünden kaydırınca reklamın yanlışlıkla açılması testte bulundu ve düzeltildi. Gerçek kimlikler yok, gerçek reklam denenmedi |
-| Satın alma çalışıyor mu? | **Gerçek Play ile denenmedi.** Kod yazıldı, sonuç işleme benzetilmiş sonuçlarla test edildi |
-| Satın alma geri yükleniyor mu? | **Gerçek Play ile denenmedi.** Kod yazıldı, Play ürünü olmadan çalıştırılamaz |
-| Reklamsız kullanıcı reklam görüyor mu? | Hayır. Reklamsız hak açılınca reklam ekrandan kalktı, yeni istek yapılmadı. Hak benzetimle açıldı |
-| İnternetsiz temel işlevler çalışıyor mu? | Evet, veri ve arayüz testleri çevrimdışı çalıştı |
-| Bütün ekranlar yeni tasarıma geçti mi? | Evet. Tüm ekranlar 5 yapılandırmada iki temada açıldı, görüntüler örnekleme ile incelendi |
-| Hangi testler başarılı? | Birim 44/44, Android 11 32/32, Android 8 ve 13 24/24, Android 14 ve 16 30/30, stres 3/3, düğme 5/5, kalıcılık 3 sürümde, release kurulum 5 sürümde, reklam testi 2 Play imajında, reklam üstü kaydırma 396/396 |
-| Hangi testler başarısız? | Son turda uygulama kodundan kaynaklı başarısız test yok. Emülatörden kaynaklı 5 olay oldu, hepsi tekrarda geçti: 4 kez test süreci açılamadı (3'ünün kaydı bunun uygulama kodu çalışmadan önce, aşırı yüklü emülatörde olduğunu gösteriyor; 1'inin kaydı yetersiz), 1 kez Google Play Hizmetleri yeniden başlarken Android uygulamayı da kapattı. Önceki turlarda nedeni bulunamayan 3 tek seferlik olay var. Ayrıntı: `docs/test-raporu.md` |
-| Release APK oluştu mu? | Evet, 4,8 MB. Yan yükleme anahtarıyla imzalı, test reklam kimlikli |
-| AAB oluştu mu? | Evet, 10,6 MB. **Bu dosya Play'e yüklenmemeli:** yan yükleme anahtarı ve test kimlikleri içerir. Play için kendi anahtarınızla üretin |
-| Google Play için ne eksik? | Geliştirici hesabı, yükleme anahtarı, AdMob kimlikleri, Play ürünü, herkese açık gizlilik politikası adresi ve e-postası, Console beyanları, gerçek cihaz testi, 12 kişilik 14 günlük kapalı test |
+| Release imzası yalnızca açıkça verilmiş yükleme anahtarıyla; eksikse derleme durur ve neyin eksik olduğunu yazar | **Tamamlandı** (CI'da doğrulandı) |
+| Yan yükleme anahtarı ve parolası depodan ve kaynak ZIP'inden çıkarıldı, yedeği gönderildi | **Tamamlandı**. Not: anahtar eski Git geçmişinde duruyor |
+| Test ve gerçek reklam kimlikleri ayrıldı; Play derlemesi test kimliğini reddeder | **Tamamlandı** |
+| Satın alma doğrulaması: anahtar yoksa hak yok; imza, ürün, paket, durum denetimi | **Tamamlandı** (birim ve cihaz testi); gerçek Play ile **Test edilmesi gerekiyor** |
+| Plan süresi hedefe tam eşit, molalar ayrı, saat yetmezse açıklama | **Tamamlandı** (8 süre senaryosu ve 9 ek senaryo) |
+| Ana sayfada gerçek süre, görev, soru, haftalık hedef, tekrar ayrı | **Tamamlandı** |
+| Gün değişimi, öne gelme, saat ve saat dilimi değişikliği | **Kısmen tamamlandı**: kod ve gün yenileme testi var; gece yarısını ve saat dilimi değişikliğini gerçek cihazda bekleyerek denemek **Test edilmesi gerekiyor** |
+| Yedek sınırları, yol aşımı, ZIP bombası, ek bütünlüğü, tam güvenlik kopyası, geri dönüş | **Tamamlandı** (14 cihaz testi); Android dosya seçicisiyle **Test edilmesi gerekiyor** |
 
-## Nihai kabul listesi (Bölüm 41)
+## 4. Yeni eklenen özellikler
 
-✅ tamam · ⚠ kısmen, not var · ❌ yapılamadı
+| Özellik | Durum |
+|---|---|
+| Denemedeki yanlış ve boş konuları yanlış defterine ve tekrara bağlama | **Tamamlandı** |
+| Öncelikli konular (eksik konu sıralaması, gerekçeli) | **Tamamlandı** |
+| Sınav öncesi modu | **Tamamlandı** |
+| Akıllı plan gerekçeleri (deneme yanlışı, uzun süredir tekrar edilmeyen, hedef net farkı), haftalık hedef, dinlenme günü, aynı gün aynı konu yok | **Tamamlandı** |
+| Plan ayarlarında blok süresi, güçlü dersler (alana göre), saat uyarısı | **Tamamlandı** |
+| Yanlış defterinde yanlış, boş, tahminle doğru; öğrenme düzeyi; "Bilgiyi karıştırma" nedeni | **Tamamlandı** |
+| Kartlarda karışık hızlı tekrar | **Tamamlandı** |
+| Odaklanmada "Oturumdan vazgeç" | **Tamamlandı** |
+| 12 TYT Matematik konusunda genişletilmiş not | **Kısmen tamamlandı**: 261 konunun 12'si. Diğerleri kısa özet olarak kalıyor ve uygulama bunu söylüyor |
+| İçerik paketinde doğrulama bilgisi | **Tamamlandı**. İçerik resmî kaynaklarla satır satır karşılaştırılmadı; uygulama "doğrulama yapılmadı" der |
+| YDT dil desteğinin açıkça belirtilmesi | **Tamamlandı** |
+| Soru bankası, mini testler, sıralama tahmini, düello, bulut | **Bu sürüme alınmadı** (`docs/gelecek-fikirleri.md`) |
+| Şifreli yedek | **Bu sürüme alınmadı** |
+| Hedef üniversite ve bölüm | Önceden vardı, değişmedi. Taban puan verisi gömülü değil |
 
-| Madde | Sonuç | Not |
-|---|---|---|
-| Orijinal kaynak kod üzerinde çalışıldı | ✅ | |
-| Mevcut uygulama incelendi | ✅ | |
-| Marka adı korundu | ✅ | |
-| Soru bankası kaldırıldı | ✅ | |
-| Kullanıcı verileri korundu | ✅ | Eski soruların şekilleri ve soru yer imleri gelmez |
-| Manuel soru performans takibi | ✅ | |
-| Kaynak yönetim sistemi | ✅ | |
-| Pusula Koç | ✅ | Yerel kural motoru, yapay zekâ değil |
-| Günlük çalışma rotası | ✅ | |
-| Akıllı program oluşturma | ✅ | |
-| Kaçırılan program düzenleme | ✅ | |
-| Konu ustalığı haritası | ✅ | |
-| Yanlış defteri | ⚠ | Fotoğraf seçici denenmedi |
-| Aralıklı tekrar | ✅ | |
-| Deneme yönetimi | ✅ | |
-| Deneme analizi | ✅ | |
-| OBP | ✅ | Diploma ×5 katsayısı yalnızca ikincil kaynakta bulundu |
-| Üniversite hedefleri | ✅ | |
-| Formüller korundu | ✅ | |
-| Bilgi kartları korundu | ✅ | |
-| PDF kaynakları | ⚠ | Dosya seçiciyle ekleme denenmedi |
-| Notlar | ✅ | |
-| Haftalık rapor | ✅ | |
-| Android widget'ları | ⚠ | Çizim test edildi, gerçek ana ekrana eklenmedi |
-| Bildirimler | ⚠ | Gösterim test edildi, saatinde gelmesi beklenmedi |
-| Tam 100 söz | ✅ | |
-| Günün sözü değişimi | ✅ | |
-| Favoriler | ✅ | |
-| Paylaşım | ⚠ | Dosya üretiliyor, gerçek uygulamaya gönderilmedi |
-| Premium Dark tüm ekranlar | ✅ | |
-| Denemeler ekranı referansa uygun | ✅ | Başlık görseldeki gibi "Denemeler" |
-| Alt navigasyon | ✅ | |
-| Ücretsiz kullanıcı reklam görüyor | ⚠ | Test kimliğiyle. Üretim kimliği yok |
-| Satın alma sistemi | ❌ | Kod hazır, gerçek Play ile denenmedi |
-| Satın alma geri yükleme | ❌ | Kod hazır, gerçek Play ile denenmedi |
-| Reklamsız kullanıcı reklam görmüyor | ✅ | Hak benzetimle açıldı |
-| UMP ve rıza yönetimi | ⚠ | Avrupa formu denenmedi |
-| Temel veriler cihazda | ✅ | Sunucu ve hesap yok |
-| İnternetsiz temel özellikler | ✅ | |
-| Yedekleme ve geri yükleme | ⚠ | Dosya seçiciyle denenmedi |
-| Room migration testleri | ✅ | |
-| API 36 hedefi | ✅ | |
-| Release derlemesi | ✅ | |
-| AAB oluşturuldu | ✅ | Üretim için yeniden üretilmeli |
-| Gerçek test raporu | ✅ | |
-| Kalan manuel işlemler | ✅ | |
+Kullanım: `docs/yeni-ozellikler-kullanim.md`.
 
-## Teslim dosyaları
+## 5. Değiştirilen dosyalar
 
-| # | Çıktı | Yer |
-|---|---|---|
-| 1 | Android Studio kaynak kodu | Kaynak ZIP |
-| 2-3 | Release AAB ve APK | Ayrı dosyalar |
-| 4 | Geçiş dosyaları | `app/.../data/Migrations.kt`, `app/schemas/`, `docs/veritabani-gecisi.md` |
-| 5 | Tasarım sistemi | `docs/tasarim-sistemi.md` |
-| 6 | Uygulama simgesi | `play/gorseller/simge-512.png` |
-| 7 | 8 mağaza ekran görseli | `play/gorseller/` (gerçek ekranlar, örnek veriyle) |
-| 8 | Tanıtım görseli | `play/gorseller/tanitim-1024x500.png` |
-| 9-10 | Kısa ve uzun açıklama | `play/magaza-metinleri.md` |
-| 11 | Gizlilik politikası | `play/gizlilik-politikasi.html` (e-posta alanını doldurun) |
-| 12 | Veri güvenliği envanteri | `play/veri-guvenligi-envanteri.md` |
-| 13 | AdMob talimatı | `play/admob-talimat.md` |
-| 14 | Play ürün talimatı | `play/play-yayin-talimat.md` |
-| 15 | Test raporu | `docs/test-raporu.md` |
-| 16 | Değişiklik raporu | `docs/degisiklik-raporu.md` |
-| 17 | Kalan manuel işler | `docs/kalan-manuel-isler.md` |
+__DOSYALAR__
 
-Rakip özellik matrisi: `play/rakip-analizi.md`.
+## 6. Veritabanı ve veri güvenliği
 
-## Bilmeniz gereken sınırlar
+- Room şema 2 → 3, yalnızca sütun ekleme. Yıkıcı geçiş kullanılmadı. Geçiş testleri: 1 → 2, 2 → 3, 1 → 3.
+- Yedek biçimi sürüm 3; sürüm 1 ve 2 yedekleri okunur.
+- Geri yükleme aşamalı: doğrula, geçici alana aç, dosyaları denetle, tam güvenlik kopyası al ve doğrula, veritabanını tek işlemde yaz, dosyaları taşı, sayıları denetle, geçici dosyaları sil. Dosya taşıma başarısız olursa güvenlik kopyasından eski hâle dönülür.
+- Bilinen sınır: PDF kitaplığı 1 GB'ı aşarsa güvenlik kopyası doğrulanamaz ve değiştirerek geri yükleme yapılmaz (birleştirme yapılabilir).
 
-- **Yayın işi denenmedi.** Play için imzalı AAB üreten `yayin-aab` işi hazır ama çalıştırılmadı, çünkü sizin anahtarınız ve kimlikleriniz gerekiyor.
-- **İmza farkı.** Dışarıdan kurulan APK, Play sürümüyle güncellenemez. Yedek alıp kaldırın, Play'den kurup yedeği geri yükleyin.
-- **Şifreli yedekleme eklenmedi.** İstek isteğe bağlıydı. Yedek ZIP'i sağlama toplamıyla korunur, şifreli değildir.
-- **Banner ve geçiş reklamı yok.** Yalnızca yerel reklam kullanıldı.
-- **Play Hizmetleri yeniden başlaması.** Google Play Hizmetleri güncellenirken veya çökerken Android, reklam kullanan uygulamaları da kapatabilir. Bu uygulama hatası değildir, kayıtlı veri kaybolmaz.
-- **Tarih ve katsayılar.** 2027 YKS tarihleri haberlerden alındı. ÖSYM kılavuzu çıkınca karşılaştırın.
-- **Rakip analizi.** Mağaza yorumlarının yazılı içeriğine erişilemedi. İndirme veya sıralama garantisi verilmez.
-- **Teknik seçimler.** Bileşenler Glance yerine RemoteViews, zamanlama WorkManager yerine AlarmManager ile yapıldı.
+## 7. Reklam ve satın alma durumu
+
+Ayrıntı: `docs/gizlilik-ve-reklam-raporu.md`.
+
+- Reklamlar: Google test kimlikleriyle Android 14 ve 16 Play imajlarında __REKLAM__. Gerçek AdMob kimliği yok: **Kullanıcı işlemi gerekiyor**.
+- Satın alma (`remove_ads_lifetime`): kod tamam, imzalı test kayıtlarıyla cihazda denendi. Gerçek Play ile: **Kullanıcı işlemi gerekiyor** (Play ürünü ve lisans test hesabı).
+- Güvenlik sınırı: sunucu olmadığı için doğrulama cihazdadır, atlatılabilir.
+
+## 8. Gizlilik ve Play Store hazırlığı
+
+| Madde | Durum |
+|---|---|
+| Gizlilik politikası güncellendi | **Kullanıcı işlemi gerekiyor**: `[GELİŞTİRİCİ ADI]` ve `[GELİŞTİRİCİ E-POSTA ADRESİ]` |
+| Veri güvenliği envanteri | **Tamamlandı**; beyan Play Console'da doldurulacak |
+| Hedef kitle önerisi (16-17 ve 18+) | **Kullanıcı işlemi gerekiyor** |
+| Mağaza metinleri, görseller | **Tamamlandı**; görseller 2.1.0 ekranlarından yeniden üretildi |
+| Hedef API 36, R8 | **Tamamlandı** |
+
+## 9. Çalıştırılan testler
+
+__TESTLER__
+
+## 10. Başarısız veya yapılamayan testler
+
+__BASARISIZ__
+
+## 11. Bilinen sorunlar
+
+- 261 konunun büyük kısmında not kısa özettir; ders anlatımı yerine geçmez.
+- İngilizce dışındaki YDT dillerinde not ve kelime kartı yok.
+- Yan yükleme anahtarı eski Git geçmişinde duruyor (depo gizli). Play için kullanılmamalı.
+- Test APK'sı GitHub'a yan yükleme anahtarı eklenmediği için geçici anahtarla imzalı; telefondaki 2.0.0'ın üstüne kurulmaz (yedek al, kaldır, kur, geri yükle).
+- `TestPurchase.kt` içindeki RSA anahtarı yalnızca otomatik testler içindir; Play derlemesi bu anahtarı kabul etmez.
+__EK_SORUNLAR__
+
+## 12. Yayın için gereken kullanıcı işlemleri
+
+Sırasıyla `docs/kalan-manuel-isler.md`:
+
+1. Google Play geliştirici hesabı.
+2. Yükleme anahtarı oluşturup iki yerde yedekleme.
+3. AdMob uygulaması, yerel reklam birimi ve GDPR iletisi.
+4. Gizlilik politikasındaki iki alanı doldurup yayımlama.
+5. `remove_ads_lifetime` ürününü oluşturma; Play açık anahtarını alma.
+6. Yedi gizli değerle `yayin-aab` işini çalıştırıp AAB üretme.
+7. Beyanlar (veri güvenliği, reklam kimliği, hedef kitle, içerik derecelendirmesi).
+8. Dahili testte lisans test hesabıyla satın alma denemeleri (gerçek para harcanmaz).
+9. 12 kişiyle 14 gün kapalı test.
+
+## 13. APK ve AAB dosyalarının konumu
+
+| Dosya | Açıklama |
+|---|---|
+| `yks-pusula-2.1.0-test.apk` | Telefona kurulabilir test sürümü. Release ile aynı küçültme ayarları, Google test reklamları, satın alma kapalı. __IMZA__ |
+| Play AAB | **Bu teslimde yok.** Yükleme anahtarınızla `yayin-aab` işinden üretilir |
+| `yks-pusula-kaynak-2.1.0.zip` | Kaynak kod. `.jks`, `.p12`, `.keystore`, parola, `local.properties`, derleme çıktısı içermez |
+| `yks-pusula-sideload-YEDEK.p12` | Eski yan yükleme test anahtarının yedeği. Play için kullanmayın, paylaşmayın |
+| `yks-pusula-play-paketi.zip` | Mağaza metinleri, görseller, gizlilik politikası, veri güvenliği envanteri, yayın talimatları |
+| `yks-pusula-raporlar.zip` | Bu rapor ve `docs/` altındaki tüm raporlar |

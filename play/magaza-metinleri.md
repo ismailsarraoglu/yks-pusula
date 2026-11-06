@@ -9,7 +9,7 @@
 YKS Pusula, sınava hazırlığını tek yerden yönetmen için yapıldı. Hangi kitaptan, PDF'ten veya videodan çalışırsan çalış; planını, konu ilerlemeni, yanlışlarını ve deneme sonuçlarını bir araya getirir. Planla. Çalış. Takip et. Hedefine yaklaş.
 
 YKS PUSULA NEDİR?
-Uygulama bir soru bankası değildir. Senin kaynaklarınla yaptığın çalışmayı düzenleyen kişisel YKS yönetim merkezidir. TYT, AYT ve YDT için 261 konu, 236 formül ve bilgi kaydı, 411 bilgi kartı içerir.
+Uygulama bir soru bankası değildir. Senin kaynaklarınla yaptığın çalışmayı düzenleyen kişisel YKS yönetim merkezidir. TYT, AYT ve YDT için 261 konu ve kısa tekrar notları, 236 formül ve bilgi kaydı, 411 bilgi kartı içerir. YDT notları ve kelime kartları yalnızca İngilizce içindir.
 
 GÜNLÜK ROTA
 Pusula Koç, kayıtlarına bakarak bugün ne çalışabileceğini önerir ve her önerinin nedenini söyler. Öneriyi kabul edebilir, reddedebilir, düzenleyebilir veya başka güne taşıyabilirsin. Öneriler cihazında hesaplanır, internet gerekmez.
@@ -27,7 +27,7 @@ YANLIŞ DEFTERİ
 Kitabında, PDF'inde veya denemende yaptığın yanlışı kaynağı, sayfası, nedeni ve fotoğrafıyla kaydet. 1, 3, 7, 14 ve 30 günlük aralıklı tekrar seni takip eder. Hatırladın mı, kısmen mi, hatırlayamadın mı? Aralık cevabına göre değişir.
 
 DENEME ANALİZİ
-Dışarıda çözdüğün TYT, AYT, YDT, branş ve konu denemelerini kaydet. Kronometreyle süre tut, sonuçlarını gir. Net gelişimini, ders performansını, boş sayılarını ve zorlandığın konuları gör. Denemeleri karşılaştır, testlere göre net hedefi koy. OBP hesaplayıcısı da uygulamada.
+Dışarıda çözdüğün TYT, AYT, YDT, branş ve konu denemelerini kaydet. Kronometreyle süre tut, sonuçlarını gir. Net gelişimini, ders performansını ve boş sayılarını gör. Yanlış ve boş yaptığın konular yanlış defterine ve tekrar takvimine kendiliğinden girer. Denemeleri karşılaştır, testlere göre net hedefi koy. OBP hesaplayıcısı da uygulamada.
 
 HAFTALIK RAPOR
 Toplam süren, tamamlanan görevlerin, çalıştığın konular ve deneme sonuçların haftalık ve aylık raporda toplanır. Raporu PDF veya görsel olarak paylaşabilirsin. Yeterli veri yoksa uygulama bunu açıkça söyler.

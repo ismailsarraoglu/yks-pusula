@@ -152,6 +152,7 @@ class BackupSecurityTest {
         assertTrue(l.check is BackupCheck.Ok)
         assertTrue(l.warnings.any { it.contains("doğrulanamadı") })
         l.attachments?.deleteRecursively()
+        Unit
     }
 
     @Test fun missingPhotoReportedNotFatal() = runBlocking {
@@ -161,6 +162,7 @@ class BackupSecurityTest {
         assertTrue(l.check is BackupCheck.Ok)
         assertTrue(l.warnings.joinToString(), l.warnings.any { it.contains("fotoğrafı yedekte yok") })
         l.attachments?.deleteRecursively()
+        Unit
     }
 
     /** Değiştirerek geri yükleme: güvenlik kopyası fotoğrafı da içermeli ve ondan geri dönülebilmeli. */
