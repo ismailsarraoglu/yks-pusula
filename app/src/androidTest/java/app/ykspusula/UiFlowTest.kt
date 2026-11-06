@@ -283,8 +283,9 @@ class UiFlowTest {
 
         go("external"); type("Deneme adı", "Yayın Denemesi"); type("Yayınevi veya kaynak", "Örnek Yayın")
         rule.onAllNodesWithText("Doğru").onFirst().performTextInput("30"); rule.onAllNodesWithText("Yanlış").onFirst().performTextInput("8"); closeKeyboard()
-        clickText("Kaydet"); waitText("Toplam net")
-        waitText("28,00", sub = true)
+        clickText("Kaydet")
+        // "Toplam net" formda da yazar; kaydın bittiğini yalnızca sonuç sayfasındaki düğme gösterir.
+        waitText("Deneme analizine git"); waitText("28,00", sub = true)
 
         go("targets"); clickText("Üniversite ekle"); type("Üniversite adı", "Boğaziçi"); type("Şehir", "İstanbul"); clickText("Ekle")
         until("üniversite") { r.user.universitiesNow().any { it.name == "Boğaziçi" } }

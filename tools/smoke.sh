@@ -123,6 +123,24 @@ adb exec-out screencap -p > "ci/screens/uyum-$NAME.png"
 adb logcat -d | grep -E 'FATAL EXCEPTION|E AndroidRuntime' | head -120 | cut -c1-200 > "ci/logs/release-crash-$NAME.txt"
 echo "release-crash-tum-cihaz: $(wc -l < "ci/logs/release-crash-$NAME.txt")" >> "$R"
 echo "release-crash: $(grep -c 'Process: app.ykspusula' "ci/logs/release-crash-$NAME.txt")" >> "$R"
+SUZGEC='ActivityManager|ActivityTaskManager|PackageManager|lowmemorykiller|lmkd|Finsky|YksAds|app\.ykspusula'
+adb logcat -d 2>/dev/null | grep -E "$SUZGEC" | tail -300 | cut -c1-260 > "ci/logs/release-acilis-$NAME.txt"
+echo "release-olum-kaydi: $(grep -E 'app\.ykspusula' "ci/logs/release-acilis-$NAME.txt" | grep -cE 'has died|Killing|ANR in|Force stopping|Force finishing')" >> "$R"
+# Temiz kurulumla art arda açılış: süreç ayakta kalıyor mu?
+if [ -n "$TEKRAR" ]; then
+  ok=0
+  for n in $(seq 1 "$TEKRAR"); do
+    adb uninstall $PKG > /dev/null 2>&1
+    adb install -r app/build/outputs/apk/release/app-release.apk > /dev/null 2>&1
+    adb logcat -c
+    adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
+    sleep 15
+    if [ -n "$(adb shell pidof $PKG | tr -d '\r')" ]; then ok=$((ok+1)); else
+      adb logcat -d 2>/dev/null | grep -E "$SUZGEC" | tail -300 | cut -c1-260 > "ci/logs/release-kayip-$NAME-$n.txt"
+    fi
+  done
+  echo "release-tekrar: $ok/$TEKRAR" >> "$R"
+fi
 adb emu kill; sleep 5
 pkill -f qemu-system; sleep 2
 # Disk dolmasın: bu sürümün imajı ve sanal cihazı silinir.

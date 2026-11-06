@@ -10,6 +10,6 @@ if ! grep -q 'acilis=1' ci/logs/uyum-a16.txt; then
 fi
 # Yerel test reklamı uygulama yükleme reklamıdır; SDK onu Play Store'suz cihazda reddeder.
 # Bu yüzden çevrimiçi reklam testi Play Store'lu imajlarda çalışır.
-CEVRIMICI=1 bash tools/smoke.sh a14p "system-images;android-34;google_apis_playstore;x86_64" app.ykspusula.MigrationTest
-CEVRIMICI=1 BELLEK=4096 bash tools/smoke.sh a16p "system-images;android-36;google_apis_playstore;x86_64" app.ykspusula.MigrationTest
+TEKRAR=6 CEVRIMICI=1 bash tools/smoke.sh a14p "system-images;android-34;google_apis_playstore;x86_64" app.ykspusula.MigrationTest
+TEKRAR=6 CEVRIMICI=1 BELLEK=4096 bash tools/smoke.sh a16p "system-images;android-36;google_apis_playstore;x86_64" app.ykspusula.MigrationTest
 true
