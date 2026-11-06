@@ -1,6 +1,6 @@
 # YKS Pusula 2.1.0 teslim raporu
 
-Sürüm 2.1.0 (versionCode 3). Uygulama kodu: `035482b`, tam test turu `42304857639`, 6 Kasım 2026. Çalışma dalı `surum-2.1`; 2.0.0 hâli `yedek-2.0.0` etiketiyle korunuyor.
+Sürüm 2.1.0 (versionCode 3). Uygulama kodu: `035482b`, tam test turu `42304857639`, 6 Kasım 2026. Çalışma dalı `surum-2.1`; 2.0.0 hâli Git geçmişinde `7c24848` kaydında duruyor.
 
 Durum etiketleri: **Tamamlandı** · **Kısmen tamamlandı** · **Test edilmesi gerekiyor** · **Kullanıcı işlemi gerekiyor** · **Bu sürüme alınmadı**
 
@@ -66,7 +66,7 @@ Kullanım: `docs/yeni-ozellikler-kullanim.md`.
 
 ## 5. Değiştirilen dosyalar
 
-Toplam 57 dosya (görseller hariç); 2.0.0'a göre ayrıntılı fark Git'te `yedek-2.0.0..surum-2.1`.
+Toplam 57 dosya (görseller hariç); 2.0.0'a göre ayrıntılı fark Git'te `7c24848..surum-2.1`.
 
 | Alan | Dosyalar |
 |---|---|
