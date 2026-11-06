@@ -2,6 +2,8 @@ package app.ykspusula
 
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
@@ -74,8 +76,18 @@ class UiFlowTest {
     }
 
     private fun waitText(t: String, ms: Long = 15000, sub: Boolean = false) {
-        rule.waitUntil(ms) { rule.onAllNodesWithText(t, substring = sub).fetchSemanticsNodes().isNotEmpty() }
+        try {
+            rule.waitUntil(ms) { rule.onAllNodesWithText(t, substring = sub).fetchSemanticsNodes().isNotEmpty() }
+        } catch (e: ComposeTimeoutException) {
+            val seen = runCatching {
+                rule.onAllNodes(hasText("", substring = true)).fetchSemanticsNodes().mapNotNull { it.config.getOrNull(SemanticsProperties.Text)?.joinToString() }.take(40)
+            }.getOrDefault(emptyList())
+            throw AssertionError("'$t' bulunamadi. Ekrandakiler: $seen", e)
+        }
     }
+
+    /** Klavye kapanırken düğmeler yer değiştirir; dokunma yanlış yere düşmesin. */
+    private fun closeKeyboard() { runCatching { Espresso.closeSoftKeyboard() }; rule.waitForIdle() }
 
     private fun clickText(t: String) {
         waitText(t)
@@ -120,9 +132,9 @@ class UiFlowTest {
         waitText("Başla"); shot("01-karsilama")
         clickText("Başla")
         waitText("Seni tanıyalım"); shot("02-tanisma")
-        rule.onNodeWithText("Adın (isteğe bağlı)").performTextInput("Elif")
+        rule.onNodeWithText("Adın (isteğe bağlı)").performTextInput("Elif"); closeKeyboard()
         clickText("Devam")
-        waitText("Hedefin"); rule.onNodeWithText("Hedef bölüm").performTextInput("Tıp")
+        waitText("Hedefin"); rule.onNodeWithText("Hedef bölüm").performTextInput("Tıp"); closeKeyboard()
         shot("03-hedef")
         clickText("Devam"); waitText("Çalışma düzenin"); shot("04-duzen")
         clickText("Devam"); waitText("Güçlü olduğun dersler"); shot("05-guclu")
@@ -177,7 +189,7 @@ class UiFlowTest {
         waitText("Deneme bitirilsin mi?")
         rule.onAllNodesWithText("Bitir").onLast().performClick()
         waitText("Sonuçları gir"); shot("32-giris")
-        rule.onAllNodesWithText("Doğru").onFirst().performTextInput("30"); rule.onAllNodesWithText("Yanlış").onFirst().performTextInput("8")
+        rule.onAllNodesWithText("Doğru").onFirst().performTextInput("30"); rule.onAllNodesWithText("Yanlış").onFirst().performTextInput("8"); closeKeyboard()
         clickText("Sonucu kaydet")
         waitText("Toplam net"); shot("33-sonuc")
         assertEquals("DONE", runBlocking { r.user.mock(id)!!.status })
@@ -228,7 +240,7 @@ class UiFlowTest {
     }
 
     private fun go(route: String) { rule.runOnUiThread { DebugNav.nav!!.navigate(route) }; rule.waitForIdle() }
-    private fun type(label: String, text: String) { waitText(label); val n = rule.onAllNodesWithText(label).onFirst(); runCatching { n.performScrollTo() }; n.performTextInput(text); rule.waitForIdle() }
+    private fun type(label: String, text: String) { waitText(label); val n = rule.onAllNodesWithText(label).onFirst(); runCatching { n.performScrollTo() }; n.performTextInput(text); closeKeyboard() }
     private fun until(what: String, block: suspend () -> Boolean) { rule.waitUntil(what, 10000) { runBlocking { block() } } }
 
     @Test fun mainButtonsDoTheirJob() {
@@ -270,7 +282,7 @@ class UiFlowTest {
         assertTrue(runBlocking { r.user.allTasks().any { it.id == task.id } })
 
         go("external"); type("Deneme adı", "Yayın Denemesi"); type("Yayınevi veya kaynak", "Örnek Yayın")
-        rule.onAllNodesWithText("Doğru").onFirst().performTextInput("30"); rule.onAllNodesWithText("Yanlış").onFirst().performTextInput("8")
+        rule.onAllNodesWithText("Doğru").onFirst().performTextInput("30"); rule.onAllNodesWithText("Yanlış").onFirst().performTextInput("8"); closeKeyboard()
         clickText("Kaydet"); waitText("Toplam net")
         waitText("28,00", sub = true)
 

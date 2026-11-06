@@ -54,6 +54,7 @@ if [ -n "$CLS" ]; then
   if ! tail -4 "ci/logs/uyum-$NAME-test.txt" | grep -q 'OK ('; then
     # Başarısız tur saklanır, ikinci tur ayrı satırda raporlanır.
     cp "ci/logs/uyum-$NAME-test.txt" "ci/logs/uyum-$NAME-test-ilk.txt"
+    adb logcat -d 2>/dev/null | grep -E -A30 'FATAL EXCEPTION|ANR in|Process crashed' | head -150 | cut -c1-260 > "ci/logs/ilk-tur-hata-$NAME.txt"
     sleep 30
     timeout 1800 adb shell am instrument -w -e class "$CLS" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -60 > "ci/logs/uyum-$NAME-test.txt"
     echo "test-ikinci-tur: $(tail -4 ci/logs/uyum-$NAME-test.txt | tr '\n' ' ')" >> "$R"
@@ -71,12 +72,13 @@ if [ -n "$CLS" ]; then
       adb logcat -c
       timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
       adb logcat -d 2>/dev/null | grep -v 'YksAds' | grep -iE 'gma|ads|webview|chromium|cr_|exception|native' | tail -500 | cut -c1-400 > "ci/logs/reklam-logcat-$NAME.txt"
+      adb logcat -d 2>/dev/null | grep -E 'YksAds|UserMessagingPlatform' | tail -40 | cut -c1-300 > "ci/logs/reklam-riza-$NAME-$d.txt"
       tail -3 "ci/logs/reklam-$NAME.txt" | grep -q 'OK (1 test)' && break
       sleep 20
     done
     echo "reklam-denemesi: $d" >> "$R"
     echo "reklam-testi: $(tail -4 ci/logs/reklam-$NAME.txt | tr '\n' ' ' | cut -c1-200)" >> "$R"
-    grep -m1 'yüklenemedi' "ci/logs/reklam-$NAME.txt" | cut -c1-300 >> "$R"
+    grep -m1 -E 'yüklenemedi|izni gelmedi' "ci/logs/reklam-$NAME.txt" | cut -c1-300 >> "$R"
     adb exec-out run-as $PKG cat files/reklam-yerel.png > "ci/screens/reklam-$NAME.png" 2>/dev/null
     adb shell cmd connectivity airplane-mode enable; sleep 5
   fi

@@ -2,6 +2,7 @@ package app.ykspusula
 
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -22,6 +23,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -40,7 +43,15 @@ class AdOnlineTest {
         val m = app.monetize
         val scenario = ActivityScenario.launch(MainActivity::class.java)
         m.forceEligibleForTest()
-        rule.waitUntil("Reklam izni", 60_000) { m.ads.canRequestAds.value }
+        try {
+            rule.waitUntil("Reklam izni", 60_000) { m.ads.canRequestAds.value }
+        } catch (e: ComposeTimeoutException) {
+            // Hatanın uygulamadan mı ağdan mı geldiğini ayırmak için gerçek bir HTTPS isteği denenir.
+            val net = runCatching {
+                (URL("https://fundingchoicesmessages.google.com/").openConnection() as HttpURLConnection).run { connectTimeout = 10_000; readTimeout = 10_000; responseCode }
+            }
+            throw AssertionError("Reklam izni gelmedi: ${m.ads.lastError}; ag: $net", e)
+        }
         val latch = CountDownLatch(1)
         var loaded = false
         rule.runOnUiThread { m.ads.nativeFor(AdPlacement.EXAMS) { loaded = it != null; latch.countDown() } }

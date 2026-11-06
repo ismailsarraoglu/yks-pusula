@@ -63,12 +63,18 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         val params = ConsentRequestParameters.Builder().build()
         try {
             consent.requestConsentInfoUpdate(activity, params, {
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { _ ->
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { e ->
+                    if (e != null) note("Riza formu: ${e.errorCode} ${e.message}")
                     update()
                 }
-            }, { update() })
-        } catch (e: Exception) { update() }
+            }, { e -> note("Riza bilgisi: ${e.errorCode} ${e.message}"); update() })
+        } catch (e: Exception) { note("Riza: $e"); update() }
         update()
+    }
+
+    private fun note(message: String) {
+        lastError = message
+        Log.w("YksAds", message)
     }
 
     private fun update() {
@@ -88,6 +94,7 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
                     update()
                 }
             } catch (e: Throwable) {
+                note("Reklam baslatilamadi: $e")
                 started = false
                 _can.value = false
             }
@@ -115,8 +122,7 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
                     }
                 }
                 override fun onAdFailedToLoad(adError: LoadAdError) {
-                    lastError = adError.toString()
-                    Log.w("YksAds", "Reklam yuklenemedi: $lastError")
+                    note("Reklam yuklenemedi: $adError")
                     failedAt[placement] = System.currentTimeMillis()
                     scope.launch(Dispatchers.Main) { onReady(null) }
                 }
