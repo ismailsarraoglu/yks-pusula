@@ -15,6 +15,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ykspusula.R
 import app.ykspusula.monetize.AdPlacement
+import app.ykspusula.monetize.AdTouchGuard
 import app.ykspusula.ui.app
 import com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
@@ -40,9 +41,10 @@ fun AdSlot(placement: AdPlacement, modifier: Modifier = Modifier) {
 @Composable
 fun NativeAdContainer(ad: NativeAd, modifier: Modifier = Modifier) {
     AndroidView(
-        factory = { c -> LayoutInflater.from(c).inflate(R.layout.ad_native, null) as NativeAdView },
+        factory = { c -> AdTouchGuard(c).apply { addView(LayoutInflater.from(c).inflate(R.layout.ad_native, this, false)) } },
         modifier = modifier.fillMaxWidth(),
-        update = { v ->
+        update = { guard ->
+            val v = guard.getChildAt(0) as NativeAdView
             val headline = v.findViewById<TextView>(R.id.ad_headline)
             val body = v.findViewById<TextView>(R.id.ad_body)
             val cta = v.findViewById<Button>(R.id.ad_cta)

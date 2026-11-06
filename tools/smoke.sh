@@ -102,6 +102,7 @@ if [ -n "$CLS" ]; then
       timeout 300 adb shell am instrument -w -e class "${REKLAM_SINIF:-$PKG.AdOnlineTest#testAdLoadsAndPurchaseRemovesIt}" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
       adb logcat -d 2>/dev/null | grep -v 'YksAds' | grep -iE 'gma|ads|webview|chromium|cr_|exception|native' | tail -500 | cut -c1-400 > "ci/logs/reklam-logcat-$NAME.txt"
       adb logcat -d 2>/dev/null | grep -E 'YksAds|UserMessagingPlatform' | tail -40 | cut -c1-300 > "ci/logs/reklam-riza-$NAME-$d.txt"
+      adb logcat -d 2>/dev/null | grep -c 'surukleme reklami acmadan iptal' | tr -d '\r' | sed "s/^/$NAME-$d koruyucu: /" >> ci/logs/koruyucu.txt
       if tail -3 "ci/logs/reklam-$NAME.txt" | grep -q 'OK (1 test)'; then
         echo "reklam-tur-$d: tamam" >> "$R"
         [ -z "$REKLAM_TUR" ] && break

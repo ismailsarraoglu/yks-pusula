@@ -61,7 +61,8 @@ class AdOnlineTest {
      */
     @Test fun dragOverAdDoesNotOpenIt() = withAdOnExams { _ ->
         val shell = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val speeds = listOf(120, 300, 700)
+        // Yüklü emülatörde çok kısa sürükleme araya hareket olayı giremeden biter, en zor durum budur.
+        val speeds = listOf(40, 120, 300)
         repeat(36) { i ->
             val view = reklamKonumu()
             // Reklam ekranın ortasına alınır, böylece her sürükleme reklamın üstünde başlar.
