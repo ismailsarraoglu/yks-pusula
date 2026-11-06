@@ -1,6 +1,6 @@
 # YKS Pusula 2.1.0 teslim raporu
 
-Sürüm 2.1.0 (versionCode 3). Uygulama kodu: `__COMMIT__`, tam test turu `__RUN__`, 6 Kasım 2026. Çalışma dalı `surum-2.1`; 2.0.0 hâli `yedek-2.0.0` etiketiyle korunuyor.
+Sürüm 2.1.0 (versionCode 3). Uygulama kodu: `035482b`, tam test turu `42304857639`, 6 Kasım 2026. Çalışma dalı `surum-2.1`; 2.0.0 hâli `yedek-2.0.0` etiketiyle korunuyor.
 
 Durum etiketleri: **Tamamlandı** · **Kısmen tamamlandı** · **Test edilmesi gerekiyor** · **Kullanıcı işlemi gerekiyor** · **Bu sürüme alınmadı**
 
@@ -41,6 +41,7 @@ Kod üzerinde yeniden doğrulandı (`docs/denetim-2.1.md`). Prompttaki eski bulg
 | Ana sayfada gerçek süre, görev, soru, haftalık hedef, tekrar ayrı | **Tamamlandı** |
 | Gün değişimi, öne gelme, saat ve saat dilimi değişikliği | **Kısmen tamamlandı**: kod ve gün yenileme testi var; gece yarısını ve saat dilimi değişikliğini gerçek cihazda bekleyerek denemek **Test edilmesi gerekiyor** |
 | Yedek sınırları, yol aşımı, ZIP bombası, ek bütünlüğü, tam güvenlik kopyası, geri dönüş | **Tamamlandı** (14 cihaz testi); Android dosya seçicisiyle **Test edilmesi gerekiyor** |
+| Denemedeki zorlanılan konuların yanlış defterine girmemesi | **Tamamlandı** (yeni özellik, aşağıda) |
 
 ## 4. Yeni eklenen özellikler
 
@@ -65,7 +66,20 @@ Kullanım: `docs/yeni-ozellikler-kullanim.md`.
 
 ## 5. Değiştirilen dosyalar
 
-__DOSYALAR__
+Toplam 57 dosya (görseller hariç); 2.0.0'a göre ayrıntılı fark Git'te `yedek-2.0.0..surum-2.1`.
+
+| Alan | Dosyalar |
+|---|---|
+| Derleme ve imza | `app/build.gradle.kts`, `.gitignore`, `.github/workflows/derleme.yml`, `.github/workflows/yayin.yml`; `app/signing/yks-pusula-sideload.p12` silindi |
+| Satın alma | `monetize/Entitlement.kt`, `monetize/Billing.kt`, `ui/screens/ExtraScreens.kt` |
+| Plan ve analiz | `domain/Logic.kt` (plan motoru, öncelik sırası, deneme eksikleri), `data/Repository.kt` |
+| Yedek | `data/Backup.kt`, `ui/screens/ProfileScreens.kt` |
+| Veritabanı | `data/Entities.kt`, `data/Migrations.kt`, `data/AppDatabase.kt`, `app/schemas/.../3.json`, `data/ContentPack.kt` |
+| Gün ve bildirim | `YksApp.kt`, `MainActivity.kt`, `notify/Notifier.kt`, `AndroidManifest.xml`, `ui/AppRoot.kt` |
+| Ekranlar | `HomeScreens.kt`, `StudyScreens.kt`, `ExamScreens.kt`, `PlanScreens.kt`, `LibraryScreens.kt`, `CoachScreens.kt`, `StatsScreens.kt`, `ProfileScreens.kt`, `ExtraScreens.kt` |
+| İçerik | `assets/content/base.json` (12 genişletilmiş not, doğrulama bilgisi) |
+| Testler | Yeni: `PlanDurationTest`, `AnalysisLogicTest`, `BackupSecurityTest`, `LearningFlowTest`, `TestPurchase`. Güncellenen: `LogicTest`, `ProductLogicTest`, `DataFlowTest`, `MigrationTest`, `AdOnlineTest`, `UiFlowTest`, `tools/*.sh` |
+| Belgeler | `docs/COMPETITOR_RESEARCH.md`, `denetim-2.1.md`, `degisiklik-raporu.md`, `test-raporu.md`, `gizlilik-ve-reklam-raporu.md`, `yeni-ozellikler-kullanim.md`, `surum-notlari.md`, `gelecek-fikirleri.md`, `kalan-manuel-isler.md`; `play/` altındaki gizlilik politikası, veri güvenliği, mağaza metinleri, yayın talimatı, görseller |
 
 ## 6. Veritabanı ve veri güvenliği
 
@@ -78,7 +92,7 @@ __DOSYALAR__
 
 Ayrıntı: `docs/gizlilik-ve-reklam-raporu.md`.
 
-- Reklamlar: Google test kimlikleriyle Android 14 ve 16 Play imajlarında __REKLAM__. Gerçek AdMob kimliği yok: **Kullanıcı işlemi gerekiyor**.
+- Reklamlar: Google test kimlikleriyle Android 14 ve 16 Play imajlarında ilk denemede göründü. Gerçek AdMob kimliği yok: **Kullanıcı işlemi gerekiyor**.
 - Satın alma (`remove_ads_lifetime`): kod tamam, imzalı test kayıtlarıyla cihazda denendi. Gerçek Play ile: **Kullanıcı işlemi gerekiyor** (Play ürünü ve lisans test hesabı).
 - Güvenlik sınırı: sunucu olmadığı için doğrulama cihazdadır, atlatılabilir.
 
@@ -94,11 +108,29 @@ Ayrıntı: `docs/gizlilik-ve-reklam-raporu.md`.
 
 ## 9. Çalıştırılan testler
 
-__TESTLER__
+Ayrıntı: `docs/test-raporu.md`. Hepsi son turda (`035482b`) geçti:
+
+- Birim testleri 70/70; bunların 19'u yeni plan süresi senaryoları.
+- Android 11 tam cihaz testleri 54/54; düğmeler 5/5; stres 3/3; 467 ekran görüntüsü; veri kalıcılığı.
+- Android 8 ve 13: 46/46. Android 14 ve 16: 52/52. Hepsi ilk denemede.
+- Geçiş testleri 1 → 2, 2 → 3, 1 → 3.
+- Yedek güvenliği: yol aşımı, ZIP bombası, dosya sayısı, toplam boyut, büyük girdi, büyük JSON, aynı adlı giriş, bozuk ve eksik ek, bozuk JSON, eski biçim, eksik fotoğraf, güvenlik kopyası ve geri dönüş, geçici dosya temizliği (14 test).
+- Google test reklamı Android 14 ve 16 Play imajlarında; reklamsız hak açılınca reklam kalkıyor.
+- Yan yükleme sürümü 5 Android sürümünde kuruldu ve açıldı; çökme satırı 0, ANR 0. Soğuk açılış 1,0-1,3 sn, bellek 71 MB.
+- Play derlemesi anahtarsız denendi: beklendiği gibi durdu.
 
 ## 10. Başarısız veya yapılamayan testler
 
-__BASARISIZ__
+Son turda başarısız test yok. Önceki iki turda bulunan test hataları ve bir mesaj sorunu düzeltildi (`docs/test-raporu.md`).
+
+Yapılamayanlar (**Test edilmesi gerekiyor** veya **Kullanıcı işlemi gerekiyor**):
+
+- Gerçek telefon; Android 9, 10, 12, 15.
+- Gerçek Google Play satın alma, iptal, bekleyen ödeme, geri yükleme. **Para harcanmadı.**
+- Gerçek AdMob kimlikleriyle reklam; Avrupa rıza formu.
+- Android dosya seçicisiyle yedek, fotoğraf ve PDF; ana ekrana bileşen ekleme; bildirimin saatinde gelmesi; bildirim izni reddi; saat dilimi değişikliği; gerçek gece yarısı geçişi.
+- Telefondaki gerçek 2.0.0 kurulumunun üstüne 2.1.0 (veritabanı geçişi testte doğrulandı).
+- `yayin-aab` işi (anahtarınız gerekiyor).
 
 ## 11. Bilinen sorunlar
 
@@ -107,7 +139,8 @@ __BASARISIZ__
 - Yan yükleme anahtarı eski Git geçmişinde duruyor (depo gizli). Play için kullanılmamalı.
 - Test APK'sı GitHub'a yan yükleme anahtarı eklenmediği için geçici anahtarla imzalı; telefondaki 2.0.0'ın üstüne kurulmaz (yedek al, kaldır, kur, geri yükle).
 - `TestPurchase.kt` içindeki RSA anahtarı yalnızca otomatik testler içindir; Play derlemesi bu anahtarı kabul etmez.
-__EK_SORUNLAR__
+- Android 14 Play imajında 1 kez Google Play Hizmetleri yeniden başlarken Android uygulamayı da kapattı. Uygulama hatası değil; gerçek telefonda da nadiren olabilir, kayıtlı veri kaybolmaz.
+- Ana sayfadaki haftalık hedef yüzdesi ve alana göre ders listesinin ayrı otomatik testi yok; ekran taramasıyla görüldü.
 
 ## 12. Yayın için gereken kullanıcı işlemleri
 
@@ -127,7 +160,7 @@ Sırasıyla `docs/kalan-manuel-isler.md`:
 
 | Dosya | Açıklama |
 |---|---|
-| `yks-pusula-2.1.0-test.apk` | Telefona kurulabilir test sürümü. Release ile aynı küçültme ayarları, Google test reklamları, satın alma kapalı. __IMZA__ |
+| `yks-pusula-2.1.0-test.apk` | Telefona kurulabilir test sürümü. Release ile aynı küçültme ayarları, Google test reklamları, satın alma kapalı. GitHub'a yan yükleme anahtarı eklenmediği için geçici (debug) anahtarla imzalı |
 | Play AAB | **Bu teslimde yok.** Yükleme anahtarınızla `yayin-aab` işinden üretilir |
 | `yks-pusula-kaynak-2.1.0.zip` | Kaynak kod. `.jks`, `.p12`, `.keystore`, parola, `local.properties`, derleme çıktısı içermez |
 | `yks-pusula-sideload-YEDEK.p12` | Eski yan yükleme test anahtarının yedeği. Play için kullanmayın, paylaşmayın |

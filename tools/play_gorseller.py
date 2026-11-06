@@ -16,7 +16,10 @@ SHOTS = [
     ("8-haftalik-rapor", "s-dark-54-reports", "Haftanı özetle", "rapor olarak paylaş"),
 ]
 def data(p): return "data:image/png;base64," + base64.b64encode(Path(p).read_bytes()).decode()
-def find(key): return sorted(SRC.glob(f"411dp-{key}*.png"))[0]
+def find(key):
+    # Ekran sırası değişebildiği için numara yerine ekran adıyla aranır: "s-dark-*-coach".
+    theme, name = key.split("-")[1], key.split("-", 3)[3]
+    return sorted(SRC.glob(f"411dp-s-{theme}-[0-9][0-9]-{name}*.png"))[0]
 PHONE = "border-radius:{r}px;border:{b}px solid #2b3750;box-shadow:0 30px 80px rgba(49,139,255,.28);overflow:hidden;background:#0b0f18"
 def shot_html(img, a, b):
     return f"""<html><body style="margin:0"><div style="width:1080px;height:1920px;position:relative;overflow:hidden;background:radial-gradient(circle at 85% 8%,#1e3a6b 0,#111827 40%,#0b0f18 75%);font-family:Roboto,Arial,sans-serif;color:#f7f8fc">
