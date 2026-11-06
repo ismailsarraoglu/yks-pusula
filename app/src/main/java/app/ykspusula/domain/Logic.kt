@@ -425,9 +425,11 @@ object TopicPriority {
         if (t.reviewDue) { score += 4.0; why += if ((t.daysSinceStudy ?: 0) >= 14) "Tekrar zamanı geçti (${t.daysSinceStudy} gündür çalışılmadı)" else "Tekrar zamanı geldi" }
         if (t.success != null && t.success < 60) { score += (60 - t.success) / 10.0 + 1; why += "Doğru oranın %${t.success}" }
         if (t.subjectGap != null && t.subjectGap > 0) { score += min(t.subjectGap, 10.0) / 2; why += "Ders hedef netinin ${Scoring.formatNet(t.subjectGap)} altında" }
-        if (t.status == 0 && !final) { score += 1.0; why += "Henüz başlanmadı" }
         if (t.status == 3 && !t.reviewDue && t.mockMisses == 0 && t.wrongOpen == 0) score -= 2.0
-        if (score <= 0 || why.isEmpty()) null else RankedTopic(t, score, why)
+        // Yalnızca "başlanmadı" olan konu listeye girmez; aksi hâlde liste bütün konuların alfabetik dökümüne döner.
+        if (score <= 0 || why.isEmpty()) return@mapNotNull null
+        if (t.status == 0 && !final) { score += 1.0; why += "Henüz başlanmadı" }
+        RankedTopic(t, score, why)
     }.sortedWith(compareByDescending<RankedTopic> { it.score }.thenBy { it.topic.name })
 }
 

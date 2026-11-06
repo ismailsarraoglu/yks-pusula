@@ -696,7 +696,7 @@ fun PrioritiesScreen() {
             }
             Muted("Sıra yalnızca senin kayıtlarından çıkar: deneme yanlışları, açık yanlışlar, tekrar tarihleri, doğru oranları ve hedef netler. Kayıt girdikçe değişir.")
             if (list.isEmpty()) {
-                YCard { Text("Henüz öncelik çıkaracak kayıt yok", style = MaterialTheme.typography.titleMedium, color = Yks.c.text); Muted("Deneme sonucu, yanlış veya soru çözümü kaydettiğinde burada çalışman gereken konular sıralanır.") }
+                YCard { Text("Henüz öncelik çıkaracak kayıt yok", style = MaterialTheme.typography.titleMedium, color = Yks.c.text); Muted("Deneme sonucu, yanlış, konu tekrarı veya soru çözümü kaydettiğinde burada çalışman gereken konular sıralanır. Başlamadığın konuları Konularım ekranında görebilirsin.") }
             } else GroupCard {
                 list.forEachIndexed { i, x ->
                     if (i > 0) Line()

@@ -29,10 +29,11 @@ class AnalysisLogicTest {
         assertTrue(r.all { it.reasons.isNotEmpty() })
     }
 
-    @Test fun finalModeDropsUnstartedBonus() {
-        val list = listOf(gt("yeni", status = 0))
-        assertEquals(1, TopicPriority.rank(list).size)
-        assertTrue(TopicPriority.rank(list, final = true).isEmpty())
+    @Test fun unstartedAloneIsNotAPriority() {
+        assertTrue(TopicPriority.rank(listOf(gt("yeni", status = 0))).isEmpty())
+        val withMock = TopicPriority.rank(listOf(gt("yeni", status = 0, mock = 1)))
+        assertTrue(withMock.single().reasons.contains("Henüz başlanmadı"))
+        assertFalse(TopicPriority.rank(listOf(gt("yeni", status = 0, mock = 1)), final = true).single().reasons.contains("Henüz başlanmadı"))
     }
 
     @Test fun learnedTopicReturnsWhenWrongAgain() {

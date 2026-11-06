@@ -79,7 +79,7 @@ class LearningFlowTest {
 
     @Test fun emptyUserHasNoFakePriorities() = runBlocking {
         val (list, _) = r.priorityTopics()
-        assertTrue(list.all { it.reasons.all { x -> x == "Henüz başlanmadı" } })
+        assertTrue("Kayıt yokken öncelik listesi boş olmalı: $list", list.isEmpty())
     }
 
     @Test fun dayRefreshFollowsClock() {
