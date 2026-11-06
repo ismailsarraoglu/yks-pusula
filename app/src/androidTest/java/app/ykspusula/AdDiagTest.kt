@@ -35,7 +35,7 @@ class AdDiagTest {
         val req = NativeAdRequest.Builder(unit, listOf(type)).build()
         NativeAdLoader.load(req, object : NativeAdLoaderCallback {
             override fun onNativeAdLoaded(nativeAd: NativeAd) { say("$name YUKLENDI baslik=${nativeAd.headline}"); latch.countDown() }
-            override fun onAdFailedToLoad(adError: LoadAdError) { say("$name HATA kod=${adError.code} mesaj=${adError.message} neden=${adError.cause}"); latch.countDown() }
+            override fun onAdFailedToLoad(adError: LoadAdError) { say("$name HATA kod=${adError.code} mesaj=${adError.message}"); latch.countDown() }
         })
         if (!latch.await(60, TimeUnit.SECONDS)) say("$name ZAMAN ASIMI")
     }
