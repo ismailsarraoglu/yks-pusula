@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "7281f532112241ca07519344f18880e4",
+    "identityHash": "199e4e46dc92ac1776e96bb10d8024d6",
     "entities": [
       {
         "tableName": "UserProfile",
@@ -622,7 +622,7 @@
       },
       {
         "tableName": "ImportedContentPack",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `version` TEXT NOT NULL, `kind` TEXT NOT NULL, `importedAt` INTEGER NOT NULL, `questionCount` INTEGER NOT NULL, `source` TEXT NOT NULL, `license` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `version` TEXT NOT NULL, `kind` TEXT NOT NULL, `importedAt` INTEGER NOT NULL, `questionCount` INTEGER NOT NULL, `source` TEXT NOT NULL, `license` TEXT NOT NULL, `verifiedAt` TEXT NOT NULL, `verification` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -669,6 +669,18 @@
           {
             "fieldPath": "license",
             "columnName": "license",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verifiedAt",
+            "columnName": "verifiedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verification",
+            "columnName": "verification",
             "affinity": "TEXT",
             "notNull": true
           }
@@ -2608,7 +2620,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7281f532112241ca07519344f18880e4')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '199e4e46dc92ac1776e96bb10d8024d6')"
     ]
   }
 }
