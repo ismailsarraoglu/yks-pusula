@@ -14,6 +14,7 @@ Profil ve sınav hedefi, 26 ders ve 261 konu, 236 formül, 411 bilgi kartı, ça
 - **Yedekleme:** ZIP biçimi; fotoğraflar ve isteğe bağlı PDF'ler dahil, sağlama toplamı, geri yükleme öncesi güvenlik kopyası. Eski yedekler okunur.
 - **Bildirimler:** Sekiz tür, saat, kapatma, sıklık; suçlamayan dil.
 - **Görünüm:** Tüm ekranlar Premium Dark tasarıma geçti; beş sekmeli alt gezinme, Denemeler ekranı referans görsele göre yapıldı.
+- **Sıfırlama:** Verileri sıfırlama artık kişisel ayarları (diploma notu ve benzerleri) ve paylaşılmış rapor önbelleğini de temizler. Tema, yazı boyutu ve süre tercihleri korunur.
 
 ## Kaldırılanlar
 

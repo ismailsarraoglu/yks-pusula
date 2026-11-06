@@ -29,6 +29,9 @@ Bunlar otomatik testlerde denenemedi. Dahili test kanalında lisans test hesabı
 - [ ] Ana ekrana dört bileşeni ekleme
 - [ ] Bildirimlerin seçilen saatte gelmesi, telefon yeniden başlayınca da devam etmesi
 - [ ] Rapor paylaşımı (WhatsApp, Drive vb.)
+- [ ] Bildirim izni reddedildiğinde uygulama normal çalışıyor
+- [ ] Sürüm 1.0.0 kurulu telefonda sürüm 2 APK'sı üstüne kuruluyor, veriler duruyor
+- [ ] Android 15 veya başka denenmemiş sürümlerde genel kullanım
 
 ## Yayın kuralı
 
