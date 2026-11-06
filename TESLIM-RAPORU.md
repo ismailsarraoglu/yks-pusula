@@ -1,6 +1,6 @@
 # YKS Pusula: Plan ve Takip, teslim raporu
 
-Sürüm 2.0.0 (versionCode 2). Teslim edilen APK ve AAB: `8217857`, tam tur `42211930760`, 6 Kasım 2026.
+Sürüm 2.0.0 (versionCode 2). Teslim edilen APK ve AAB: `e6f4882`, tam tur `42242504720`, 6 Kasım 2026.
 
 ## Özet
 
@@ -22,14 +22,14 @@ Ayrıntılı sonuçlar: `docs/test-raporu.md`. Size kalan işler: `docs/kalan-ma
 | Kullanıcı verileri korundu mu? | Evet, testte profil, notlar, denemeler, yanlış kayıtları ve soru sayıları korundu. **Bilinen kayıplar:** eski yanlış kayıtlarında soru metni ve açıklama gelir ama sorunun şekli gelmez. Soru bankasına bağlı yer imleri silinir. "Soru çözüldü" konu durumu "çalışıldı" durumuna iner |
 | Migration testleri yapıldı mı? | Evet, 7 emülatör kurulumunda geçti. Gerçek 1.0.0 APK'sının üstüne kurarak denenmedi |
 | 100 motivasyon sözü var mı? | Evet, tam 100 benzersiz söz, test ile doğrulandı |
-| Reklamlar çalışıyor mu? | Google test kimlikleriyle evet, Android 14 ve 16 Play imajlarında. Gerçek kimlikler yok, gerçek reklam denenmedi |
+| Reklamlar çalışıyor mu? | Google test kimlikleriyle evet, Android 14 ve 16 Play imajlarında. Reklamın üstünden kaydırınca reklamın yanlışlıkla açılması testte bulundu ve düzeltildi. Gerçek kimlikler yok, gerçek reklam denenmedi |
 | Satın alma çalışıyor mu? | **Gerçek Play ile denenmedi.** Kod yazıldı, sonuç işleme benzetilmiş sonuçlarla test edildi |
 | Satın alma geri yükleniyor mu? | **Gerçek Play ile denenmedi.** Kod yazıldı, Play ürünü olmadan çalıştırılamaz |
 | Reklamsız kullanıcı reklam görüyor mu? | Hayır. Reklamsız hak açılınca reklam ekrandan kalktı, yeni istek yapılmadı. Hak benzetimle açıldı |
 | İnternetsiz temel işlevler çalışıyor mu? | Evet, veri ve arayüz testleri çevrimdışı çalıştı |
 | Bütün ekranlar yeni tasarıma geçti mi? | Evet. Tüm ekranlar 5 yapılandırmada iki temada açıldı, görüntüler örnekleme ile incelendi |
-| Hangi testler başarılı? | Birim 44/44, Android 11 29/29, Android 8 ve 13 21/21, Android 14 ve 16 27/27, stres 3/3, düğme 5/5, kalıcılık 3 sürümde, release kurulum 5 sürümde |
-| Hangi testler başarısız? | <!-- REKLAM-SONUC --> |
+| Hangi testler başarılı? | Birim 44/44, Android 11 32/32, Android 8 ve 13 24/24, Android 14 ve 16 30/30, stres 3/3, düğme 5/5, kalıcılık 3 sürümde, release kurulum 5 sürümde, reklam testi 2 Play imajında, reklam üstü kaydırma 396/396 |
+| Hangi testler başarısız? | Son turda uygulama kodundan kaynaklı başarısız test yok. Emülatörden kaynaklı 5 olay oldu, hepsi tekrarda geçti: 4 kez test süreci açılamadı (3'ünün kaydı bunun uygulama kodu çalışmadan önce, aşırı yüklü emülatörde olduğunu gösteriyor; 1'inin kaydı yetersiz), 1 kez Google Play Hizmetleri yeniden başlarken Android uygulamayı da kapattı. Önceki turlarda nedeni bulunamayan 3 tek seferlik olay var. Ayrıntı: `docs/test-raporu.md` |
 | Release APK oluştu mu? | Evet, 4,8 MB. Yan yükleme anahtarıyla imzalı, test reklam kimlikli |
 | AAB oluştu mu? | Evet, 10,6 MB. **Bu dosya Play'e yüklenmemeli:** yan yükleme anahtarı ve test kimlikleri içerir. Play için kendi anahtarınızla üretin |
 | Google Play için ne eksik? | Geliştirici hesabı, yükleme anahtarı, AdMob kimlikleri, Play ürünü, herkese açık gizlilik politikası adresi ve e-postası, Console beyanları, gerçek cihaz testi, 12 kişilik 14 günlük kapalı test |
@@ -115,6 +115,7 @@ Rakip özellik matrisi: `play/rakip-analizi.md`.
 - **İmza farkı.** Dışarıdan kurulan APK, Play sürümüyle güncellenemez. Yedek alıp kaldırın, Play'den kurup yedeği geri yükleyin.
 - **Şifreli yedekleme eklenmedi.** İstek isteğe bağlıydı. Yedek ZIP'i sağlama toplamıyla korunur, şifreli değildir.
 - **Banner ve geçiş reklamı yok.** Yalnızca yerel reklam kullanıldı.
+- **Play Hizmetleri yeniden başlaması.** Google Play Hizmetleri güncellenirken veya çökerken Android, reklam kullanan uygulamaları da kapatabilir. Bu uygulama hatası değildir, kayıtlı veri kaybolmaz.
 - **Tarih ve katsayılar.** 2027 YKS tarihleri haberlerden alındı. ÖSYM kılavuzu çıkınca karşılaştırın.
 - **Rakip analizi.** Mağaza yorumlarının yazılı içeriğine erişilemedi. İndirme veya sıralama garantisi verilmez.
 - **Teknik seçimler.** Bileşenler Glance yerine RemoteViews, zamanlama WorkManager yerine AlarmManager ile yapıldı.

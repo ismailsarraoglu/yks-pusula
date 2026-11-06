@@ -32,6 +32,7 @@ Profil ve sınav hedefi, 26 ders ve 261 konu, 236 formül, 411 bilgi kartı, ça
 - Dört ana ekran bileşeni: geri sayım, günlük hedef, bugünkü görevler, odaklanma.
 - 100 özgün motivasyon sözü, 10 kategori, favoriler, kopyalama, paylaşma, isteğe bağlı günlük bildirim.
 - AdMob yerel reklamları, UMP rıza akışı, tek seferlik `remove_ads_lifetime` satın alması, satın alma geri yükleme.
+- Reklam yanlışlıkla tıklama koruması: reklamın üstünden başlayan kaydırma reklamı açmaz, normal dokunuş açar. Testlerde bulunan bir sorun üzerine eklendi.
 - Gizlilik politikası ve kullanım koşulları ekranları; mağaza metinleri, görseller, veri güvenliği envanteri, rakip analizi.
 
 ## Rakip araştırmasından gelen eklemeler

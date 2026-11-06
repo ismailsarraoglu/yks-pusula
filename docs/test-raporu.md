@@ -1,6 +1,6 @@
 # Test raporu
 
-Sürüm 2.0.0 (versionCode 2). Test edilen uygulama kodu: `8217857`, tam tur `42211930760`, 6 Kasım 2026.
+Sürüm 2.0.0 (versionCode 2). Test edilen uygulama kodu: `e6f4882`, tam tur `42242504720`, 6 Kasım 2026.
 Testler GitHub Actions üzerindeki Android emülatörlerinde çalıştı. **Gerçek telefonda ve gerçek Google Play bağlantısıyla hiçbir test yapılmadı.**
 
 İşaretler: ✅ otomatik test geçti · ⚠ kısmen denendi, sınırı yanında yazıyor · ❌ denenmedi
@@ -10,23 +10,24 @@ Testler GitHub Actions üzerindeki Android emülatörlerinde çalıştı. **Ger�
 | Test | Ortam | Sonuç |
 |---|---|---|
 | Birim testleri | Bilgisayar | 44/44 |
-| Tam cihaz testleri | Android 11 | 29/29 |
+| Tam cihaz testleri | Android 11 | 32/32 |
 | Ana düğmeler, art arda 5 kez | Android 11 | 5/5 |
 | Geçiş sırasında kapanma stresi, 3 tur × 35 geçiş | Android 11 | 3/3 |
 | Ekran taraması: 5 yapılandırma, açık ve koyu tema | Android 11 | Tamamı açıldı, 455 görüntü |
 | Veri yazma, zorla durdurma, yeniden başlatma | Android 11, 14, 16 | Hepsi geçti |
-| Veri ve geçiş testleri | Android 8 ve 13 | 21/21 |
-| Veri, geçiş ve arayüz testleri | Android 14 ve 16 | 27/27, ilk denemede |
+| Veri ve geçiş testleri | Android 8 ve 13 | 24/24 |
+| Veri, geçiş ve arayüz testleri | Android 14 ve 16 | 30/30, ilk denemede |
 | Room geçişi | Android 14 ve 16 Play imajı | 1/1 |
 | Çevrimiçi test reklamı ve satın alma sonrası kapanma | Android 14 Play imajı | Geçti, 1. denemede |
-| Çevrimiçi test reklamı ve satın alma sonrası kapanma | Android 16 Play imajı | Geçti, 2. denemede. 1. deneme "Process crashed" |
+| Çevrimiçi test reklamı ve satın alma sonrası kapanma | Android 16 Play imajı | Geçti, 2. denemede. 1. denemede test süreci uygulama kodu çalışmadan önce açılamadı (aşağıda) |
+| Reklamın üstünden başlayan kaydırma reklamı açmıyor | Android 16 Play imajı, 4 ayrı açılış × 3 tur | 11/12 tur geçti, toplam 396 kaydırma. 17 kaydırma koruma tarafından durduruldu, Play Store hiç açılmadı. Kalan 1 tur test başlamadan düştü (aşağıda) |
 | Release temiz kurulum ve açılış | Android 8, 11, 13, 14, 16 | Kuruldu, açıldı, çökme satırı 0 |
-| Release art arda temiz kurulum | Android 14 ve 16 Play imajı | 6/6 ve 6/6 |
+| Release art arda temiz kurulum | Android 14 ve 16 Play imajı | 5/6 ve 6/6. Android 14'teki 1 kayıp Google Play Hizmetleri'nin yeniden başlamasından (aşağıda) |
 
 Ölçümler (Android 11 emülatörü):
 
-- Soğuk açılış 1344, 1228, 1205 ms
-- Bellek 70,1 MB PSS
+- Soğuk açılış 1421, 1216, 1597 ms
+- Bellek 70,7 MB PSS
 - ANR 0
 - Release APK 4,8 MB, AAB 10,6 MB
 - Hedef API 36, en düşük API 26, debuggable değil, imza doğrulandı
@@ -91,6 +92,7 @@ Android 8'de uçak modu komutu çalışmadı; bu sürümde Wi-Fi ve mobil veri k
 | Gösterilmeyen ekranlar | ✅ | Kod denetimi: reklam alanı yalnızca Ana sayfa, Çalış, Denemeler, İstatistik |
 | Reklam sıklığı | ⚠ | Kodda 90 sn alt sınır ve ilk 3 açılışta reklam yok. Otomatik testi yok |
 | Satın alma sonrası kapanma | ✅ | Hak açılınca reklam ekrandan kalktı (benzetilmiş satın alma sonucu) |
+| Yanlışlıkla tıklama | ✅ | Reklamın üstünden başlayan kaydırma tıklama sayılmıyor. Önceki sürümde 1 kez Play Store açılmıştı, düzeltmeden sonra 396 kaydırmada 0. Dokunuş hâlâ reklama ulaşıyor (3 cihaz testi). Gerçek telefonda denenmedi |
 
 ### Satın alma
 
@@ -135,25 +137,35 @@ Play Console ürünü henüz yok, bu yüzden gerçek Play bağlantısıyla satı
 
 | Madde | Durum | Dayanak ve sınır |
 |---|---|---|
-| Soğuk açılış | ✅ | Yaklaşık 1,2-1,3 sn |
+| Soğuk açılış | ✅ | Yaklaşık 1,2-1,6 sn |
 | Bellek | ✅ | 70 MB |
-| ANR, crash | ✅ | Son turda release sürümünde 0. Test ortamındaki olaylar aşağıda |
+| ANR, crash | ✅ | Release sürümünde uygulamadan kaynaklı çökme ve ANR 0. Test ortamındaki olaylar ve nedenleri aşağıda |
 | Ekran geçişleri | ⚠ | Stres testi geçti, kare süresi ölçülmedi |
 | Room sorguları, PDF, grafikler, widget | ⚠ | Çalıştı, süre ölçümü yapılmadı |
 
 ## Ara sıra görülen olaylar
 
-Bu olaylar saklanmadı. Son tam turda yalnızca 1. satır görüldü.
+Bu olaylar saklanmadı. Her birinin Android kaydındaki gerçek nedeni yazıldı; nedeni bulunamayanlar öyle belirtildi.
 
-<!-- REKLAM-TESHIS -->
+### Reklam teşhisi
+
+Android 14 ve 16 Play imajlarında reklam testleri ara sıra başarısız oldu. Nedeni bulmak için 3 teşhis turu yapıldı (yaklaşık 200 test çalıştırması). Bulunanlar:
+
+| Bulgu | Nasıl anlaşıldı | Sonuç |
+|---|---|---|
+| **Reklamın üstünden başlayan hızlı kaydırma reklamı açıyordu** | 432 kaydırmada 1 kez Play Store açıldı (`market://details`), uygulama arka plana geçti | **Uygulama hatası, düzeltildi.** Reklam çevresine koruma eklendi: parmak başladığı yerden uzaklaştıysa kaldırma tıklama sayılmaz. Son turda 396 kaydırmada 17'si korumaya takıldı, Play Store 0 kez açıldı |
+| Google Play Hizmetleri yeniden başlayınca uygulama kapatıldı | Android kaydı: `depends on provider com.google.android.gms/.fonts.provider.FontsProvider in dying proc com.google.android.gms.persistent` | Uygulama çökmesi değil. Android, ölen Play Hizmetleri sürecine bağlı uygulamaları da kapatır. Bağlantı reklam ve WebView tarafından geliyor, uygulamanın kendi kodunda yazı tipi sağlayıcısı kullanımı yok. Kaydedilmiş veri kaybolmaz. Son turda Android 14 release kurulumunda 1 kez görüldü. Önceki bir turda aynı belirti (release süreci 15 sn sonra yok) 1 kez görülmüştü; büyük ihtimalle aynı neden, o turun kaydı bunu kanıtlamaya yetmedi |
+| Test süreci "açılışı tamamlayamadı" | Android kaydı: `bg anr ... failed to complete startup`. Süreç başladıktan 28 sn sonra bile uygulama sınıfı (`YksApp`) oluşturulmamıştı; aynı anda telefon, Play Hizmetleri ve sistem arayüzü de yanıt veremedi, işlemci baskısı %85 üstündeydi | Uygulama kodu çalışmadan önce oluyor; yeni açılmış, yükü çok yüksek emülatöre ait. Son turda 3 kez kayıtla doğrulandı, 1 kez (Android 16 geçiş testi) kayıt yetersiz ama aynı anda Play Hizmetleri ve telefon da açılamadı. Hepsi ikinci denemede geçti |
+| Rıza adımının hiç başlamaması | Önceki bir testin satın alma benzetimi temizlenmeden yarıda kalması, uygulamanın doğru biçimde reklamsız davranması | Test hatası, düzeltildi |
+| Gezinme hazır olmadan test ekran değiştirdi | `DebugNav.nav` boş | Test hatası, düzeltildi |
+| Reklam sunucusu reklam vermedi (`NO_FILL`) | Sunucu yanıtı | Normal durum; uygulama reklam alanını göstermez |
+
+### Diğer olaylar
 
 | Olay | Sıklık | Durum |
 |---|---|---|
-| Android 16 Play imajında test süreci "Process crashed" | Bir kez reklam testinde (son tur), bir kez geçiş testinde (daha önceki bir tur) | Hedefli teşhis turu aşağıda |
-| Android 14 ve 16 Play imajlarında rıza/reklam başlatma tamamlanmadı | Birer turda | Son turda tekrarlamadı. Uygulama reklamsız çalışmaya devam eder, sonraki açılışta yeniden dener |
-| Android 11'de Compose iç hatası: test sonunda etkinlik kapanırken | 1 kez | Uygulama kodu iz kaydında yok. Son turda 5/5 düğme ve 105 geçişlik stres testi temiz. Yalnızca teste ait olduğu kanıtlanmadı |
-| Android 11'de "Detected multithreaded access" | 1 kez, önceki sürüm | Tekrarlamadı |
-| Android 14 Play imajında release süreci açılıştan 15 sn sonra görülmedi | 1 kez | Sonraki 24 temiz kurulumda tekrarlamadı, neden belirlenemedi |
+| Android 11'de Compose iç hatası: test sonunda etkinlik kapanırken | 1 kez, önceki bir turda | Uygulama kodu iz kaydında yok. Son iki turda 5/5 düğme ve 105 geçişlik stres testi temiz. Yalnızca teste ait olduğu kanıtlanmadı |
+| Android 11'de "Detected multithreaded access" | 1 kez, önceki sürüm | Tekrarlamadı, neden belirlenemedi |
 | Android 16'da 503 çökme satırı | 1 kez, yoğun yeniden başlatma | Bellek ve bekleme ayarından sonra tekrarlamadı |
 | Android 11 emülatörü yeniden başlatmada kapandı | 1 kez | Emülatör hatası; test betiği artık emülatörü aynı diskle açıyor |
 | Android 8'de test uygulaması kurulu değil hatası, tüm tur geçersiz | 1 kez | Test betiği hatası, düzeltildi |
