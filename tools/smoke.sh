@@ -86,6 +86,9 @@ if [ -n "$CLS" ]; then
         echo "--- crash"; adb logcat -d -b crash 2>/dev/null | tail -80
         echo "--- events"; adb logcat -d -b events 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr|am_low_memory|am_wtf|ykspusula' | tail -50
         echo "--- sistem"; adb logcat -d 2>/dev/null | grep -E 'ykspusula|has died|Killing |lowmemorykiller|lmkd|Fatal signal|FATAL EXCEPTION|Force stopping|Force finishing|REPLACED|package replaced|Finsky.*[Ii]nstall|WIN DEATH|Instrumentation|Crash of app' | tail -150
+        echo "--- on plan"; adb shell dumpsys activity activities | grep -E 'topResumedActivity|mResumedActivity|mFocusedApp' | head -6
+        echo "--- etkinlik baslatma"; adb logcat -d -b main,system 2>/dev/null | grep -E 'START u0|Displayed |market:|play.google.com|Opening|Intent \{' | tail -40
+        echo "--- pencere olaylari"; adb logcat -d -b events 2>/dev/null | grep -E 'wm_set_resumed_activity|wm_create_activity|wm_restart_activity|wm_task_to_front|wm_pause_activity' | tail -30
         echo "--- paketler"
         for P in com.google.android.gms com.google.android.webview com.android.vending; do
           echo "$P: $(adb shell dumpsys package $P | grep -m2 -E 'versionName|lastUpdateTime' | tr -d '\r' | tr '\n' ' ')"
@@ -96,7 +99,7 @@ if [ -n "$CLS" ]; then
     for d in $(seq 1 ${REKLAM_TUR:-3}); do
       adb logcat -c
       adb logcat -b events -c 2>/dev/null
-      timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
+      timeout 300 adb shell am instrument -w $REKLAM_ARG -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
       adb logcat -d 2>/dev/null | grep -v 'YksAds' | grep -iE 'gma|ads|webview|chromium|cr_|exception|native' | tail -500 | cut -c1-400 > "ci/logs/reklam-logcat-$NAME.txt"
       adb logcat -d 2>/dev/null | grep -E 'YksAds|UserMessagingPlatform' | tail -40 | cut -c1-300 > "ci/logs/reklam-riza-$NAME-$d.txt"
       if tail -3 "ci/logs/reklam-$NAME.txt" | grep -q 'OK (1 test)'; then

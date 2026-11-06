@@ -76,7 +76,7 @@ jobs:
       - name: Reklam teshisi
         if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[reklam]')
         continue-on-error: true
-        timeout-minutes: 90
+        timeout-minutes: 95
         run: bash tools/reklam-teshis.sh
       - name: Rapor
         if: always()
