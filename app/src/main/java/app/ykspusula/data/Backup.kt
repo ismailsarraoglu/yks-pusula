@@ -288,6 +288,11 @@ class BackupManager(private val repo: Repository, private val filesDir: File, pr
         } catch (e: BackupRejected) {
             dir?.deleteRecursively()
             LoadedBackup(BackupCheck.Bad(e.message ?: "Yedek reddedildi."), null)
+        } catch (e: java.util.zip.ZipException) {
+            // Android 14 ve sonrası ".." içeren girişleri kendisi reddeder.
+            dir?.deleteRecursively()
+            val path = e.message.orEmpty().contains("path", ignoreCase = true)
+            LoadedBackup(BackupCheck.Bad(if (path) "Yedekte geçersiz dosya yolu var." else "Dosya bozuk veya bu uygulamanın yedeği değil."), null)
         } catch (e: Exception) {
             dir?.deleteRecursively()
             LoadedBackup(BackupCheck.Bad("Dosya bozuk veya bu uygulamanın yedeği değil."), null)

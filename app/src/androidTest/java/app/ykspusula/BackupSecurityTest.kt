@@ -113,11 +113,18 @@ class BackupSecurityTest {
         assertTrue(m, m.contains("çok büyük"))
     }
 
+    /** Java'nın ZIP yazıcısı aynı adı iki kez yazmaz; ikinci ad aynı uzunlukta yazılıp baytlarda değiştirilir. */
     @Test fun duplicateEntryRejected() = runBlocking {
-        val m = bad(zip { z ->
+        val raw = zip { z ->
             z.putNextEntry(ZipEntry("yedek.json")); z.write("{}".toByteArray()); z.closeEntry()
-            z.putNextEntry(ZipEntry("yedek.json")); z.write("{}".toByteArray()); z.closeEntry()
-        })
+            z.putNextEntry(ZipEntry("yedek.jsoX")); z.write("{}".toByteArray()); z.closeEntry()
+        }
+        val from = "yedek.jsoX".toByteArray(); val to = "yedek.json".toByteArray()
+        var i = 0
+        while (i <= raw.size - from.size) {
+            if ((from.indices).all { raw[i + it] == from[it] }) { to.copyInto(raw, i); i += from.size } else i++
+        }
+        val m = bad(raw)
         assertTrue(m, m.contains("aynı adlı"))
     }
 
