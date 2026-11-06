@@ -67,6 +67,14 @@ if [ -n "$CLS" ]; then
     done
     echo "ping-cevrimici: $PING" >> "$R"
     echo "dns-cevrimici: $(timeout 20 adb shell ping -c 1 -W 3 googleads.g.doubleclick.net 2>&1 | head -1 | tr -d '\r' | cut -c1-90)" >> "$R"
+    if [ -n "$TANI" ]; then
+      adb shell setprop log.tag.GoogleMobileAds VERBOSE; adb shell setprop log.tag.Ads VERBOSE
+      adb logcat -c
+      timeout 280 adb shell am instrument -w -e class $PKG.AdDiagTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/tani-$NAME.txt"
+      adb logcat -d 2>/dev/null > /tmp/tani.txt
+      grep -E 'YksTani' /tmp/tani.txt | cut -c1-900 > "ci/logs/tani-sonuc-$NAME.txt"
+      grep -vE 'GoogleMobileAdsNetwork|BillingClient|EmojiCompat|AppsFilter' /tmp/tani.txt | grep -E ' (W|E) |GoogleMobileAds|Ads  ' | tail -700 | cut -c1-500 > "ci/logs/tani-logcat-$NAME.txt"
+    fi
     for d in 1 2 3; do
       adb logcat -c
       timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"

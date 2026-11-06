@@ -26,7 +26,7 @@ android {
         versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Bu test internet ister; bağlantılı emülatörde ayrıca çalıştırılır.
-        testInstrumentationRunnerArguments["notClass"] = "app.ykspusula.AdOnlineTest"
+        testInstrumentationRunnerArguments["notClass"] = "app.ykspusula.AdOnlineTest,app.ykspusula.AdDiagTest"
         vectorDrawables { useSupportLibrary = true }
 
         // Varsayılanlar Google'ın test kimlikleridir. Üretim değerleri keystore.properties dosyasından gelir.

@@ -1,6 +1,5 @@
 #!/bin/bash
 # Yalnızca çevrimiçi reklam testi. Google test kimliklerini kullanır.
-T=app.ykspusula.MigrationTest
-CEVRIMICI=1 bash tools/smoke.sh a14g "system-images;android-34;google_apis;x86_64" "$T"
-CEVRIMICI=1 BELLEK=4096 bash tools/smoke.sh a16 "system-images;android-36;google_apis;x86_64" "$T"
+./gradlew --no-daemon --console=plain --offline :app:dependencies --configuration releaseRuntimeClasspath > ci/logs/bagimlilik.txt 2>&1
+TANI=1 CEVRIMICI=1 bash tools/smoke.sh a14g "system-images;android-34;google_apis;x86_64" app.ykspusula.MigrationTest
 true
