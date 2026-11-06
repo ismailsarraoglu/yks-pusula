@@ -59,6 +59,8 @@ val LocalNav = staticCompositionLocalOf<NavController> { error("Nav yok") }
 
 @Composable fun app(): YksApp = LocalContext.current.applicationContext as YksApp
 @Composable fun repo(): Repository = app().repo
+/** Gün değişince ekranlar yeni günün verisini gösterir. */
+@Composable fun currentDay(): java.time.LocalDate = app().day.collectAsStateWithLifecycle().value
 
 /** Askıya alınan işlerden sonra gezinme her zaman ana iş parçacığında sürer. */
 @Composable fun rememberUiScope(): CoroutineScope {
@@ -189,6 +191,7 @@ private fun Graph(nav: NavHostController, modifier: Modifier) {
         composable("subject/{id}") { SubjectScreen(it.s("id")) }
         composable("topic/{id}") { TopicScreen(it.s("id")) }
         composable("mastery") { MasteryScreen() }
+        composable("priorities") { PrioritiesScreen() }
         composable("log?source={source}&topic={topic}&subject={subject}&task={task}&route={route}", listOf(sArg("source"), sArg("topic"), sArg("subject"), sArg("task"), sArg("route"))) {
             StudyLogScreen(it.s("source"), it.s("topic"), it.s("subject"), it.s("task"), it.s("route"))
         }
@@ -202,7 +205,7 @@ private fun Graph(nav: NavHostController, modifier: Modifier) {
         composable("wrongReview") { WrongReviewScreen() }
         composable("cards") { CardsScreen() }
         composable("deck/{deck}") { DeckScreen(it.s("deck")) }
-        composable("review/{deck}") { CardReviewScreen(it.s("deck")) }
+        composable("review/{deck}?mix={mix}", listOf(sArg("mix"))) { CardReviewScreen(it.s("deck"), it.s("mix") == "1") }
         composable("cardEdit/{deck}") { CardEditScreen(it.s("deck")) }
         composable("formulas") { FormulasScreen() }
         composable("notes") { NotesScreen() }

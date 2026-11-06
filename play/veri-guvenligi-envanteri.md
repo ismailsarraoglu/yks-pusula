@@ -37,9 +37,20 @@ Bu veriler cihazdan çıkmaz, Veri Güvenliği formunda "toplanıyor" sayılmaz:
 
 Geniş dosya izni, kamera izni veya konum izni istenmez. Fotoğraf ve PDF sistem seçicisiyle alınır.
 
-## Hedef kitle
+## Hedef kitle ve Families politikası
 
-- Hedef yaş grubu olarak 13 yaş altı seçilmemelidir. Önerilen: 13-15, 16-17 ve 18+.
-- Uygulama çocuklara yönelik olarak değerlendirilirse Families politikası gereği reklam kimliği iletilemez ve yalnızca sertifikalı SDK'lar ve kişiselleştirilmemiş reklamlar kullanılabilir. Bu durumda `AdsManager` yapılandırması değiştirilmelidir.
-- Reklam içerik sınırı kodda PG olarak ayarlandı. AdMob panelinde de aynı sınır seçilmelidir.
-- Yaş bilgisi toplanmaz. Bu beyanlar hukuki danışmanlık değildir; Türkiye'de reşit olmayanların verileriyle ilgili yükümlülükler için bir uzmana danışın.
+Kaynak: [Hedef kitle ve uygulama içeriği ayarları](https://support.google.com/googleplay/android-developer/answer/9867159?hl=en), 6 Kasım 2026'da okundu.
+
+- Google'a göre 5 yaş altı, 6-8 ve 9-12 grupları çoğu ülkede çocuk sayılır. 13-15 ve 16-17 grupları bazı ülkelerde çocuk sayılabilir.
+- Hedef kitlede çocuk yaş grubu varsa Families şartları uygulanır: reklamlar yalnızca Families sertifikalı reklam SDK'larından gelmelidir. Çocuk ve büyükler birlikte hedefleniyorsa tarafsız yaş ekranı gerekir.
+- **Öneri: hedef yaş grubu olarak 16-17 ve 18+ seçin.** YKS öğrencilerinin büyük kısmı bu gruptadır. Bu seçimle uygulama çocuklara yönelik sayılmaz, tarafsız yaş ekranı gerekmez ve uygulamaya yaş ekranı eklenmedi.
+- 13-15 grubunu da seçmek isterseniz (9. ve 10. sınıf öğrencileri), bazı ülkelerde bu grup çocuk sayılabileceği için AdMob'da "çocuklara yönelik işlem" ve "reşit olmayan kullanıcı" etiketlerini ve Families şartlarını yeniden değerlendirin. Bu durumda `AdsManager` yapılandırması değiştirilmelidir.
+- Mağaza görselleri ve metinleri çocuklara hitap eden çizgi karakter içermez.
+- Reklam içerik sınırı kodda PG (`MAX_AD_CONTENT_RATING_PG`) olarak ayarlı. AdMob panelinde de aynı sınırı seçin.
+- Uygulama yaş, kimlik, telefon veya e-posta istemez.
+- Bu beyanlar hukuki danışmanlık değildir; Türkiye'de reşit olmayanların verileriyle ilgili yükümlülükler için bir uzmana danışın.
+
+## Sürüm 2.1.0'da değişen
+
+- Yeni veri türü toplanmadı, yeni SDK veya izin eklenmedi. Saat ve saat dilimi değişikliğinde hatırlatıcıları yeniden kurmak için sistem yayını dinlenir; bu bir izin gerektirmez.
+- Satın alma doğrulaması artık Play açık anahtarı olmadan hak vermez. Satın alma kaydı (JSON ve imza) yalnızca cihazda saklanır.

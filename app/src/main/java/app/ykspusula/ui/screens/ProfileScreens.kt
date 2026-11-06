@@ -1,5 +1,6 @@
 package app.ykspusula.ui.screens
 
+import app.ykspusula.ui.currentDay
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -124,7 +125,7 @@ fun ProfileEditScreen() {
             Muted("Sınıf"); PillGroup(GRADES, u.grade) { p = u.copy(grade = it) }
             Muted("Sınav yılı"); PillGroup(listOf(2027, 2028, 2029, 2030).map { "$it" to "$it" }, "${u.examYear}") { p = u.copy(examYear = it.toInt()) }
             Muted("Hedef alan"); PillGroup(FIELD_LABELS, u.field) { p = u.copy(field = it) }
-            Muted("YDT dili"); PillGroup(LANGUAGES.map { it to it }, u.ydtLanguage) { p = u.copy(ydtLanguage = it) }
+            Muted("YDT dili"); PillGroup(LANGUAGES.map { it to it }, u.ydtLanguage) { p = u.copy(ydtLanguage = it) }; Muted(ydtSupportNote(u.ydtLanguage))
             Field(u.targetUniversity, { v -> p = u.copy(targetUniversity = v) }, "Hedef üniversite")
             Field(u.targetDepartment, { v -> p = u.copy(targetDepartment = v) }, "Hedef bölüm")
             Field(u.dailyMinutes.toString(), { v -> p = u.copy(dailyMinutes = v.filter(Char::isDigit).take(3).toIntOrNull() ?: 0) }, "Günlük çalışma (dakika)", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
@@ -493,6 +494,7 @@ fun PacksScreen() {
                         Muted("Sürüm ${p.version} • ${shortDate(p.importedAt)}")
                         if (p.source.isNotBlank()) Muted("Kaynak: ${p.source}")
                         if (p.license.isNotBlank()) Muted("Lisans: ${p.license}")
+                        if (p.kind == "CONTENT") Muted(if (p.verifiedAt.isNotBlank()) "Son doğrulama: ${p.verifiedAt}. ${p.verification}" else "Resmî kaynaklarla doğrulama: yapılmadı. ${p.verification}")
                     }
                 }
             }
@@ -515,9 +517,9 @@ fun BadgesScreen() {
     val tasks by r.user.doneTaskCount().collectAsStateWithLifecycle(0)
     val cards by r.user.learnedCards().collectAsStateWithLifecycle(0)
     val s by r.settings.collectAsStateWithLifecycle(AppSettings())
-    val date = remember { today() }
-    val week = remember { weekStart(date) }
-    val month = remember { date.withDayOfMonth(1) }
+    val date = currentDay()
+    val week = remember(date) { weekStart(date) }
+    val month = remember(date) { date.withDayOfMonth(1) }
     val weekMin by r.user.minutesBetween(startOf(week), startOf(date.plusDays(1))).collectAsStateWithLifecycle(0)
     val monthQ by r.user.solvedBetween(startOf(month), startOf(date.plusDays(1))).collectAsStateWithLifecycle(0)
     val rest by r.user.restDays().collectAsStateWithLifecycle(emptyList())

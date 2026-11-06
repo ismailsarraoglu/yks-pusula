@@ -402,6 +402,52 @@ object PlanGenerator {
     fun clock(m: Int) = "%02d:%02d".format(java.util.Locale.US, (m / 60) % 24, m % 60)
 }
 
+/* ---------- EKSİK KONU ÖNCELİK SIRASI ---------- */
+
+data class GapTopic(
+    val id: String, val name: String, val subjectId: String, val subjectName: String,
+    val status: Int, val success: Int?, val reviewDue: Boolean, val mockMisses: Int, val wrongOpen: Int, val daysSinceStudy: Int?,
+    val subjectGap: Double? = null,
+)
+data class RankedTopic(val topic: GapTopic, val score: Double, val reasons: List<String>)
+
+/**
+ * "Önce hangi konu?" sorusunun cevabı. Puan yalnızca öğrencinin kendi kayıtlarından gelir:
+ * deneme yanlışları, açık yanlışlar, tekrar tarihi, konudaki doğru oranı, hedef net farkı ve konu seviyesi.
+ * Ağırlıklar başlangıç değeridir, bilimsel kesinlik iddia etmez.
+ */
+object TopicPriority {
+    fun rank(list: List<GapTopic>, final: Boolean = false): List<RankedTopic> = list.mapNotNull { t ->
+        var score = 0.0
+        val why = ArrayList<String>()
+        if (t.mockMisses > 0) { score += 3.0 * min(t.mockMisses, 5); why += "Son denemelerde ${t.mockMisses} yanlış veya boş" }
+        if (t.wrongOpen > 0) { score += 2.0 * min(t.wrongOpen, 5); why += "Defterde ${t.wrongOpen} açık yanlış" }
+        if (t.reviewDue) { score += 4.0; why += if ((t.daysSinceStudy ?: 0) >= 14) "Tekrar zamanı geçti (${t.daysSinceStudy} gündür çalışılmadı)" else "Tekrar zamanı geldi" }
+        if (t.success != null && t.success < 60) { score += (60 - t.success) / 10.0 + 1; why += "Doğru oranın %${t.success}" }
+        if (t.subjectGap != null && t.subjectGap > 0) { score += min(t.subjectGap, 10.0) / 2; why += "Ders hedef netinin ${Scoring.formatNet(t.subjectGap)} altında" }
+        if (t.status == 0 && !final) { score += 1.0; why += "Henüz başlanmadı" }
+        if (t.status == 3 && !t.reviewDue && t.mockMisses == 0 && t.wrongOpen == 0) score -= 2.0
+        if (score <= 0 || why.isEmpty()) null else RankedTopic(t, score, why)
+    }.sortedWith(compareByDescending<RankedTopic> { it.score }.thenBy { it.topic.name })
+}
+
+/* ---------- DENEMEDEKİ KONU EKSİKLERİ ---------- */
+
+/** Denemede bir konudan yapılan yanlış ve boş sayısı. Saklama biçimi: "konu:yanlış:boş" virgülle ayrılır; eski kayıtlarda yalnızca konu kimliği bulunur. */
+data class TopicMiss(val topicId: String, val wrong: Int = 0, val blank: Int = 0)
+
+object MockMisses {
+    fun parse(text: String): List<TopicMiss> = text.split(',').map { it.trim() }.filter { it.isNotEmpty() }.mapNotNull { part ->
+        val p = part.split(':')
+        val id = p[0].trim()
+        if (id.isEmpty()) null else TopicMiss(id, p.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 200) ?: 0, p.getOrNull(2)?.toIntOrNull()?.coerceIn(0, 200) ?: 0)
+    }.distinctBy { it.topicId }
+
+    fun format(list: List<TopicMiss>): String = list.distinctBy { it.topicId }.joinToString(",") { "${it.topicId}:${it.wrong}:${it.blank}" }
+
+    fun ids(text: String): List<String> = parse(text).map { it.topicId }
+}
+
 /* ---------- KAÇIRILAN PROGRAMI YENİDEN DÜZENLEME ---------- */
 
 data class SlotTask(val id: String, val date: LocalDate, val time: String, val minutes: Int, val priority: Int, val title: String)

@@ -50,6 +50,7 @@ class MainActivity : ComponentActivity() {
     /** Uygulama kapalıyken tamamlanan bekleyen ödemeler de burada yakalanır. */
     override fun onResume() {
         super.onResume()
+        yks.refreshDay()
         yks.scope.launch { yks.monetize.billing.queryPurchases() }
     }
 

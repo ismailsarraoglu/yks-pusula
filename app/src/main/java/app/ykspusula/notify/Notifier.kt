@@ -160,11 +160,17 @@ class ReminderReceiver : BroadcastReceiver() {
     }
 }
 
+/** Açılış, güncelleme, saat ve saat dilimi değişikliğinde bildirimler yeni yerel saate göre yeniden kurulur. */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, intent: Intent) {
         val pending = goAsync()
-        (c.applicationContext as YksApp).scope.launch {
-            try { Notifier.rescheduleAll(c) } finally { pending.finish() }
+        val app = c.applicationContext as YksApp
+        app.scope.launch {
+            try {
+                app.refreshDay()
+                Notifier.rescheduleAll(c)
+                app.ykspusula.widget.Widgets.updateAll(c)
+            } finally { pending.finish() }
         }
     }
 }

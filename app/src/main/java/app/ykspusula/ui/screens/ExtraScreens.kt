@@ -1,5 +1,6 @@
 package app.ykspusula.ui.screens
 
+import app.ykspusula.ui.currentDay
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -42,7 +43,7 @@ fun MotivationScreen() {
     val favs by r.user.bookmarkIds("QUOTE").collectAsStateWithLifecycle(emptyList())
     var tab by rememberSaveable { mutableStateOf("TODAY") }
     var index by rememberSaveable { mutableIntStateOf(-1) }
-    val date = remember { today() }
+    val date = currentDay()
     val quotes = r.quotes
     val base = remember(date) { r.quoteOfDay(date) }
     val current = if (index in quotes.indices) quotes[index] else base

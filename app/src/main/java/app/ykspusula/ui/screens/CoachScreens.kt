@@ -1,5 +1,6 @@
 package app.ykspusula.ui.screens
 
+import app.ykspusula.ui.currentDay
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -28,11 +29,11 @@ fun CoachScreen() {
     val r = repo()
     val nav = LocalNav.current
     val scope = rememberUiScope()
-    val date = remember { today() }
-    val route by remember { r.user.routeOn(date.toString()) }.collectAsStateWithLifecycle(emptyList())
+    val date = currentDay()
+    val route by remember(date) { r.user.routeOn(date.toString()) }.collectAsStateWithLifecycle(emptyList())
     var editing by remember { mutableStateOf<RouteItem?>(null) }
     var moving by remember { mutableStateOf<RouteItem?>(null) }
-    LaunchedEffect(Unit) { r.ensureRoute(date) }
+    LaunchedEffect(date) { r.ensureRoute(date) }
     Screen("Pusula Koç", { nav.popBackStack() }, actions = {
         IconButton({ scope.launch { r.rebuildRoute(date) } }) { Icon(Icons.Rounded.Refresh, "Rotayı yenile") }
     }) {

@@ -217,7 +217,7 @@ class Repository(private val context: Context, val db: AppDatabase) {
             )
             content.formulas(p.formulas.map { Formula(it.id, it.subjectId, it.subjectName, it.category, it.title, it.body, it.note, p.pack.id) })
             content.flashcards(p.flashcards.map { Flashcard(it.id, it.deck, it.subjectName, it.front, it.back, it.partOfSpeech, it.example, false, p.pack.id) })
-            content.pack(ImportedContentPack(p.pack.id, p.pack.title, p.pack.version, p.pack.kind, System.currentTimeMillis(), 0, p.pack.source, p.pack.license))
+            content.pack(ImportedContentPack(p.pack.id, p.pack.title, p.pack.version, p.pack.kind, System.currentTimeMillis(), 0, p.pack.source, p.pack.license, p.pack.verifiedAt, p.pack.verification))
         }
     }
 
@@ -409,9 +409,38 @@ class Repository(private val context: Context, val db: AppDatabase) {
             user.saveResults(rows.mapIndexed { i, r -> MockExamResult(id, r.name, r.correct, r.wrong, r.blank, Scoring.net(r.correct, r.wrong, divisor), i) })
             user.saveLogs(rows.map { r -> PracticeLog(id = "mock-$id-${r.name.hashCode()}", at = at, subjectId = r.subjectId, mockExamId = id, correct = r.correct, wrong = r.wrong, blank = r.blank, origin = "MOCK", createdAt = now, updatedAt = now) })
             if (spentMinutes > 0) user.saveSession(StudySession(id = "mock-$id", label = title, startedAt = at, minutes = spentMinutes, kind = "MOCK", activity = "DENEME"))
-            hardTopics.split(',').filter { it.isNotBlank() }.forEach { t -> setReviewIfMissing(t, now) }
+            val misses = MockMisses.parse(hardTopics)
+            misses.forEach { t -> setReviewIfMissing(t.topicId, now) }
+            syncMockWrongs(m.copy(title = title), misses, at, now)
         }
         changed()
+    }
+
+    /**
+     * Denemede yanlış veya boş bırakılan konular yanlış defterine ve tekrar takvimine girer.
+     * Sonuç yeniden kaydedilirse sayılar güncellenir, tekrar aşaması korunur; listeden çıkarılan konunun deneme kaydı silinir.
+     */
+    private suspend fun syncMockWrongs(m: MockExam, misses: List<TopicMiss>, at: Long, now: Long) {
+        val topics = content.allTopics().associateBy { it.id }
+        val existing = user.wrongsNow().filter { it.mockExamId == m.id && it.origin == "MOCK" }.associateBy { it.id }
+        val keep = HashSet<String>()
+        misses.forEach { t ->
+            val topic = topics[t.topicId] ?: return@forEach
+            listOf("WRONG" to t.wrong, "BLANK" to t.blank).filter { it.second > 0 }.forEach { (kind, count) ->
+                val id = "mock-${m.id}-${t.topicId}-$kind"
+                keep += id
+                val old = existing[id]
+                val first = Repetition.onWrong(at)
+                saveWrong(
+                    (old ?: WrongEntry(
+                        id = id, subjectId = topic.subjectId, topicId = topic.id, sourceLabel = m.title, firstWrongAt = at, lastWrongAt = at,
+                        nextReviewAt = first.nextReviewAt.coerceAtMost(now + Repetition.DAY_MS), origin = "MOCK", kind = kind, mockExamId = m.id,
+                        reason = if (kind == "BLANK") "Boş bırakıldı" else "", updatedAt = now,
+                    )).copy(wrongCount = count, sourceLabel = m.title, updatedAt = now),
+                )
+            }
+        }
+        existing.keys.filter { it !in keep }.forEach { user.deleteWrong(it) }
     }
 
     private suspend fun setReviewIfMissing(topicId: String, now: Long) {
@@ -433,6 +462,7 @@ class Repository(private val context: Context, val db: AppDatabase) {
     suspend fun deleteExam(id: String) {
         db.withTransaction {
             user.deleteResults(id); user.deleteMockLogs(id); user.deleteMock(id); user.deleteSession("mock-$id")
+            user.wrongsNow().filter { it.mockExamId == id && it.origin == "MOCK" }.forEach { user.deleteWrong(it.id) }
         }
         changed()
     }
@@ -485,6 +515,19 @@ class Repository(private val context: Context, val db: AppDatabase) {
         )
     }
 
+    /** Eksik konu öncelik sırası: plan girdisiyle aynı veriden üretilir. */
+    suspend fun priorityTopics(limit: Int = 40): Pair<List<RankedTopic>, Long> {
+        val input = planInput(today())
+        val names = content.subjectsNow().associate { it.id to it.name }
+        val wrongs = user.wrongsNow().filter { !it.resolved && it.topicId != null }.groupingBy { it.topicId!! }.eachCount()
+        val gaps = input.subjects.associate { it.id to it.gap }
+        val daysLeft = ChronoUnit.DAYS.between(input.start, input.examDate)
+        val list = input.topics.map { t ->
+            GapTopic(t.id, t.name, t.subjectId, names[t.subjectId].orEmpty(), t.status, t.success, t.reviewDue, t.mockMisses, wrongs[t.id] ?: 0, t.daysSinceStudy, gaps[t.subjectId])
+        }
+        return TopicPriority.rank(list, daysLeft in 1..PlanGenerator.FINAL_DAYS).take(limit) to daysLeft
+    }
+
     /** Son 60 gündeki denemelerde yanlış veya boş olarak işaretlenen konular ve zorlanılan konular. */
     private suspend fun mockMisses(now: Long): Map<String, Int> {
         val since = now - 60 * Repetition.DAY_MS
@@ -492,7 +535,7 @@ class Repository(private val context: Context, val db: AppDatabase) {
         user.wrongsNow().filter { it.origin == "MOCK" && !it.resolved && it.firstWrongAt >= since && it.topicId != null }
             .forEach { out[it.topicId!!] = (out[it.topicId] ?: 0) + it.wrongCount }
         user.mockSummariesNow().filter { it.createdAt >= since }.takeLast(3).forEach { m ->
-            user.mock(m.id)?.hardTopics.orEmpty().split(',').filter { it.isNotBlank() }.forEach { t -> if (t !in out) out[t] = 1 }
+            MockMisses.parse(user.mock(m.id)?.hardTopics.orEmpty()).forEach { t -> if (t.topicId !in out) out[t.topicId] = maxOf(1, t.wrong + t.blank) }
         }
         return out
     }
@@ -620,7 +663,7 @@ class Repository(private val context: Context, val db: AppDatabase) {
             val sub = cfgs[k.first]?.let { c -> sectionsOf(c).firstOrNull { it.name == k.second }?.parts?.map { it.subjectId } }.orEmpty()
             CoachSection(k.first, k.second, v, sub)
         }
-        val hard = mocks.takeLast(1).flatMap { m -> user.mock(m.id)?.hardTopics.orEmpty().split(',').filter { it.isNotBlank() } }.toSet()
+        val hard = mocks.takeLast(1).flatMap { m -> MockMisses.ids(user.mock(m.id)?.hardTopics.orEmpty()) }.toSet()
         val missed = user.missedTasksNow(date.minusDays(7).toString(), date.toString()).map { CoachMissed(it.id, it.title, it.subjectId, it.topicId, it.minutes, LocalDate.parse(it.date)) }
         val from = startOf(date)
         val done = user.minutesBetweenNow(from, startOf(date.plusDays(1)))

@@ -27,6 +27,16 @@ class YksApp : Application() {
     /** Bildirim veya ana ekran bileşeninden gelen hedef ekran. */
     val pendingRoute = MutableStateFlow<String?>(null)
     private val dataChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** Ekranların kullandığı gün. Gece yarısı, saat veya saat dilimi değişince ve uygulama öne gelince yenilenir. */
+    val day = MutableStateFlow(app.ykspusula.data.today())
+
+    fun refreshDay() {
+        val d = app.ykspusula.data.today()
+        if (d != day.value) {
+            day.value = d
+            Widgets.updateAll(this)
+        }
+    }
 
     @OptIn(FlowPreview::class)
     override fun onCreate() {
@@ -43,6 +53,15 @@ class YksApp : Application() {
             }
         }
         repo.onDataChanged = { dataChanges.tryEmit(Unit) }
+        // Uygulama gece açık kalırsa gün değişimi kaçırılmasın.
+        scope.launch {
+            while (true) {
+                val z = java.time.ZoneId.systemDefault()
+                val next = java.time.LocalDate.now(z).plusDays(1).atStartOfDay(z).toInstant().toEpochMilli()
+                kotlinx.coroutines.delay((next - System.currentTimeMillis()).coerceIn(1_000L, 3_600_000L) + 500)
+                refreshDay()
+            }
+        }
         scope.launch { dataChanges.debounce(1500).collect { Widgets.updateAll(this@YksApp) } }
     }
 }

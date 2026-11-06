@@ -1,5 +1,6 @@
 package app.ykspusula.ui.screens
 
+import app.ykspusula.ui.currentDay
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -35,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ykspusula.data.*
 import app.ykspusula.domain.Mastery
 import app.ykspusula.domain.MasteryResult
+import app.ykspusula.domain.Repetition
 import app.ykspusula.domain.Scoring
 import app.ykspusula.monetize.AdPlacement
 import app.ykspusula.ui.LocalNav
@@ -49,7 +51,10 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 val MANUAL_STATUS = listOf("Başlanmadı", "Çalışılıyor", "Tekrar gerekiyor", "Öğrenildi")
-val WRONG_REASONS = listOf("Konuyu bilmiyordum", "Dikkatsizlik", "İşlem hatası", "Soruyu yanlış okuma", "Zaman yetersizliği", "İki seçenek arasında kalma", "Bilgiyi unutma", "Diğer")
+val WRONG_REASONS = listOf("Konuyu bilmiyordum", "Bilgiyi karıştırma", "Dikkatsizlik", "İşlem hatası", "Soruyu yanlış okuma", "Zaman yetersizliği", "İki seçenek arasında kalma", "Bilgiyi unutma", "Diğer")
+/** Yanlış kaydının türü. Tahminle doğru da tekrar gerektirir. */
+val WRONG_KINDS = listOf("WRONG" to "Yanlış", "BLANK" to "Boş", "GUESS" to "Tahminle doğru")
+fun wrongKindLabel(k: String) = WRONG_KINDS.firstOrNull { it.first == k }?.second ?: "Yanlış"
 val TOPIC_CHECKS = listOf("KONU" to "Konu çalışıldı", "OZET" to "Özet çıkarıldı", "SORU" to "Soru çözüldü", "TEKRAR" to "Tekrar edildi")
 
 @Composable fun masteryColor(level: Int): Color = when (level) { 4 -> Yks.c.purpleLight; 3 -> Yks.c.success; 2 -> Yks.c.warning; 1 -> Yks.c.accentLight; else -> Yks.c.muted }
@@ -57,6 +62,11 @@ val TOPIC_CHECKS = listOf("KONU" to "Konu çalışıldı", "OZET" to "Özet çı
 /** Öğrencinin alanına ve diline uyan dersleri seçer. */
 fun relevant(subjects: List<Subject>, p: UserProfile?): List<Subject> = subjects.filter { s ->
     s.language == null || s.language == (p?.ydtLanguage ?: "İngilizce")
+}
+
+/** Öğrencinin alanına giren dersler: TYT herkes için; AYT ve YDT alana göre. */
+fun fieldSubjects(subjects: List<Subject>, p: UserProfile): List<Subject> = relevant(subjects, p).filter { s ->
+    s.exam == "TYT" || (p.field != "TYT" && s.fields.split(',').any { it == p.field || it == "ALL" })
 }
 
 private data class StudyLink(val title: String, val subtitle: String, val icon: ImageVector, val route: String, val purple: Boolean = false)
@@ -69,8 +79,8 @@ fun StudyScreen() {
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     val rows by r.content.allTopicRows().collectAsStateWithLifecycle(emptyList())
-    val date = remember { today() }
-    val route by remember { r.user.routeOn(date.toString()) }.collectAsStateWithLifecycle(emptyList())
+    val date = currentDay()
+    val route by remember(date) { r.user.routeOn(date.toString()) }.collectAsStateWithLifecycle(emptyList())
     val last by r.user.lastSource().collectAsStateWithLifecycle(null)
     var exam by rememberSaveable { mutableStateOf("TYT") }
     LaunchedEffect(Unit) { r.ensureRoute() }
@@ -93,6 +103,7 @@ fun StudyScreen() {
         }
         SectionHeader("Çalışma alanın")
         val links = listOf(
+            StudyLink("Öncelikli konular", "Önce neyi çalışmalısın", Icons.Rounded.PriorityHigh, "priorities", true),
             StudyLink("Çalışma planı", "Haftalık programın", Icons.Rounded.CalendarMonth, "plan"),
             StudyLink("Konularım", "Konu ustalığı haritası", Icons.Rounded.Map, "mastery", true),
             StudyLink("Kaynaklarım", "Kitap ve dokümanların", Icons.AutoMirrored.Rounded.MenuBook, "sources"),
@@ -109,7 +120,7 @@ fun StudyScreen() {
         if (y >= 2028) InfoBanner("Konu listesi 2027 YKS çerçevesine göre hazırlandı. $y sınavı için kapsam ÖSYM ve MEB tarafından açıklandığında yeni içerik paketi gerekir.", Icons.Rounded.Info)
         SectionHeader("Derslerim")
         PillGroup(listOf("TYT" to "TYT", "AYT" to "AYT", "YDT" to "YDT"), exam) { exam = it }
-        if (exam == "YDT") Muted("Seçili dil: ${profile?.ydtLanguage ?: "İngilizce"}. Dili Profil'den değiştirebilirsin.")
+        if (exam == "YDT") Muted("Seçili dil: ${profile?.ydtLanguage ?: "İngilizce"}. " + ydtSupportNote(profile?.ydtLanguage ?: "İngilizce") + " Dili Profil'den değiştirebilirsin.")
         if (list.isEmpty()) YCard { Muted("Bu dil için henüz içerik yok. Bir içerik paketiyle eklenebilir.") }
         grouped.forEach { (group, subs) ->
             if (grouped.size > 1) Text(group, style = MaterialTheme.typography.titleMedium, color = c.muted)
@@ -276,6 +287,8 @@ fun TopicScreen(id: String) {
             if (t.lesson.isNotBlank()) Block("Konu notu", t.lesson)
             if (t.keyPoints.isNotBlank()) Block("Formüller ve önemli bilgiler", t.keyPoints)
             if (t.example.isNotBlank()) Block("Örnek", t.example)
+            if (t.lesson.isBlank() && t.keyPoints.isBlank()) Muted("Bu konu için uygulamada not yok. Konu listesi ve takip için kullanabilir, kendi kaynağından çalışıp not ekleyebilirsin.")
+            else Muted("Buradaki notlar kısa tekrar özetidir; ders kitabı veya konu anlatımı yerine geçmez.")
             Muted("Müfredat sürümü: ${t.curriculum} • Geçerlilik: ${t.validFromYear}-${t.validToYear}")
         }
     }
@@ -516,6 +529,7 @@ fun WrongEditScreen(id: String, topicArg: String, subjectArg: String, sourceArg:
     var page by rememberSaveable { mutableStateOf("") }
     var number by rememberSaveable { mutableStateOf("") }
     var reason by rememberSaveable { mutableStateOf("") }
+    var kind by rememberSaveable { mutableStateOf("WRONG") }
     var note by rememberSaveable { mutableStateOf("") }
     var photo by rememberSaveable { mutableStateOf<String?>(null) }
     var review by remember { mutableStateOf(today().plusDays(1)) }
@@ -523,7 +537,7 @@ fun WrongEditScreen(id: String, topicArg: String, subjectArg: String, sourceArg:
     LaunchedEffect(id) {
         if (id != "new") r.user.wrong(id)?.let { w ->
             existing = w; subject = w.subjectId.orEmpty(); topic = w.topicId.orEmpty(); source = w.sourceId.orEmpty(); label = w.sourceLabel
-            page = w.page?.toString().orEmpty(); number = w.questionNo; reason = w.reason; note = w.note; photo = w.photoFile; review = dateOf(w.nextReviewAt)
+            page = w.page?.toString().orEmpty(); number = w.questionNo; reason = w.reason; kind = w.kind; note = w.note; photo = w.photoFile; review = dateOf(w.nextReviewAt)
         }
     }
     val rows by remember(subject) { if (subject.isEmpty()) kotlinx.coroutines.flow.flowOf(emptyList()) else r.content.topicRows(subject) }.collectAsStateWithLifecycle(emptyList())
@@ -545,7 +559,9 @@ fun WrongEditScreen(id: String, topicArg: String, subjectArg: String, sourceArg:
                 NumberField(page, { page = it }, "Sayfa", Modifier.weight(1f))
                 Field(number, { number = it.take(8) }, "Soru no", Modifier.weight(1f))
             }
-            Muted("Yanlış nedeni")
+            Muted("Soru durumu")
+            PillGroup(WRONG_KINDS, kind) { kind = it }
+            Muted("Neden")
             PillGroup(WRONG_REASONS.map { it to it }, reason) { reason = it }
             Field(note, { note = it }, "Kişisel açıklama", singleLine = false, minLines = 3)
             photo?.let { PhotoView(r.photoFile(it)) }
@@ -561,8 +577,8 @@ fun WrongEditScreen(id: String, topicArg: String, subjectArg: String, sourceArg:
                 scope.launch {
                     val e = existing
                     val at = startOf(review) + 8 * 3_600_000L
-                    if (e == null) r.saveWrong(r.newWrong(subject.ifEmpty { null }, topic.ifEmpty { null }, source.ifEmpty { null }, srcName, page.toIntOrNull(), number, reason, note.trim(), photo, at, now))
-                    else r.saveWrong(e.copy(subjectId = subject.ifEmpty { null }, topicId = topic.ifEmpty { null }, sourceId = source.ifEmpty { null }, sourceLabel = srcName, page = page.toIntOrNull(), questionNo = number, reason = reason, note = note.trim(), photoFile = photo, nextReviewAt = at, updatedAt = now))
+                    if (e == null) r.saveWrong(r.newWrong(subject.ifEmpty { null }, topic.ifEmpty { null }, source.ifEmpty { null }, srcName, page.toIntOrNull(), number, reason, note.trim(), photo, at, now).copy(kind = kind))
+                    else r.saveWrong(e.copy(subjectId = subject.ifEmpty { null }, topicId = topic.ifEmpty { null }, sourceId = source.ifEmpty { null }, sourceLabel = srcName, page = page.toIntOrNull(), questionNo = number, reason = reason, kind = kind, note = note.trim(), photoFile = photo, nextReviewAt = at, updatedAt = now))
                     nav.popBackStack()
                 }
             }
@@ -580,11 +596,13 @@ private fun WrongBody(w: WrongEntry, subject: String?, topic: String?) {
         if (w.sourceLabel.isNotBlank()) KeyValue("Kaynak", w.sourceLabel)
         w.page?.let { KeyValue("Sayfa", "$it") }
         if (w.questionNo.isNotBlank()) KeyValue("Soru no", w.questionNo)
+        KeyValue("Durum", wrongKindLabel(w.kind) + if (w.wrongCount > 1) " • ${w.wrongCount} soru" else "")
         if (w.reason.isNotBlank()) KeyValue("Neden", w.reason)
         if (w.givenAnswer.isNotBlank()) KeyValue("Verdiğin cevap", w.givenAnswer)
         if (w.correctAnswer.isNotBlank()) KeyValue("Doğru cevap", w.correctAnswer, Yks.c.success)
         KeyValue("İlk kayıt", shortDate(w.firstWrongAt))
         KeyValue("Sonraki tekrar", shortDate(w.nextReviewAt))
+        KeyValue("Öğrenme düzeyi", if (w.resolved) "Öğrenildi" else "Tekrar ${w.stage + 1} / ${Repetition.INTERVALS.size}")
     }
     if (w.note.isNotBlank()) YCard { Muted("Açıklaman"); Text(w.note, color = Yks.c.text) }
 }
@@ -656,6 +674,35 @@ fun WrongReviewScreen() {
             WrongBody(row.w, row.subjectName, row.topicName)
             Text("Bu soruyu yeniden çözdün mü? Nasıl geçti?", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
             RatingButtons { v -> scope.launch { r.reviewWrong(id, v) }; index++ }
+        }
+    }
+}
+
+/** Eksik konu öncelik sırası ve sınav öncesi tekrar görünümü. */
+@Composable
+fun PrioritiesScreen() {
+    val r = repo()
+    val nav = LocalNav.current
+    val date = app.ykspusula.ui.currentDay()
+    var data by remember { mutableStateOf<Pair<List<app.ykspusula.domain.RankedTopic>, Long>?>(null) }
+    LaunchedEffect(date) { data = r.priorityTopics() }
+    Screen("Öncelikli konular", { nav.popBackStack() }) {
+        ScrollColumn {
+            val d = data
+            if (d == null) { Muted("Hazırlanıyor…"); return@ScrollColumn }
+            val (list, daysLeft) = d
+            if (daysLeft in 1..app.ykspusula.domain.PlanGenerator.FINAL_DAYS) {
+                InfoBanner("Sınav öncesi modu: sınava $daysLeft gün kaldı. Yeni konu yerine deneme yanlışların, tekrar zamanı gelen konular ve düşük doğru oranlı konular öne alındı.", Icons.Rounded.Flag, Yks.c.warning)
+            }
+            Muted("Sıra yalnızca senin kayıtlarından çıkar: deneme yanlışları, açık yanlışlar, tekrar tarihleri, doğru oranları ve hedef netler. Kayıt girdikçe değişir.")
+            if (list.isEmpty()) {
+                YCard { Text("Henüz öncelik çıkaracak kayıt yok", style = MaterialTheme.typography.titleMedium, color = Yks.c.text); Muted("Deneme sonucu, yanlış veya soru çözümü kaydettiğinde burada çalışman gereken konular sıralanır.") }
+            } else GroupCard {
+                list.forEachIndexed { i, x ->
+                    if (i > 0) Line()
+                    NavRow("${i + 1}. ${x.topic.name}", "${x.topic.subjectName} • " + x.reasons.joinToString(" • "), Icons.Rounded.PriorityHigh, if (i < 3) Yks.c.warning else Yks.c.accent, onClick = { nav.navigate("topic/${x.topic.id}") })
+                }
+            }
         }
     }
 }

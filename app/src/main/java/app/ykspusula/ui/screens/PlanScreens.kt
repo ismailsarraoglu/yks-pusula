@@ -1,5 +1,6 @@
 package app.ykspusula.ui.screens
 
+import app.ykspusula.ui.currentDay
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -77,8 +78,10 @@ fun PlanScreen() {
             }
             MainButton("Otomatik program oluştur", Modifier.fillMaxWidth(), icon = Icons.Rounded.AutoAwesome) {
                 scope.launch {
-                    val n = r.generatePlan(if (start > today()) start else today())
-                    info = if (n > 0) "$n görev oluşturuldu. Tamamlanan görevlerin korunur." else "Program oluşturulamadı: sınav tarihi geçmiş olabilir."
+                    val res = r.generatePlanDetailed(if (start > today()) start else today())
+                    val n = res.tasks.size
+                    info = (if (n > 0) "$n görev oluşturuldu: toplam ${res.studyMinutes} dk çalışma. Tamamlanan ve elle eklediğin görevler korundu." else "Program oluşturulamadı.") +
+                        res.notes.joinToString("") { "\n• $it" }
                 }
             }
             if (info.isNotEmpty()) Muted(info)
@@ -87,6 +90,11 @@ fun PlanScreen() {
                 val list = tasks.filter { it.date == day.toString() }
                 Section(WEEK[i] + if (day == today()) " • Bugün" else "") {
                     IconButton({ nav.navigate("taskEdit/$day") }) { Icon(Icons.Rounded.Add, "${WEEK[i]} için görev ekle", tint = Yks.c.accent) }
+                }
+                if (list.isNotEmpty()) {
+                    val study = list.sumOf { it.minutes }
+                    val gaps = list.sortedBy { it.time }.zipWithNext().sumOf { (a, b) -> (clockMinutes(b.time) - clockMinutes(a.time) - a.minutes).coerceAtLeast(0) }
+                    Muted("Çalışma $study dk" + if (gaps > 0) " • Mola $gaps dk" else "")
                 }
                 if (list.isEmpty()) Muted("Görev yok")
                 else GroupCard {
@@ -196,14 +204,24 @@ fun PlanSettingsScreen() {
             MultiPills(DAY_NAMES, u.studyDays.split(',').toSet()) { p = u.copy(studyDays = toggle(u.studyDays, it)) }
             TimeField(u.startHour, 0, "Başlangıç saati") { h, _ -> p = u.copy(startHour = h) }
             TimeField(u.endHour, 0, "Bitiş saati") { h, _ -> p = u.copy(endHour = h) }
-            NumberField("${u.breakMinutes}", { v -> p = u.copy(breakMinutes = v.toIntOrNull() ?: 0) }, "Dinlenme arası (dakika)", max = 2)
-            val tyt = subjects.filter { it.exam == "TYT" || it.exam == "AYT" }.map { it.id to "${it.exam} ${it.name}" }
+            NumberField("${u.blockMinutes}", { v -> p = u.copy(blockMinutes = v.toIntOrNull() ?: 0) }, "Tercih ettiğin çalışma bloğu (dakika)", max = 3)
+            NumberField("${u.breakMinutes}", { v -> p = u.copy(breakMinutes = v.toIntOrNull() ?: 0) }, "Bloklar arası mola (dakika)", max = 2)
+            Muted("Molalar çalışma süresine eklenmez. Her üç bloktan sonra daha uzun mola verilir. Son blok kalan süreye göre kısalır.")
+            val fit = remember(u) {
+                val blocks = app.ykspusula.domain.PlanGenerator.split(minOf(u.dailyMinutes, u.maxDailyMinutes), u.blockMinutes.coerceIn(15, 120))
+                blocks.sum() + blocks.indices.toList().dropLast(1).sumOf { app.ykspusula.domain.PlanGenerator.breakAfter(it, u.breakMinutes) }
+            }
+            val window = (u.endHour - u.startHour) * 60
+            if (window > 0 && fit > window) Text("Günlük hedefin molalarla ${fit / 60} sa ${fit % 60} dk sürüyor ama seçtiğin saat aralığı ${window / 60} saat. Plan sığan kadarını yerleştirir ve nedenini yazar.", color = Yks.c.warning, style = MaterialTheme.typography.bodyMedium)
+            val mine = fieldSubjects(subjects, u).map { it.id to "${it.exam} ${it.name}" }
             Muted("Zorlandığın dersler")
-            MultiPills(tyt, u.weakSubjects.split(',').toSet()) { p = u.copy(weakSubjects = toggle(u.weakSubjects, it)) }
+            MultiPills(mine, u.weakSubjects.split(',').toSet()) { p = u.copy(weakSubjects = toggle(u.weakSubjects, it), strongSubjects = u.strongSubjects.split(',').filter { s -> s != it }.joinToString(",")) }
+            Muted("Güçlü olduğun dersler")
+            MultiPills(mine, u.strongSubjects.split(',').toSet()) { p = u.copy(strongSubjects = toggle(u.strongSubjects, it), weakSubjects = u.weakSubjects.split(',').filter { s -> s != it }.joinToString(",")) }
             val count = u.priorityTopics.split(',').count { it.isNotBlank() }
             SoftButton(if (count > 0) "$count öncelikli konu" else "Öncelikli konu seç", Modifier.fillMaxWidth(), icon = Icons.Rounded.Flag) { pick = true }
-            val valid = u.studyDays.isNotBlank() && u.dailyMinutes > 0 && u.maxDailyMinutes >= u.dailyMinutes && u.endHour > u.startHour
-            if (!valid) Text("Günlük en fazla süre hedeften az olamaz; bitiş saati başlangıçtan sonra olmalı.", color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
+            val valid = u.studyDays.isNotBlank() && u.dailyMinutes > 0 && u.maxDailyMinutes >= u.dailyMinutes && u.endHour > u.startHour && u.blockMinutes in 15..120
+            if (!valid) Text("Günlük en fazla süre hedeften az olamaz; bitiş saati başlangıçtan sonra olmalı; blok 15-120 dakika olmalı.", color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
             MainButton("Kaydet ve planı güncelle", Modifier.fillMaxWidth(), enabled = valid) {
                 scope.launch {
                     r.user.saveProfile(u)
@@ -214,7 +232,7 @@ fun PlanSettingsScreen() {
                 }
             }
         }
-        if (pick) TopicPickerDialog("TYT", u.priorityTopics.split(',').filter { it.isNotBlank() }.toSet(), { pick = false }) { p = u.copy(priorityTopics = it.joinToString(",")) }
+        if (pick) TopicPickerDialog(if (u.field == "TYT") "TYT" else if (u.field == "DIL") "YDT" else "AYT", u.priorityTopics.split(',').filter { it.isNotBlank() }.toSet(), { pick = false }) { p = u.copy(priorityTopics = it.joinToString(",")) }
     }
 }
 
@@ -233,7 +251,7 @@ fun PomodoroScreen(subjectArg: String, topicArg: String, sourceArg: String, minu
     val subjects by r.content.subjects().collectAsStateWithLifecycle(emptyList())
     val sources by r.user.sources().collectAsStateWithLifecycle(emptyList())
     val sessions by r.user.recentSessions(8).collectAsStateWithLifecycle(emptyList())
-    val date = remember { today() }
+    val date = currentDay()
     val todayMin by r.user.minutesBetween(startOf(date), startOf(date.plusDays(1))).collectAsStateWithLifecycle(0)
     var work by rememberSaveable { mutableStateOf(if (minutesArg > 0) "$minutesArg" else "") }
     var pause by rememberSaveable { mutableStateOf("") }
@@ -270,6 +288,11 @@ fun PomodoroScreen(subjectArg: String, topicArg: String, sourceArg: String, minu
         }
     }
     /** Gerçek süre kaydedilir; planlanan süre ayrı tutulur. */
+    var discard by remember { mutableStateOf(false) }
+    if (discard) ConfirmDialog("Oturumdan vazgeçilsin mi?", "Bu oturumun süresi çalışma kaydına eklenmez.", "Vazgeç", true, { discard = false }) {
+        discard = false
+        scope.launch { Notifier.cancelPomodoro(context); r.savePomodoro(PomodoroState()); note = "" }
+    }
     fun finishWork(next: PomodoroState) {
         scope.launch {
             val id = "pomo-${state.startedAt}"
@@ -309,7 +332,10 @@ fun PomodoroScreen(subjectArg: String, topicArg: String, sourceArg: String, minu
                 }
                 if (!isIdle) SoftButton("Bitir", Modifier.weight(1f), icon = Icons.Rounded.Stop, color = Yks.c.error) { finishWork(PomodoroState()) }
             }
-            if (state.phase == "WORK") Field(note, { note = it }, "Kısa not")
+            if (state.phase == "WORK") {
+                TextButton({ discard = true }, Modifier.fillMaxWidth()) { Text("Oturumdan vazgeç (kaydetme)", color = Yks.c.muted) }
+                Field(note, { note = it }, "Kısa not")
+            }
             if (state.pendingSessionId.isNotEmpty()) PerformanceCard(state.pendingSessionId) { scope.launch { r.savePomodoro(state.copy(pendingSessionId = "")) } }
             if (isIdle) {
                 PillGroup(listOf("25-5" to "25 / 5", "50-10" to "50 / 10", "90-15" to "90 / 15"), "$work-$pause") { v -> work = v.substringBefore('-'); pause = v.substringAfter('-') }
@@ -370,3 +396,5 @@ private fun PerformanceCard(sessionId: String, onDone: () -> Unit) {
         }
     }
 }
+
+private fun clockMinutes(t: String): Int = (t.substringBefore(':').toIntOrNull() ?: 0) * 60 + (t.substringAfter(':', "0").toIntOrNull() ?: 0)

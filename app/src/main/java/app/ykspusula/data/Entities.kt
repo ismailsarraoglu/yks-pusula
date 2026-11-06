@@ -135,6 +135,9 @@ data class ImportedContentPack(
     val questionCount: Int,
     val source: String,
     val license: String,
+    /** İçeriğin resmî kaynaklarla en son karşılaştırıldığı tarih ve açıklaması; yapılmadıysa boş. */
+    val verifiedAt: String = "",
+    val verification: String = "",
 )
 
 /* ---------- ÖĞRENCİ VERİLERİ (yedeğe girer) ---------- */

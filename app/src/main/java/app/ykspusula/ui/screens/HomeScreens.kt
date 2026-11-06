@@ -1,5 +1,6 @@
 package app.ykspusula.ui.screens
 
+import app.ykspusula.ui.currentDay
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -49,6 +50,11 @@ import java.time.temporal.ChronoUnit
 val FIELD_LABELS = listOf("SAY" to "Sayısal", "EA" to "Eşit Ağırlık", "SOZ" to "Sözel", "DIL" to "Dil", "TYT" to "Yalnızca TYT")
 val GRADES = listOf("9" to "9. sınıf", "10" to "10. sınıf", "11" to "11. sınıf", "12" to "12. sınıf", "MEZUN" to "Mezun")
 val LANGUAGES = listOf("İngilizce", "Almanca", "Fransızca", "Rusça", "Arapça")
+
+/** YDT içerik desteği dürüstçe belirtilir: yalnızca İngilizcede konu notu ve kelime kartı vardır. */
+fun ydtSupportNote(language: String): String =
+    if (language == "İngilizce") "İngilizce için konu listesi, kısa notlar ve 135 kelime kartı var."
+    else "$language için yalnızca konu listesi ve takip var; konu notu ve kelime kartı yok."
 val DAY_NAMES = listOf("1" to "Pzt", "2" to "Sal", "3" to "Çar", "4" to "Per", "5" to "Cum", "6" to "Cmt", "7" to "Paz")
 
 /* ---------- İLK AÇILIŞ ---------- */
@@ -176,35 +182,41 @@ fun HomeScreen() {
     val r = repo()
     val nav = LocalNav.current
     val scope = rememberUiScope()
-    val date = remember { today() }
-    val from = remember { startOf(date) }
-    val to = remember { startOf(date.plusDays(1)) }
+    val date = currentDay()
+    val from = remember(date) { startOf(date) }
+    val to = remember(date) { startOf(date.plusDays(1)) }
     val profile by r.user.profile().collectAsStateWithLifecycle(null)
     val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
     val tasks by r.user.tasksOn(date.toString()).collectAsStateWithLifecycle(emptyList())
-    val route by remember { r.user.routeOn(date.toString()) }.collectAsStateWithLifecycle(emptyList())
+    val route by remember(date) { r.user.routeOn(date.toString()) }.collectAsStateWithLifecycle(emptyList())
     val solved by r.user.solvedBetween(from, to).collectAsStateWithLifecycle(0)
     val minutes by r.user.minutesBetween(from, to).collectAsStateWithLifecycle(0)
-    val week = remember { weekStart(date) }
+    val week = remember(date) { weekStart(date) }
     val weekMinutes by r.user.minutesBetween(startOf(week), to).collectAsStateWithLifecycle(0)
     val running by r.user.running().collectAsStateWithLifecycle(null)
-    val missed by remember { r.missedTasks(date) }.collectAsStateWithLifecycle(emptyList())
+    val missed by remember(date) { r.missedTasks(date) }.collectAsStateWithLifecycle(emptyList())
     val mocks by r.user.mockSummaries().collectAsStateWithLifecycle(emptyList())
     val recent by r.user.recentSessions(1).collectAsStateWithLifecycle(emptyList())
     val last by r.user.lastSource().collectAsStateWithLifecycle(null)
     val active by r.user.activeDays().collectAsStateWithLifecycle(emptyList())
     val rest by r.user.restDays().collectAsStateWithLifecycle(emptyList())
     val favQuotes by r.user.bookmarkIds("QUOTE").collectAsStateWithLifecycle(emptyList())
-    LaunchedEffect(Unit) { r.ensureRoute(date) }
+    val settings by r.settings.collectAsStateWithLifecycle(app.ykspusula.data.AppSettings())
+    val nowMs = remember(date) { System.currentTimeMillis() }
+    val wrongsDue by remember(date) { r.user.wrongDue(nowMs + 1) }.collectAsStateWithLifecycle(0)
+    val topicsDue by remember(date) { r.user.topicsDue(to - 1) }.collectAsStateWithLifecycle(0)
+    LaunchedEffect(date) { r.ensureRoute(date) }
 
     val p = profile ?: return
     val c = Yks.c
     val examCode = if (p.field == "DIL") "YDT" else "TYT"
     val exam = configs.firstOrNull { it.code == examCode }
     val daysLeft = exam?.let { ChronoUnit.DAYS.between(date, LocalDate.parse(it.examDate)) }
-    val taskMinutes = tasks.filter { it.done }.sumOf { it.minutes }
-    val studied = maxOf(minutes, taskMinutes)
+    // Gerçek çalışma yalnızca sayaç ve çalışma kayıtlarından gelir; tamamlanan görevin tahmini süresi eklenmez.
+    val studied = minutes
     val minFrac = if (p.dailyMinutes > 0) studied.toFloat() / p.dailyMinutes else 0f
+    val weekGoal = if (settings.weeklyGoalMinutes > 0) settings.weeklyGoalMinutes else p.dailyMinutes * p.studyDays.split(',').count { it.isNotBlank() }.coerceAtLeast(1)
+    val examToday = tasks.firstOrNull { !it.done && (it.kind == "MOCK" || it.title.contains("deneme", ignoreCase = true)) }
     val greeting = when (LocalTime.now().hour) { in 5..11 -> "Günaydın"; in 12..17 -> "Hoş geldin"; in 18..22 -> "İyi akşamlar"; else -> "İyi geceler" }
     val quote = remember(date) { r.quoteOfDay(date) }
     val isRest = date.toString() in rest
@@ -246,6 +258,9 @@ fun HomeScreen() {
             }
         }
 
+        if (daysLeft != null && daysLeft in 1..app.ykspusula.domain.PlanGenerator.FINAL_DAYS) {
+            InfoRow("Sınav öncesi modu", "Tekrar, eksik konu ve deneme odaklı liste", Icons.Rounded.Flag) { nav.navigate("priorities") }
+        }
         if (missed.isNotEmpty()) {
             InfoBanner("Tamamlanmayan ${missed.size} görevin var. Programını yeniden düzenleyelim mi?", Icons.Rounded.EventRepeat, c.accentLight)
             SoftButton("Programı düzenle", Modifier.fillMaxWidth(), icon = Icons.Rounded.EventRepeat) { nav.navigate("replan") }
@@ -265,13 +280,23 @@ fun HomeScreen() {
         YCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Günlük hedef", style = MaterialTheme.typography.titleMedium, color = c.text)
-                    Muted("Süre: $studied / ${p.dailyMinutes} dk")
-                    Muted("Soru: $solved / ${p.dailyQuestions}")
-                    Muted("Görev: ${tasks.count { it.done }} / ${tasks.size}")
+                    Text("Bugünkü ilerleme", style = MaterialTheme.typography.titleMedium, color = c.text)
+                    Muted("Gerçek çalışma: $studied / ${p.dailyMinutes} dk")
+                    Muted("Soru çözümü: $solved / ${p.dailyQuestions}")
+                    Muted("Görev tamamlama: ${tasks.count { it.done }} / ${tasks.size}")
+                    Muted("Haftalık hedef: %${Scoring.percent(weekMinutes, weekGoal)} ($weekMinutes / $weekGoal dk)")
                 }
                 val pct = (minFrac.coerceAtMost(1f) * 100).toInt()
-                Ring(minFrac, "%$pct", description = "Günlük hedefin yüzde $pct kadarı tamamlandı")
+                Ring(minFrac, "%$pct", description = "Günlük çalışma süresi hedefinin yüzde $pct kadarı tamamlandı")
+            }
+            Muted("Yüzde yalnızca sayaçla veya çalışma kaydıyla girilen gerçek süreye göre hesaplanır.")
+        }
+        if (wrongsDue + topicsDue > 0 || examToday != null) {
+            GroupCard {
+                var first = true
+                if (wrongsDue > 0) { NavRow("Tekrar bekleyen yanlış: $wrongsDue", "Yanlış defterini aç", Icons.Rounded.ErrorOutline, onClick = { nav.navigate("wrongs") }); first = false }
+                if (topicsDue > 0) { if (!first) Line(); NavRow("Tekrar bekleyen konu: $topicsDue", "Konu tekrarlarını gör", Icons.Rounded.EventRepeat, onClick = { nav.navigate("mastery") }); first = false }
+                examToday?.let { e -> if (!first) Line(); NavRow("Bugünkü deneme görevi", e.title, Icons.Rounded.Assignment, onClick = { nav.navigate("exams") { launchSingleTop = true } }) }
             }
         }
 

@@ -1,5 +1,6 @@
 package app.ykspusula.ui.screens
 
+import app.ykspusula.ui.currentDay
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
@@ -34,8 +35,8 @@ private val SHORT = DateTimeFormatter.ofPattern("d MMM", Locale("tr", "TR"))
 fun StatsScreen() {
     val r = repo()
     val nav = LocalNav.current
-    val date = remember { today() }
-    val since = remember { startOf(date.minusDays(120)) }
+    val date = currentDay()
+    val since = remember(date) { startOf(date.minusDays(120)) }
     val minutesTotal by r.user.minutesTotal().collectAsStateWithLifecycle(0)
     val solved by r.user.solvedTotal().collectAsStateWithLifecycle(0)
     val mocks by r.user.mockSummaries().collectAsStateWithLifecycle(emptyList())

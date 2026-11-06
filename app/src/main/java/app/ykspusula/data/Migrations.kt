@@ -133,5 +133,7 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         db.execSQL("ALTER TABLE `WrongEntry` ADD COLUMN `kind` TEXT NOT NULL DEFAULT 'WRONG'")
         db.execSQL("ALTER TABLE `WrongEntry` ADD COLUMN `mockExamId` TEXT")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_WrongEntry_mockExamId` ON `WrongEntry` (`mockExamId`)")
+        db.execSQL("ALTER TABLE `ImportedContentPack` ADD COLUMN `verifiedAt` TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE `ImportedContentPack` ADD COLUMN `verification` TEXT NOT NULL DEFAULT ''")
     }
 }

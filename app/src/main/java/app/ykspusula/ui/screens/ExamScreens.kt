@@ -258,6 +258,8 @@ private fun ExamResultForm(
     var note by rememberSaveable { mutableStateOf(initialNote) }
     var hard by rememberSaveable { mutableStateOf(initialHard) }
     var pick by remember { mutableStateOf(false) }
+    var topicNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    LaunchedEffect(Unit) { topicNames = r.content.allTopics().associate { it.id to it.name } }
     val values = remember { mutableStateMapOf<String, String>() }
     LaunchedEffect(initialRows) { initialRows.forEach { x -> values["${x.section}|c"] = "${x.correct}"; values["${x.section}|w"] = "${x.wrong}"; values["${x.section}|b"] = "${x.blank}" } }
     val cfg = configs.firstOrNull { it.code == exam }
@@ -312,14 +314,32 @@ private fun ExamResultForm(
         }
         NumberField(spent, { spent = it }, "Süre (dakika)", max = 3)
         Field(note, { note = it }, "Kişisel not", singleLine = false, minLines = 2)
-        val hardCount = hard.split(',').count { it.isNotBlank() }
-        SoftButton(if (hardCount > 0) "$hardCount zorlandığın konu seçildi" else "Zorlandığın konuları seç", Modifier.fillMaxWidth(), icon = Icons.Rounded.Flag) { pick = true }
+        val misses = app.ykspusula.domain.MockMisses.parse(hard)
+        Section("Yanlış ve boş konular")
+        Muted("Seçtiğin konular yanlış sayısıyla birlikte yanlış defterine ve tekrar takvimine eklenir. Sayıyı bilmiyorsan boş bırakabilirsin.")
+        if (misses.isNotEmpty()) {
+            YCard(padding = Space.m) {
+                misses.forEachIndexed { i, t ->
+                    if (i > 0) Spacer(Modifier.height(Space.s))
+                    Text(topicNames[t.topicId] ?: t.topicId, style = MaterialTheme.typography.bodyLarge, color = Yks.c.text)
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalAlignment = Alignment.CenterVertically) {
+                        NumberField(if (t.wrong > 0) "${t.wrong}" else "", { v -> hard = app.ykspusula.domain.MockMisses.format(misses.map { if (it.topicId == t.topicId) it.copy(wrong = v.toIntOrNull() ?: 0) else it }) }, "Yanlış", Modifier.weight(1f), max = 3)
+                        NumberField(if (t.blank > 0) "${t.blank}" else "", { v -> hard = app.ykspusula.domain.MockMisses.format(misses.map { if (it.topicId == t.topicId) it.copy(blank = v.toIntOrNull() ?: 0) else it }) }, "Boş", Modifier.weight(1f), max = 3)
+                        IconButton({ hard = app.ykspusula.domain.MockMisses.format(misses.filter { it.topicId != t.topicId }) }) { Icon(Icons.Rounded.Close, "${topicNames[t.topicId] ?: "Konuyu"} listeden çıkar", tint = Yks.c.muted) }
+                    }
+                }
+            }
+        }
+        SoftButton(if (misses.isNotEmpty()) "Konu ekle veya çıkar (${misses.size})" else "Yanlış ve boş yaptığın konuları seç", Modifier.fillMaxWidth(), icon = Icons.Rounded.Flag) { pick = true }
         YCard { Row { Text("Toplam net", color = Yks.c.text, modifier = Modifier.weight(1f)); Text(Scoring.formatNet(total), style = MaterialTheme.typography.titleLarge.merge(NumberStyle), color = Yks.c.accentLight) } }
         MainButton(submit, Modifier.fillMaxWidth(), enabled = title.isNotBlank() && problems.isEmpty() && sections.isNotEmpty() && answered > 0) {
             onSave(title.trim(), publisher.trim(), date, spent.toIntOrNull() ?: 0, sections.map { SectionEntry(it.name, v(it.key, "c"), v(it.key, "w"), blank(it), it.subjectId) }, hard, note.trim())
         }
     }
-    if (pick) TopicPickerDialog(exam, hard.split(',').filter { it.isNotBlank() }.toSet(), { pick = false }) { hard = it.joinToString(",") }
+    if (pick) TopicPickerDialog(exam, app.ykspusula.domain.MockMisses.ids(hard).toSet(), { pick = false }) { sel ->
+        val cur = app.ykspusula.domain.MockMisses.parse(hard).associateBy { it.topicId }
+        hard = app.ykspusula.domain.MockMisses.format(sel.map { cur[it] ?: app.ykspusula.domain.TopicMiss(it) })
+    }
 }
 
 /** Birden çok konu seçmek için aranabilir liste. */
@@ -423,8 +443,11 @@ fun ResultScreen(id: String) {
         val all = r.user.mockSummariesNow().filter { it.exam == m?.exam }
         val i = all.indexOfFirst { it.id == id }
         previous = if (i > 0) all[i - 1] else null
-        val ids = m?.hardTopics.orEmpty().split(',').filter { it.isNotBlank() }
-        if (ids.isNotEmpty()) hardNames = r.content.allTopics().filter { it.id in ids }.map { it.id to it.name }
+        val misses = app.ykspusula.domain.MockMisses.parse(m?.hardTopics.orEmpty()).associateBy { it.topicId }
+        if (misses.isNotEmpty()) hardNames = r.content.allTopics().filter { it.id in misses }.map { t ->
+            val x = misses.getValue(t.id)
+            t.id to t.name + listOfNotNull(x.wrong.takeIf { it > 0 }?.let { "$it yanlış" }, x.blank.takeIf { it > 0 }?.let { "$it boş" }).joinToString(", ").let { if (it.isEmpty()) "" else " • $it" }
+        }
     }
     Screen("Deneme sonucu", { if (!nav.popBackStack()) nav.navigate("exams") }, actions = {
         IconButton({ nav.navigate("examEntry/$id") }) { Icon(Icons.Rounded.Edit, "Düzenle") }
@@ -471,7 +494,7 @@ fun ResultScreen(id: String) {
             }
             if (hardNames.isNotEmpty()) {
                 Section("Zorlandığın konular")
-                GroupCard { hardNames.forEachIndexed { i, (tid, n) -> if (i > 0) Line(); NavRow(n, "Pusula Koç bu konuyu önerilerine ekler", Icons.Rounded.Flag, Yks.c.warning, { nav.navigate("topic/$tid") }) } }
+                GroupCard { hardNames.forEachIndexed { i, (tid, n) -> if (i > 0) Line(); NavRow(n, "Yanlışlar defterine ve tekrar takvimine eklendi", Icons.Rounded.Flag, Yks.c.warning, { nav.navigate("topic/$tid") }) } }
             }
             if (m.note.isNotBlank()) YCard { Muted("Notun"); Text(m.note, color = Yks.c.text) }
             MainButton("Yanlış kaydet", Modifier.fillMaxWidth(), icon = Icons.Rounded.AddCircleOutline) { nav.navigate("wrongEdit/new") }

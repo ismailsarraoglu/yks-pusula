@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 @Serializable data class PackHeader(
     val id: String, val title: String, val version: String, val kind: String = "CONTENT",
     val source: String = "", val license: String = "",
+    val verifiedAt: String = "", val verification: String = "",
 )
 @Serializable data class SubjectDto(
     val id: String, val exam: String, val name: String, val groupName: String = "",

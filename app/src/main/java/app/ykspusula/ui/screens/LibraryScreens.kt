@@ -58,6 +58,7 @@ fun CardsScreen() {
         ScrollColumn {
             Row2({ Tile("$due", "Tekrarı gelen", it) }, { Tile("$learned", "Öğrenilen", it, Yks.c.success) })
             MainButton("Tüm destelerden tekrar", Modifier.fillMaxWidth(), icon = Icons.Rounded.Style) { nav.navigate("review/_all") }
+            SoftButton("Sınav öncesi karışık tekrar", Modifier.fillMaxWidth(), icon = Icons.Rounded.Shuffle) { nav.navigate("review/_all?mix=1") }
             Section("Desteler") { TextButton({ nav.navigate("cardEdit/Kartlarım") }) { Text("Kart ekle") } }
             GroupCard {
                 decks.forEachIndexed { i, d ->
@@ -85,6 +86,7 @@ fun DeckScreen(deck: String) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
                     MainButton("Tekrara başla", Modifier.fillMaxWidth(), enabled = cards.isNotEmpty()) { nav.navigate("review/${Uri.encode(deck)}") }
+                    SoftButton("Karışık hızlı tekrar", Modifier.fillMaxWidth(), enabled = cards.isNotEmpty(), icon = Icons.Rounded.Shuffle) { nav.navigate("review/${Uri.encode(deck)}?mix=1") }
                     PillGroup(listOf("ALL" to "Tümü (${cards.size})", "NEW" to "Yeni", "DONE" to "Öğrenilen (${cards.count { it.learned == true }})", "FAV" to "Favoriler"), filter) { filter = it }
                 }
             }
@@ -113,17 +115,21 @@ fun DeckScreen(deck: String) {
 }
 
 @Composable
-fun CardReviewScreen(deck: String) {
+fun CardReviewScreen(deck: String, mixed: Boolean = false) {
     val r = repo()
     val nav = LocalNav.current
     val scope = app.ykspusula.ui.rememberUiScope()
     var queue by remember { mutableStateOf<List<CardWithProgress>?>(null) }
     var index by remember { mutableIntStateOf(0) }
     var flipped by remember { mutableStateOf(false) }
-    LaunchedEffect(deck) { queue = r.user.cardsDue(if (deck == "_all") "" else deck, System.currentTimeMillis(), 50) }
+    // Karışık mod: tekrar zamanına bakmadan rastgele 30 kart; sınav öncesi hızlı tekrar için.
+    LaunchedEffect(deck, mixed) {
+        val d = if (deck == "_all") "" else deck
+        queue = if (mixed) r.user.cardsDue(d, Long.MAX_VALUE, 2000).shuffled().take(30) else r.user.cardsDue(d, System.currentTimeMillis(), 50)
+    }
     val rotation by animateFloatAsState(if (flipped) 180f else 0f, label = "kart")
     val favs by r.user.bookmarkIds("CARD").collectAsStateWithLifecycle(emptyList())
-    Screen("Kart tekrarı", { nav.popBackStack() }) {
+    Screen(if (mixed) "Karışık hızlı tekrar" else "Kart tekrarı", { nav.popBackStack() }) {
         val q = queue ?: return@Screen
         val c = q.getOrNull(index)
         if (c == null) {
