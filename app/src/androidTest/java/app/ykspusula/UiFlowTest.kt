@@ -57,7 +57,9 @@ class UiFlowTest {
         r.updateSettings { it[Keys.theme] = "DARK" }
     }
 
-    @After fun tearDown() { scenario?.close() }
+    // Compose, geçiş sürerken etkinlik kapanırsa kendi içinde hata verebiliyor (StresTest bunu ayrıca ölçer).
+    // Bu sınıfın konusu o olmadığı için kapanmadan önce son geçişin bitmesi beklenir.
+    @After fun tearDown() { Thread.sleep(800); scenario?.close() }
 
     private fun launch() { scenario = ActivityScenario.launch(MainActivity::class.java); rule.waitForIdle() }
 

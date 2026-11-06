@@ -52,6 +52,8 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
     /** Son yükleme hatası. Yalnızca teşhis için tutulur, hiçbir yere gönderilmez. */
     @Volatile var lastError: String? = null
         private set
+    /** Rıza ve başlatma zincirinde gelinen son adım. Yalnızca teşhis için tutulur. */
+    @Volatile private var stage = "baslamadi"
 
     /** Tüm uygulama için geçerli: içerik düzeyi gençlere uygun tutulur. */
     private fun requestConfiguration() = RequestConfiguration.Builder()
@@ -62,15 +64,26 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         if (entitlement.value) { _can.value = false; return }
         val params = ConsentRequestParameters.Builder().build()
         try {
+            step("riza istendi")
             consent.requestConsentInfoUpdate(activity, params, {
+                step("riza bilgisi geldi")
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { e ->
                     if (e != null) note("Riza formu: ${e.errorCode} ${e.message}")
+                    step("riza tamam")
                     update()
                 }
             }, { e -> note("Riza bilgisi: ${e.errorCode} ${e.message}"); update() })
         } catch (e: Exception) { note("Riza: $e"); update() }
         update()
     }
+
+    private fun step(name: String) {
+        stage = name
+        Log.i("YksAds", name)
+    }
+
+    /** Test raporları için anlık durum özeti. Kişisel veri içermez. */
+    fun debugState() = "asama=$stage canRequestAds=${consent.canRequestAds()} riza=${consent.consentStatus} basladi=$started hazir=$initialized"
 
     private fun note(message: String) {
         lastError = message
@@ -89,7 +102,9 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         started = true
         scope.launch(Dispatchers.IO) {
             try {
+                step("reklam baslatma istendi")
                 MobileAds.initialize(context.applicationContext, InitializationConfig.Builder(AdsConfig.appId).setRequestConfiguration(requestConfiguration()).build()) {
+                    step("reklam baslatma bitti")
                     initialized = true
                     update()
                 }

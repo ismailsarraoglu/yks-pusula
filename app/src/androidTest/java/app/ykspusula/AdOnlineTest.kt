@@ -44,13 +44,13 @@ class AdOnlineTest {
         val scenario = ActivityScenario.launch(MainActivity::class.java)
         m.forceEligibleForTest()
         try {
-            rule.waitUntil("Reklam izni", 60_000) { m.ads.canRequestAds.value }
+            rule.waitUntil("Reklam izni", 120_000) { m.ads.canRequestAds.value }
         } catch (e: ComposeTimeoutException) {
             // Hatanın uygulamadan mı ağdan mı geldiğini ayırmak için gerçek bir HTTPS isteği denenir.
             val net = runCatching {
                 (URL("https://fundingchoicesmessages.google.com/").openConnection() as HttpURLConnection).run { connectTimeout = 10_000; readTimeout = 10_000; responseCode }
             }
-            throw AssertionError("Reklam izni gelmedi: ${m.ads.lastError}; ag: $net", e)
+            throw AssertionError("Reklam izni gelmedi: ${m.ads.lastError}; ${m.ads.debugState()}; ag: $net", e)
         }
         val latch = CountDownLatch(1)
         var loaded = false

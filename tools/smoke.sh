@@ -85,6 +85,8 @@ if [ -n "$CLS" ]; then
       adb logcat -d 2>/dev/null | grep -v 'YksAds' | grep -iE 'gma|ads|webview|chromium|cr_|exception|native' | tail -500 | cut -c1-400 > "ci/logs/reklam-logcat-$NAME.txt"
       adb logcat -d 2>/dev/null | grep -E 'YksAds|UserMessagingPlatform' | tail -40 | cut -c1-300 > "ci/logs/reklam-riza-$NAME-$d.txt"
       tail -3 "ci/logs/reklam-$NAME.txt" | grep -q 'OK (1 test)' && break
+      cp "ci/logs/reklam-$NAME.txt" "ci/logs/reklam-hata-$NAME-$d.txt"
+      adb logcat -d 2>/dev/null | grep -E 'YksAds|GoogleMobileAds|Ads:|DynamiteModule|DynamiteLoader|GooglePlayServicesUtil|WebView|chromium' | grep -v 'GMA Debug' | tail -120 | cut -c1-240 > "ci/logs/reklam-iz-$NAME-$d.txt"
       sleep 20
     done
     echo "reklam-denemesi: $d" >> "$R"
