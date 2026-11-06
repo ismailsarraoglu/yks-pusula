@@ -164,10 +164,10 @@ class ReminderReceiver : BroadcastReceiver() {
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, intent: Intent) {
         val pending = goAsync()
-        val app = c.applicationContext as YksApp
-        app.scope.launch {
+        val yks = c.applicationContext as YksApp
+        yks.scope.launch {
             try {
-                app.refreshDay()
+                yks.refreshDay()
                 Notifier.rescheduleAll(c)
                 app.ykspusula.widget.Widgets.updateAll(c)
             } finally { pending.finish() }

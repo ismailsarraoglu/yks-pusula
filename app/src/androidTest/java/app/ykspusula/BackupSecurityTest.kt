@@ -22,6 +22,9 @@ import java.util.zip.ZipOutputStream
 class BackupSecurityTest {
     private val app get() = ApplicationProvider.getApplicationContext<Context>() as YksApp
     private val r get() = app.repo
+    /** Emülatör diskini doldurmamak için sınırlar küçültülür; denetim kodu uygulamadakiyle aynıdır. */
+    private val small = BackupLimits(maxInputBytes = 8L * 1024 * 1024, maxJsonBytes = 1024 * 1024, maxFileBytes = 1024 * 1024, maxTotalBytes = 3L * 1024 * 1024, maxEntries = 50)
+    private val strict get() = BackupManager(r, app.filesDir, app.cacheDir, small)
 
     @Before fun setup() = runBlocking {
         app.ready.first { it }
@@ -31,7 +34,7 @@ class BackupSecurityTest {
     }
 
     private fun bad(bytes: ByteArray): String {
-        val l = runBlocking { app.backup.load(ByteArrayInputStream(bytes)) }
+        val l = runBlocking { strict.load(ByteArrayInputStream(bytes)) }
         assertNull("Reddedilen yedeğin geçici dosyası kalmamalı", l.attachments)
         return (l.check as BackupCheck.Bad).message
     }
@@ -71,7 +74,7 @@ class BackupSecurityTest {
     }
 
     @Test fun tooManyEntriesRejected() = runBlocking {
-        val m = bad(zip { z -> repeat(BackupLimits.MAX_ENTRIES + 1) { z.putNextEntry(ZipEntry("files/photos/p$it.jpg")); z.closeEntry() } })
+        val m = bad(zip { z -> repeat(small.maxEntries + 1) { z.putNextEntry(ZipEntry("files/photos/p$it.jpg")); z.closeEntry() } })
         assertTrue(m, m.contains("çok fazla"))
         unchanged()
     }
@@ -81,7 +84,7 @@ class BackupSecurityTest {
         val chunk = ByteArray(1024 * 1024)
         val m = bad(zip { z ->
             z.putNextEntry(ZipEntry("files/photos/bomba.jpg"))
-            repeat((BackupLimits.MAX_FILE_BYTES / chunk.size).toInt() + 2) { z.write(chunk) }
+            repeat((small.maxFileBytes / chunk.size).toInt() + 2) { z.write(chunk) }
             z.closeEntry()
         })
         assertTrue(m, m.contains("büyük"))
@@ -92,10 +95,22 @@ class BackupSecurityTest {
         val chunk = ByteArray(1024 * 1024) { ' '.code.toByte() }
         val m = bad(zip { z ->
             z.putNextEntry(ZipEntry("yedek.json"))
-            repeat((BackupLimits.MAX_JSON_BYTES / chunk.size).toInt() + 2) { z.write(chunk) }
+            repeat((small.maxJsonBytes / chunk.size).toInt() + 2) { z.write(chunk) }
             z.closeEntry()
         })
         assertTrue(m, m.contains("büyük"))
+    }
+
+    /** Tek tek sınırın altında kalan ama toplamı sınırı aşan dosyalar. */
+    @Test fun totalUnpackedSizeLimited() = runBlocking {
+        val chunk = ByteArray(900 * 1024)
+        val m = bad(zip { z -> repeat(5) { z.putNextEntry(ZipEntry("files/library/d$it.pdf")); z.write(chunk); z.closeEntry() } })
+        assertTrue(m, m.contains("açılmış boyutu"))
+    }
+
+    @Test fun oversizedInputRejected() = runBlocking {
+        val m = bad(ByteArray(9 * 1024 * 1024) { (it % 251).toByte() })
+        assertTrue(m, m.contains("çok büyük"))
     }
 
     @Test fun duplicateEntryRejected() = runBlocking {

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Android sürüm matrisi. Her sürümde veri, geçiş ve arayüz testleri çalışır.
-T=app.ykspusula.DataFlowTest,app.ykspusula.MigrationTest,app.ykspusula.AdTouchGuardTest
+T=app.ykspusula.DataFlowTest,app.ykspusula.MigrationTest,app.ykspusula.AdTouchGuardTest,app.ykspusula.LearningFlowTest,app.ykspusula.BackupSecurityTest
 # Bir sürüm takılırsa süre sınırıyla kesilir, sonraki sürümler yine denenir.
 smoke() { timeout -k 10 1800 bash tools/smoke.sh "$@" || echo "smoke $1 bitis kodu: $?" >> ci/logs/matris.txt; }
 BELLEK=1536 smoke a8 "system-images;android-26;default;x86_64" "$T"

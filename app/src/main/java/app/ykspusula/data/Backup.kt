@@ -24,13 +24,13 @@ private const val ZIP_JSON = "yedek.json"
 private val ATTACHMENT_DIRS = listOf("photos", "library")
 
 /** Kötü niyetli veya bozuk dosyaya karşı sınırlar. Gerçek bir öğrenci yedeği bunların çok altında kalır. */
-object BackupLimits {
-    const val MAX_INPUT_BYTES = 700L * 1024 * 1024
-    const val MAX_JSON_BYTES = 32L * 1024 * 1024
-    const val MAX_FILE_BYTES = 150L * 1024 * 1024
-    const val MAX_TOTAL_BYTES = 1024L * 1024 * 1024
-    const val MAX_ENTRIES = 5_000
-}
+data class BackupLimits(
+    val maxInputBytes: Long = 700L * 1024 * 1024,
+    val maxJsonBytes: Long = 32L * 1024 * 1024,
+    val maxFileBytes: Long = 150L * 1024 * 1024,
+    val maxTotalBytes: Long = 1024L * 1024 * 1024,
+    val maxEntries: Int = 5_000,
+)
 
 /** Sınır aşıldığında veya bütünlük bozulduğunda atılır; mesaj kullanıcıya gösterilir. */
 class BackupRejected(message: String) : Exception(message)
@@ -190,7 +190,7 @@ data class LoadedBackup(val check: BackupCheck, val attachments: File?, val warn
 /** Geri yükleme sonucu: kaç kayıt ve dosyanın aktarıldığı. */
 data class RestoreReport(val records: Int, val files: Int, val warnings: List<String>, val safetyCopy: File?)
 
-class BackupManager(private val repo: Repository, private val filesDir: File, private val cacheDir: File) {
+class BackupManager(private val repo: Repository, private val filesDir: File, private val cacheDir: File, val limits: BackupLimits = BackupLimits()) {
     private val u get() = repo.user
 
     suspend fun snapshot(): BackupData = withContext(Dispatchers.IO) {
@@ -247,10 +247,10 @@ class BackupManager(private val repo: Repository, private val filesDir: File, pr
         val temp = cacheDir.resolve("gelen-yedek-${System.nanoTime()}")
         var dir: File? = null
         try {
-            input.use { i -> temp.outputStream().use { o -> copyLimited(i, o, BackupLimits.MAX_INPUT_BYTES, "Yedek dosyası çok büyük.") } }
+            input.use { i -> temp.outputStream().use { o -> copyLimited(i, o, limits.maxInputBytes, "Yedek dosyası çok büyük.") } }
             val zip = temp.inputStream().use { val h = ByteArray(2); it.read(h) == 2 && h[0] == 'P'.code.toByte() && h[1] == 'K'.code.toByte() }
             if (!zip) {
-                if (temp.length() > BackupLimits.MAX_JSON_BYTES) throw BackupRejected("Yedek dosyası çok büyük.")
+                if (temp.length() > limits.maxJsonBytes) throw BackupRejected("Yedek dosyası çok büyük.")
                 return@withContext LoadedBackup(BackupCodec.decode(temp.readText()), null)
             }
             val target = cacheDir.resolve("gelen-ekler-${System.nanoTime()}").apply { mkdirs() }
@@ -262,21 +262,21 @@ class BackupManager(private val repo: Repository, private val filesDir: File, pr
             ZipInputStream(temp.inputStream().buffered()).use { z ->
                 var e = z.nextEntry
                 while (e != null) {
-                    if (++entries > BackupLimits.MAX_ENTRIES) throw BackupRejected("Yedekte çok fazla dosya var.")
+                    if (++entries > limits.maxEntries) throw BackupRejected("Yedekte çok fazla dosya var.")
                     val n = e.name
                     if (!seen.add(n)) throw BackupRejected("Yedekte aynı adlı iki dosya var; dosya bozulmuş olabilir.")
                     if (n == ZIP_JSON) {
                         // Belleğe değil dosyaya açılır; sınır aşılırsa okunmadan reddedilir.
                         val jf = target.resolve("yedek.json.tmp")
-                        total += jf.outputStream().use { o -> copyLimited(z, o, BackupLimits.MAX_JSON_BYTES, "Yedek verisi çok büyük.") }
+                        total += jf.outputStream().use { o -> copyLimited(z, o, limits.maxJsonBytes, "Yedek verisi çok büyük.") }
                         text = jf.readText(); jf.delete()
                     } else if (!e.isDirectory) {
                         val (folder, name) = entryPath(n) ?: throw BackupRejected("Yedekte beklenmeyen dosya yolu var: $n")
                         val out = target.resolve(folder).apply { mkdirs() }.resolve(name)
                         if (!out.canonicalPath.startsWith(target.canonicalPath + File.separator)) throw BackupRejected("Yedekte geçersiz dosya yolu var.")
-                        total += out.outputStream().use { o -> copyLimited(z, o, BackupLimits.MAX_FILE_BYTES, "Yedekteki bir dosya çok büyük.") }
+                        total += out.outputStream().use { o -> copyLimited(z, o, limits.maxFileBytes, "Yedekteki bir dosya çok büyük.") }
                     }
-                    if (total > BackupLimits.MAX_TOTAL_BYTES) throw BackupRejected("Yedeğin açılmış boyutu çok büyük.")
+                    if (total > limits.maxTotalBytes) throw BackupRejected("Yedeğin açılmış boyutu çok büyük.")
                     e = z.nextEntry
                 }
             }

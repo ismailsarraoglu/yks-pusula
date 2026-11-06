@@ -219,9 +219,9 @@ class UiFlowTest {
         val exam = mocks.first().id
         val wrong = runBlocking { r.user.wrongsNow().first().id }
         val routes = listOf(
-            "home", "study", "exams", "stats", "profile", "search", "subject/tyt-mat", "topic/tyt-mat-uslu-sayilar", "topic/ayt-mat-turev", "mastery", "coach", "replan",
+            "home", "study", "exams", "stats", "profile", "search", "subject/tyt-mat", "topic/tyt-mat-uslu-sayilar", "topic/ayt-mat-turev", "mastery", "priorities", "coach", "replan",
             "sources", "source/s1", "sourceEdit/new", "sourceEdit/s1", "sourceCompare", "log", "wrongs", "wrong/$wrong", "wrongEdit/new", "wrongEdit/$wrong", "wrongReview",
-            "cards", "deck/Tarih", "review/_all", "cardEdit/Kartlarım", "formulas", "notes", "note/n1", "note/new", "library", "pomodoro", "plan", "planSettings", "planHistory", "taskEdit/${today()}",
+            "cards", "deck/Tarih", "review/_all", "review/_all?mix=1", "cardEdit/Kartlarım", "formulas", "notes", "note/n1", "note/new", "library", "pomodoro", "plan", "planSettings", "planHistory", "taskEdit/${today()}",
             "examStart/ALL", "examStart/TYT", "examStart/AYT", "examStart/YDT", "examStart/BRANCH", "examStart/TOPIC", "examStart/PERSONAL", "examStart/CUSTOM", "examEntry/$exam", "result/$exam",
             "examHistory", "examCompare/${mocks[0].id}/${mocks[3].id}", "examAnalysis", "netGoals", "external", "examSettings", "obp", "reports", "motivation", "removeAds", "privacy", "terms", "about", "info",
             "profileEdit", "settings", "reminders", "backup", "targets", "packs", "badges", "topic/ayt-biy-evrim",
