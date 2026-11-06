@@ -18,4 +18,6 @@ PLAY_PUBLIC_KEY=Play Console > Para kazanma > Lisanslama bölümündeki Base64 a
 
 7. Yeni AAB derleyin. Kendi reklamınıza tıklamayın; geliştirme sırasında test kimliklerini kullanın.
 
-Reklam alanları: Ana Sayfa, Çalış, Denemeler listesi ve İstatistik. İlk üç açılışta reklam gösterilmez. Banner kimliği ileride banner kullanılırsa diye ayrılmıştır; mevcut sürüm yerel reklam kullanır.
+Reklam alanları: Ana Sayfa, Çalış, Denemeler listesi ve İstatistik. Uygulama ilk iki açılışta reklam göstermez, üçüncü açılıştan itibaren gösterir. Yerel reklam kullanılır; banner kimliği ayrılmıştır, mevcut sürümde banner gösterilmez.
+
+Test notu: Google'ın yerel test reklamı uygulama yükleme reklamıdır. Reklam SDK'sı bu reklamı Play Store olmayan cihaz ve emülatörde reddeder, "Incorrect native ad response. Click actions were not properly specified" iletisi günlüğe düşer ve sonuç No fill olur. Bu durum uygulama hatası değildir. Denemeyi Play Store'lu bir emülatörde veya telefonda yapın.
