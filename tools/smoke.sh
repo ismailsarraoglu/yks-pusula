@@ -79,14 +79,35 @@ if [ -n "$CLS" ]; then
     done
     echo "ping-cevrimici: $PING" >> "$R"
     echo "dns-cevrimici: $(timeout 20 adb shell ping -c 1 -W 3 googleads.g.doubleclick.net 2>&1 | head -1 | tr -d '\r' | cut -c1-90)" >> "$R"
-    for d in 1 2 3; do
+    # Süreç ölürse nedeni kaydedilir: Android'in çıkış kaydı, kilitlenme arabelleği ve sistem olayları.
+    olum_kaydi() {
+      {
+        echo "--- exit-info"; adb shell dumpsys activity exit-info $PKG | head -70
+        echo "--- crash"; adb logcat -d -b crash 2>/dev/null | tail -80
+        echo "--- events"; adb logcat -d -b events 2>/dev/null | grep -E 'am_proc_died|am_kill|am_crash|am_anr|am_low_memory|am_wtf|ykspusula' | tail -50
+        echo "--- sistem"; adb logcat -d 2>/dev/null | grep -E 'ykspusula|has died|Killing |lowmemorykiller|lmkd|Fatal signal|FATAL EXCEPTION|Force stopping|Force finishing|REPLACED|package replaced|Finsky.*[Ii]nstall|WIN DEATH|Instrumentation|Crash of app' | tail -150
+        echo "--- paketler"
+        for P in com.google.android.gms com.google.android.webview com.android.vending; do
+          echo "$P: $(adb shell dumpsys package $P | grep -m2 -E 'versionName|lastUpdateTime' | tr -d '\r' | tr '\n' ' ')"
+        done
+      } 2>&1 | cut -c1-320 > "ci/logs/reklam-olum-$NAME-$d.txt"
+      adb logcat -d 2>/dev/null | tail -900 | cut -c1-260 > "ci/logs/reklam-tam-$NAME-$d.txt"
+    }
+    for d in $(seq 1 ${REKLAM_TUR:-3}); do
       adb logcat -c
+      adb logcat -b events -c 2>/dev/null
       timeout 300 adb shell am instrument -w -e class $PKG.AdOnlineTest $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -30 > "ci/logs/reklam-$NAME.txt"
       adb logcat -d 2>/dev/null | grep -v 'YksAds' | grep -iE 'gma|ads|webview|chromium|cr_|exception|native' | tail -500 | cut -c1-400 > "ci/logs/reklam-logcat-$NAME.txt"
       adb logcat -d 2>/dev/null | grep -E 'YksAds|UserMessagingPlatform' | tail -40 | cut -c1-300 > "ci/logs/reklam-riza-$NAME-$d.txt"
-      tail -3 "ci/logs/reklam-$NAME.txt" | grep -q 'OK (1 test)' && break
+      if tail -3 "ci/logs/reklam-$NAME.txt" | grep -q 'OK (1 test)'; then
+        echo "reklam-tur-$d: tamam" >> "$R"
+        [ -z "$REKLAM_TUR" ] && break
+        continue
+      fi
+      echo "reklam-tur-$d: hata: $(tail -3 ci/logs/reklam-$NAME.txt | tr '\n' ' ' | cut -c1-120)" >> "$R"
       cp "ci/logs/reklam-$NAME.txt" "ci/logs/reklam-hata-$NAME-$d.txt"
       adb logcat -d 2>/dev/null | grep -E 'YksAds|GoogleMobileAds|Ads:|DynamiteModule|DynamiteLoader|GooglePlayServicesUtil|WebView|chromium' | grep -v 'GMA Debug' | tail -120 | cut -c1-240 > "ci/logs/reklam-iz-$NAME-$d.txt"
+      olum_kaydi
       sleep 20
     done
     echo "reklam-denemesi: $d" >> "$R"
@@ -94,6 +115,13 @@ if [ -n "$CLS" ]; then
     grep -m1 -E 'yüklenemedi|izni gelmedi' "ci/logs/reklam-$NAME.txt" | cut -c1-300 >> "$R"
     adb exec-out run-as $PKG cat files/reklam-yerel.png > "ci/screens/reklam-$NAME.png" 2>/dev/null
     adb shell cmd connectivity airplane-mode enable; sleep 5
+    if [ -n "$YALNIZ_REKLAM" ]; then
+      adb emu kill; sleep 5
+      pkill -f qemu-system; sleep 2
+      "$SDK/avdmanager" delete avd -n "$NAME" > /dev/null 2>&1
+      rm -rf "$ANDROID_AVD_HOME/$NAME.avd"
+      exit 0
+    fi
   fi
   if [ -n "$KALICILIK" ]; then
     P=$PKG.PersistenceTest
