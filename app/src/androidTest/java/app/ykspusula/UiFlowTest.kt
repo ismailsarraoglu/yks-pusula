@@ -8,6 +8,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import app.ykspusula.data.*
 import app.ykspusula.ui.DebugNav
 import kotlinx.coroutines.flow.first
@@ -28,7 +29,14 @@ class UiFlowTest {
     /** Hata mesajına test iş parçacığını yazar: Compose eşzamanlılık hatasının kaynağını ayırt etmek için. */
     @get:Rule(order = -2) val threadNote = TestRule { base, _ -> object : Statement() {
         override fun evaluate() {
-            try { base.evaluate() } catch (t: Throwable) { throw AssertionError("testThread=${Thread.currentThread().id}", t) }
+            try { base.evaluate() } catch (t: Throwable) {
+                runCatching {
+                    InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { b ->
+                        File(app.filesDir, "hata.png").outputStream().use { o -> b.compress(Bitmap.CompressFormat.PNG, 90, o) }
+                    }
+                }
+                throw AssertionError("testThread=${Thread.currentThread().id}", t)
+            }
         }
     } }
     @get:Rule val rule = createEmptyComposeRule()
