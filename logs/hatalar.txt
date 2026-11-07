@@ -1,0 +1,4 @@
+GateProbeTest > deliberateFailureWhenAsked FAILED
+> Task :app:testDebugUnitTest FAILED
+* What went wrong:
+BUILD FAILED in 2m 38s

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.ykspusula.LogicTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-11-07T06:46:24.187Z" hostname="runnervm7aw5e" time="0.145">
+  <properties/>
+  <testcase name="streaks" classname="app.ykspusula.LogicTest" time="0.023"/>
+  <testcase name="blankNeverChangesNet" classname="app.ykspusula.LogicTest" time="0.005"/>
+  <testcase name="zeroDivisorRejected" classname="app.ykspusula.LogicTest" time="0.001"/>
+  <testcase name="turkishNormalization" classname="app.ykspusula.LogicTest" time="0.002"/>
+  <testcase name="fuzzySearch" classname="app.ykspusula.LogicTest" time="0.004"/>
+  <testcase name="percentRounds" classname="app.ykspusula.LogicTest" time="0.002"/>
+  <testcase name="badgesFromRealStats" classname="app.ykspusula.LogicTest" time="0.001"/>
+  <testcase name="sectionValidation" classname="app.ykspusula.LogicTest" time="0.001"/>
+  <testcase name="planRespectsDaysAndLimits" classname="app.ykspusula.LogicTest" time="0.044"/>
+  <testcase name="timer" classname="app.ykspusula.LogicTest" time="0.002"/>
+  <testcase name="obpRules" classname="app.ykspusula.LogicTest" time="0.0"/>
+  <testcase name="negativeRejected" classname="app.ykspusula.LogicTest" time="0.0"/>
+  <testcase name="advisorUsesRealData" classname="app.ykspusula.LogicTest" time="0.014"/>
+  <testcase name="planAddsWrongReview" classname="app.ykspusula.LogicTest" time="0.019"/>
+  <testcase name="repetitionFollowsIntervals" classname="app.ykspusula.LogicTest" time="0.004"/>
+  <testcase name="planFavoursWeakButKeepsStrong" classname="app.ykspusula.LogicTest" time="0.013"/>
+  <testcase name="cardRatings" classname="app.ykspusula.LogicTest" time="0.0"/>
+  <testcase name="netMatchesFormula" classname="app.ykspusula.LogicTest" time="0.0"/>
+  <testcase name="noPlanAfterExam" classname="app.ykspusula.LogicTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

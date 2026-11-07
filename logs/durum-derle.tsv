@@ -1,0 +1,7 @@
+plan	PASS	cihazlar: a8
+birim-testleri	FAIL	76 test, 1 başarısız, 0 hata, 0 atlandı; GateProbeTest > deliberateFailureWhenAsked FAILED > Task :app:testDebugUnitTest FAILED * What went wrong:
+derleme	NOT_RUN	önceki aşama başarısız olduğu için çalışmadı
+release-denetimi	NOT_RUN	önceki aşama başarısız olduğu için çalışmadı
+manifest-debuggable-degil	NOT_RUN	önceki aşama başarısız olduğu için çalışmadı
+manifest-hedef-sdk	NOT_RUN	önceki aşama başarısız olduğu için çalışmadı
+apk-imza	NOT_RUN	önceki aşama başarısız olduğu için çalışmadı

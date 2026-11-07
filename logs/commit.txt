@@ -1,0 +1,2 @@
+f4c23d1 Yaş ekranı cihaz testi; yaş bilgisi geç yüklenirse rıza akışı başlar; 2.1.1 değişiklik raporu [tam]
+run=42348249351 olay=workflow_dispatch dal=duzeltme-2.1.1 kapi_denemesi=birim

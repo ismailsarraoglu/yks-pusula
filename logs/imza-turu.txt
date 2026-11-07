@@ -1,0 +1,1 @@
+imza=debug-anahtari (SIDELOAD_P12_B64 tanimli degil)

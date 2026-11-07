@@ -1,0 +1,86 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/build.gradle.kts:118:38: 'fun srcDir(srcDir: Any): Any' is deprecated. Use `directories` mutable set instead.
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig FROM-CACHE
+> Task :app:generateDebugResources FROM-CACHE
+> Task :app:packageDebugResources FROM-CACHE
+> Task :app:processDebugNavigationResources FROM-CACHE
+> Task :app:parseDebugLocalResources FROM-CACHE
+> Task :app:generateDebugRFile FROM-CACHE
+> Task :app:javaPreCompileDebug FROM-CACHE
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:compileDebugNavigationResources FROM-CACHE
+> Task :app:mergeDebugResources FROM-CACHE
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug FROM-CACHE
+> Task :app:processDebugMainManifest FROM-CACHE
+> Task :app:processDebugManifest FROM-CACHE
+> Task :app:processDebugManifestForPackage FROM-CACHE
+> Task :app:processDebugResources FROM-CACHE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :app:kspDebugKotlin
+> Task :app:compileDebugKotlin
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/report/ReportExporter.kt:29:66 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/AppRoot.kt:76:45 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/AppRoot.kt:262:127 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/AppRoot.kt:263:141 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/CoachScreens.kt:92:80 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/CoachScreens.kt:116:101 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:92:50 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:132:224 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:542:127 'val Icons.Rounded.CompareArrows: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.CompareArrows.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:606:42 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:734:64 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Double'.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:734:140 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Double'.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/HomeScreens.kt:249:40 Condition is always 'true'.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/HomeScreens.kt:303:114 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/HomeScreens.kt:310:118 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/LibraryScreens.kt:299:61 'val Icons.Rounded.StickyNote2: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.StickyNote2.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ProfileScreens.kt:88:79 'val Icons.Rounded.EventNote: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.EventNote.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/SourceScreens.kt:61:76 'val Icons.Rounded.CompareArrows: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.CompareArrows.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/SourceScreens.kt:240:62 'val Icons.Rounded.CompareArrows: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.CompareArrows.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/StatsScreens.kt:32:58 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/StatsScreens.kt:100:126 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/StatsScreens.kt:105:106 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:compressDebugJavaRes FROM-CACHE
+> Task :app:kspDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:copyRoomSchemas NO-SOURCE
+> Task :app:compressDebugUnitTestJavaRes FROM-CACHE
+> Task :app:extractDebugUnitTestJavaRes
+
+> Task :app:testDebugUnitTest
+
+GateProbeTest > deliberateFailureWhenAsked FAILED
+    java.lang.AssertionError at GateProbeTest.kt:11
+
+76 tests completed, 1 failed
+
+> Task :app:testDebugUnitTest FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1794033837539.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/yks-pusula/yks-pusula/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testDebugUnitTest'.
+> There were failing tests. See the report at: file:///home/runner/work/yks-pusula/yks-pusula/app/build/reports/tests/testDebugUnitTest/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 2m 38s
+29 actionable tasks: 12 executed, 17 from cache
