@@ -12,6 +12,7 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import app.ykspusula.data.*
+import app.ykspusula.domain.AgeGate
 import androidx.datastore.preferences.core.edit
 import app.ykspusula.ui.DebugNav
 import kotlinx.coroutines.flow.first
@@ -236,7 +237,7 @@ class UiFlowTest {
             it.remove(androidx.datastore.preferences.core.intPreferencesKey("birth_year"))
             it.remove(androidx.datastore.preferences.core.intPreferencesKey("birth_month"))
         }
-        app.monetize.birth.first { it?.first == app.ykspusula.domain.AgeGate.NOT_SET }
+        app.monetize.birth.first { it?.first == AgeGate.NOT_SET }
     }
 
     private fun enterBirth(month: String, year: String) {
@@ -276,7 +277,7 @@ class UiFlowTest {
         clearBirth()
         launch()
         clickText("Belirtmek istemiyorum")
-        runBlocking { m.birth.first { it?.first == app.ykspusula.domain.AgeGate.DECLINED } }
+        runBlocking { m.birth.first { it?.first == AgeGate.DECLINED } }
         assertFalse(m.verifiedAdult.value)
         assertTrue(m.ads.debugState(), m.ads.debugState().contains("basladi=false"))
         scenario!!.close(); scenario = null
