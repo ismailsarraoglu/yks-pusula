@@ -12,7 +12,9 @@ Bu işler hesabınıza, kimliğinize veya gerçek cihaza bağlı olduğu için t
 5. **Kendi anahtarınızla AAB üretin.** GitHub'daki `yayin-aab` işi veya kendi bilgisayarınız. Gereken yedi değer: yükleme anahtarı dosyası ve üç parola/ad, `ADMOB_APP_ID`, `ADMOB_NATIVE_ID`, `PLAY_PUBLIC_KEY`. Bu teslimde Play'e yüklenecek AAB yoktur; anahtarınız olmadan üretilemez.
 6. **Play Console'da uygulama oluşturun.** Mağaza metinleri `play/magaza-metinleri.md`, görseller `play/gorseller/`. Ekran görselleri örnek veriyle hazırlandı.
 7. **`remove_ads_lifetime` ürününü** oluşturun ve fiyatını belirleyin.
-8. **Beyanları doldurun:** veri güvenliği, reklam kimliği, hedef kitle (öneri: 16-17 ve 18+), içerik derecelendirmesi. Dayanak: `play/veri-guvenligi-envanteri.md`.
+8. **Beyanları doldurun:** veri güvenliği, reklam kimliği, hedef kitle, içerik derecelendirmesi. Dayanak: `play/veri-guvenligi-envanteri.md`.
+   - **Hedef kitle (2.1.1'de değişti):** gerçek kitlenizi seçin: 16-17 ve 18+; 9. ve 10. sınıf kullanıcılar da varsa 13-15. 2.1.0 raporundaki "16-17 ve 18+ seçilirse yaş ekranı gerekmez" önerisi yanlıştı ve geri çekildi. Kitle karma olduğu için Families politikası uygulanır; uygulama tarafsız yaş ekranı gösterir ve 18 yaş altına reklam göstermez. Gerekçe: `docs/gizlilik-ve-reklam-raporu.md`.
+   - Families politikası ve yaş konusundaki hukuki yükümlülükler (KVKK, farklı ülkeler) için bir hukukçuya danışın. Google da yaş işlemi seçimi için hukuk danışmanı öneriyor.
 
 ## Gerçek cihaz ve Play ile denenmesi gerekenler
 
@@ -25,7 +27,8 @@ Bunlar otomatik testlerde denenemedi. Dahili test kanalında lisans test hesabı
 - [ ] Uygulama silinip yeniden kurulunca satın alma geri yükleniyor
 - [ ] Uçak modunda reklamsız hak korunuyor
 - [ ] Avrupa Ekonomik Alanı konumunda rıza formu çıkıyor, Profil'den yeniden açılıyor
-- [ ] Gerçek reklam kimlikleriyle reklam görünüyor (kendi reklamınıza tıklamayın)
+- [ ] Gerçek reklam kimlikleriyle reklam görünüyor (kendi reklamınıza tıklamayın). Önce yaş ekranında 18 yaşından büyük bir doğum tarihi girin; 18 altında reklam hiç çıkmaz
+- [ ] Yaş ekranı: 18 altı ve "Belirtmek istemiyorum" seçilince reklam ve rıza formu hiç çıkmıyor (gerçek telefonda)
 - [ ] Test reklamı görünürken parmağınızı reklamın üstüne koyup sayfayı hızlıca kaydırın, reklam açılmamalı. Bunu Google test kimlikli sürümle yapın, gerçek reklamda denemeyin
 - [ ] Yanlış defterinde fotoğraf seçme, PDF ekleme, yedeği dosyaya kaydetme ve dosyadan geri yükleme (Android dosya seçicisi)
 - [ ] Ana ekrana dört bileşeni ekleme
@@ -33,8 +36,9 @@ Bunlar otomatik testlerde denenemedi. Dahili test kanalında lisans test hesabı
 - [ ] Rapor paylaşımı (WhatsApp, Drive vb.)
 - [ ] Bildirim izni reddedildiğinde uygulama normal çalışıyor
 - [ ] Sürüm 1.0.0 kurulu telefonda sürüm 2 APK'sı üstüne kuruluyor, veriler duruyor
-- [ ] Android 15 veya başka denenmemiş sürümlerde genel kullanım
-- [ ] Sürüm 2.0.0 kurulu telefonda 2.1.0 üstüne kuruluyor, veriler duruyor (aynı imzayla kurulmuşsa)
+- [ ] Android 15 gerçek telefonda genel kullanım (2.1.1'de Android 15 yalnızca emülatörde denendi: `docs/android15-test-raporu.md`); Android 9, 10 ve 12 hiç denenmedi
+- [ ] Sürüm 2.0.0 veya 2.1.0 kurulu telefonda 2.1.1 üstüne kuruluyor, veriler duruyor (aynı imzayla kurulmuşsa)
+- [ ] Geri yükleme sırasında telefon kapanırsa (ör. pil biterse) sonraki açılışta veriler eski hâline dönüyor. Emülatörde işlemin ortasında kesilme benzetimiyle denendi (süreç gerçekten öldürülmedi); gerçek kapanmayla denenmedi
 - [ ] Telefonun saat dilimini değiştirince hatırlatma yeni saatte geliyor
 - [ ] Uygulama gece açık kalıp sabah açıldığında yeni günün görevleri görünüyor
 - [ ] Denemede yanlış konu girince yanlış defterinde görünüyor

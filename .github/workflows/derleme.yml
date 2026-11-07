@@ -11,7 +11,7 @@ on:
         description: "Cihaz turu: derleme (yalnız derleme), tam (bütün sürümler), emu (a11) veya virgüllü liste (a8,a11,a13,a14,a15,a16,a14p,a16p)"
         default: derleme
       kapi_denemesi:
-        description: "Kalite kapısı denemesi: hayir, birim (kasıtlı birim testi hatası) veya cihaz (kasıtlı cihaz testi hatası)"
+        description: "Kalite kapısı denemesi: hayir, birim (kasıtlı birim testi hatası), cihaz (kasıtlı cihaz testi hatası) veya emulator (emülatör oluşturulamaz)"
         default: hayir
 permissions:
   contents: write

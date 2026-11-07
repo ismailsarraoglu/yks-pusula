@@ -4,6 +4,8 @@
 # Çıkış kodu: 0 hepsi geçti, 1 bir aşama başarısız veya çalışmadı, 3 emülatör açılmadı.
 NAME=$1; IMG=$2; CLS=$3
 source tools/kapi.sh "$NAME"
+# Kalite kapısı denemesi: var olmayan imaj istenir; emülatör oluşturulamamalı ve betik 3 ile bitmeli.
+[ "$KAPI_DENEMESI" = "emulator" ] && IMG="system-images;android-99;olmayan-imaj;x86_64"
 mkdir -p ci/screens
 if ! emulator_ac "$NAME" "$IMG" "${BELLEK:-3072}"; then
   kayit acilis FAIL "emülatör açılmadı ($IMG)"
