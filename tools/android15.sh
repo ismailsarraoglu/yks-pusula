@@ -10,8 +10,8 @@ mkdir -p "$D" ci/screens ci/screens-a15
 
 PLAN="test-kurulum ana-testler yasam-arka-plan yasam-surec-olumu yasam-bellek-baskisi yasam-cokme kalicilik-yaz kalicilik-zorla-durdurma kalicilik-yeniden-baslatma
 gezinme-hareket e2e-hareket-dikey e2e-hareket-dikey-yazi130 e2e-hareket-yatay kesik-etkin e2e-kesik-yatay gezinme-3dugme e2e-3dugme-yatay
-bildirim-goster hatirlatma-zamaninda saat-dilimi bildirim-izni-kaldirildi bildirim-izinsiz pdf-secici foto-secici yedek-secici
-cevrimici-ag reklam billing release-kurulum release-cokme release-anr release-acik-kaldi"
+bildirim-goster hatirlatma-zamaninda saat-dilimi bildirim-izni-kaldirildi bildirim-izinsiz pdf-secici foto-secici yedek-secici osym-cevrimdisi
+cevrimici-ag osym-tarayici reklam billing release-kurulum release-cokme release-anr release-acik-kaldi"
 
 if ! emulator_ac a15 "$IMG" 4096; then
   kayit acilis FAIL "emülatör açılmadı ($IMG)"
@@ -124,6 +124,8 @@ else
   testi_calistir pdf-secici $D/pdf-secici.txt "$S#pdfPickerImportsAndRenders"
   testi_calistir foto-secici $D/foto-secici.txt "$S#photoPickerAttachesToWrong"
   testi_calistir yedek-secici $D/yedek-secici.txt "$S#backupSaveAndRestoreThroughPicker"
+  # YKS bilgi merkezi, ÖSYM kartı: internet yokken uyarı (cihaz şu an uçak modunda).
+  testi_calistir osym-cevrimdisi $D/osym-cevrimdisi.txt "$S#osymLinkOfflineShowsWarning"
   adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens e2e sistem 2>/dev/null' 2>/dev/null | tar -x -C ci/screens-a15 2>/dev/null
   mv ci/screens-a15/e2e $D/e2e 2>/dev/null; mv ci/screens-a15/sistem $D/sistem 2>/dev/null
 
@@ -132,6 +134,11 @@ else
   # GitHub sunucuları ICMP (ping) geçirmez; bağlantı Android'in doğrulanmış ağ bilgisinden okunur.
   ag_dogrulandi() { local n; for n in $(seq 1 12); do adb shell dumpsys connectivity 2>/dev/null | grep -qE '&VALIDATED' && return 0; sleep 5; done; return 1; }
   if kontrol cevrimici-ag "doğrulanmış ağ: $(adb shell dumpsys connectivity 2>/dev/null | grep -m1 -oE 'NetworkAgentInfo\{[^ ]* [^ ]*' | tr -d '\r')" ag_dogrulandi; then
+    # ÖSYM kartı: telefonun tarayıcısı resmî arşiv adresiyle açılır.
+    testi_calistir osym-tarayici $D/osym-tarayici.txt "$S#osymLinkOpensBrowser"
+    adb exec-out screencap -p > ci/screens-a15/osym-tarayici.png 2>/dev/null
+    adb exec-out run-as $PKG cat files/sistem/osymLinkOpensBrowser.txt 2>/dev/null | sed 's/^/osym: /'
+    adb shell input keyevent KEYCODE_HOME
     ANA=$DURUM; DURUM=$D/reklam-denemeleri.tsv; : > "$DURUM"
     sonuc=FAIL; aciklama=""
     for d in 1 2 3; do
@@ -149,7 +156,7 @@ else
     adb exec-out run-as $PKG cat files/sistem/billingClientStarts.txt > $D/sistem-billing.txt 2>/dev/null
     adb logcat -d 2>/dev/null | grep -iE 'BillingClient|BillingLogger' | tail -40 | cut -c1-220 > $D/billing-logcat.txt
   else
-    calismadi "emülatör internete çıkamadı" reklam billing
+    calismadi "emülatör internete çıkamadı" osym-tarayici reklam billing
   fi
   cevrimdisi
 fi

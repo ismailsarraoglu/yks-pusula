@@ -29,6 +29,8 @@ import app.ykspusula.notify.Notifier
 import app.ykspusula.notify.REMINDER_TYPES
 import app.ykspusula.notify.ReminderReceiver
 import app.ykspusula.ui.DebugNav
+import app.ykspusula.ui.screens.OSYM_SORU_ARSIVI
+import app.ykspusula.ui.screens.OfficialLink
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -298,6 +300,50 @@ class SystemIntegrationTest {
         rule.waitUntil("not döndü", 30_000) { runBlocking { r.user.notesNow().any { it.id == "yedek-notu" } } }
         note("yedek-geri-yuklendi=evet")
     }
+
+    /* ---------- YKS bilgi merkezi: ÖSYM soru ve cevap arşivi bağlantısı ---------- */
+
+    /** İnternet yokken ÖSYM kartı anlaşılır bir uyarı gösterir, tarayıcı açmaz ve uygulama çökmez (uçak modunda). */
+    @Test fun osymLinkOfflineShowsWarning() = runBlocking<Unit> {
+        launch("info")
+        clickApp("ÖSYM")
+        rule.waitUntil("internet uyarısı", 10_000) { rule.onAllNodesWithText(OfficialLink.NO_INTERNET).fetchSemanticsNodes().isNotEmpty() }
+        assertTrue("Uygulama önde kalmalı", device.currentPackageName == app.packageName)
+        note("cevrimdisi-uyari=gosterildi")
+    }
+
+    /** Çevrimiçiyken ÖSYM kartı telefonun tarayıcısını resmî arşiv adresiyle açar (uygulama içinde WebView yok). */
+    @Test fun osymLinkOpensBrowser() = runBlocking<Unit> {
+        val intent = OfficialLink.browserIntent(OSYM_SORU_ARSIVI)
+        assertEquals(OSYM_SORU_ARSIVI, intent.dataString)
+        assertEquals(Intent.ACTION_VIEW, intent.action)
+        assertTrue(intent.selector!!.hasCategory(Intent.CATEGORY_BROWSABLE))
+        val browser = app.packageManager.resolveActivity(intent.selector!!, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
+        note("varsayilan-tarayici=$browser")
+        launch("info")
+        clickApp("ÖSYM")
+        // Açılan etkinlik ve görevin isteği sistemden okunur: tarayıcı önde mi, istek ÖSYM adresini taşıyor mu?
+        var top = ""; var task = ""
+        val start = System.currentTimeMillis()
+        while (System.currentTimeMillis() - start < 30_000) {
+            val dump = shell("dumpsys activity activities")
+            top = dump.lineSequence().firstOrNull { it.contains("topResumedActivity") || it.contains("mResumedActivity") }?.trim() ?: ""
+            task = dump.lineSequence().firstOrNull { it.contains("act=android.intent.action.VIEW") && it.contains("osym.gov.tr") }?.trim() ?: ""
+            if (task.isNotEmpty() && top.isNotEmpty() && !top.contains(" ${app.packageName}/")) break
+            Thread.sleep(1000)
+        }
+        note("on-plan=$top")
+        note("istek=$task")
+        assertFalse("Uygulama yerine tarayıcı önde olmalı: $top", top.isEmpty() || top.contains(" ${app.packageName}/"))
+        assertTrue("Tarayıcıya giden istek ÖSYM adresini taşımalı: $task", task.contains("https://www.osym.gov.tr"))
+        assertTrue(rule.onAllNodesWithText(OfficialLink.NO_INTERNET).fetchSemanticsNodes().isEmpty())
+        device.pressBack()
+    }
+
+    private fun shell(cmd: String): String =
+        InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(cmd).use { pfd ->
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd).bufferedReader().readText()
+        }
 
     /* ---------- Play Billing (çevrimiçi Play imajında çalıştırılır) ---------- */
 

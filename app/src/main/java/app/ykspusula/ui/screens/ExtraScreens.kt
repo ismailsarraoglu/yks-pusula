@@ -229,6 +229,44 @@ fun WidgetsScreen() {
     }
 }
 
+/**
+ * ÖSYM'nin sınav soru ve cevapları arşivi. Belirli bir yılın PDF'i değil genel arşiv sayfasıdır; kullanıcı YKS
+ * yılını seçip TYT, AYT ve YDT temel soru kitapçıklarına ve cevap anahtarlarına oradan ulaşır.
+ */
+const val OSYM_SORU_ARSIVI = "https://www.osym.gov.tr/sinav-soru-ve-cevaplari"
+
+/** Bağlantı açma sonucu; ekranda gösterilecek uyarı metni (başarıda null). */
+object OfficialLink {
+    const val NO_INTERNET = "İnternet bağlantısı yok. ÖSYM sayfasını açmak için internete bağlanıp tekrar dene."
+    const val NO_BROWSER = "Tarayıcı açılamadı. Telefonunda etkin bir internet tarayıcısı olmalı."
+
+    /**
+     * Sayfayı uygulama içinde değil, telefonun varsayılan tarayıcısında açan istek. Seçici (selector) yalnızca
+     * genel web adreslerini açabilen uygulamalara, yani tarayıcılara çözülür; asıl adres değişmeden iletilir.
+     */
+    fun browserIntent(url: String): Intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        .addCategory(Intent.CATEGORY_BROWSABLE)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        .apply { selector = Intent(Intent.ACTION_VIEW, Uri.parse("https://")).addCategory(Intent.CATEGORY_BROWSABLE) }
+
+    fun hasInternet(context: Context): Boolean {
+        val cm = context.getSystemService(android.net.ConnectivityManager::class.java) ?: return false
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork ?: return false) ?: return false
+        return caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    /** Tarayıcıyı açar; açamazsa veya internet yoksa uyarı metni döner. Hiçbir durumda istisna dışarı çıkmaz. */
+    fun open(context: Context, url: String): String? {
+        if (!hasInternet(context)) return NO_INTERNET
+        return try {
+            context.startActivity(browserIntent(url)); null
+        } catch (e: Exception) {
+            // Seçiciye uyan tarayıcı yoksa (ör. özel cihaz yapılandırması) seçicisiz bir kez daha denenir.
+            runCatching { context.startActivity(browserIntent(url).apply { selector = null }) }.fold({ null }, { NO_BROWSER })
+        }
+    }
+}
+
 /** YKS bilgi merkezi: sınav yapısı ve resmî bağlantılar. Çıkmış sorular uygulamaya gömülmez. */
 @Composable
 fun InfoScreen() {
@@ -237,6 +275,7 @@ fun InfoScreen() {
     val context = LocalContext.current
     val configs by r.user.examConfigs().collectAsStateWithLifecycle(emptyList())
     fun open(url: String) { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
+    var osymNote by remember { mutableStateOf<String?>(null) }
     Screen("YKS bilgi merkezi", { nav.popBackStack() }) {
         ScrollColumn {
             configs.sortedBy { it.code }.forEach { c ->
@@ -254,9 +293,10 @@ fun InfoScreen() {
             Muted("Bilgiler sınav yılı kılavuzuyla karşılaştırılmalıdır. Resmî olmayan veya açıklanmamış gelecek yıl bilgileri gösterilmez.")
             Section("Resmî bağlantılar")
             GroupCard {
-                NavRow("ÖSYM", "Takvim, kılavuz ve çıkmış sorular", Icons.AutoMirrored.Rounded.OpenInNew, onClick = { open("https://www.osym.gov.tr") }); Line()
+                NavRow("ÖSYM", "Takvim, kılavuz ve çıkmış sorular", Icons.AutoMirrored.Rounded.OpenInNew, onClick = { osymNote = OfficialLink.open(context, OSYM_SORU_ARSIVI) }); Line()
                 NavRow("YÖK Atlas", "Program, kontenjan ve taban verileri", Icons.AutoMirrored.Rounded.OpenInNew, onClick = { open("https://yokatlas.yok.gov.tr") })
             }
+            osymNote?.let { Text(it, color = Yks.c.error, style = MaterialTheme.typography.bodyMedium) }
             Muted("Bu bağlantılar tarayıcıda açılır ve internet gerektirir. İndirdiğin PDF'leri PDF kaynaklarına ekleyebilirsin.")
         }
     }
