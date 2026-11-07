@@ -16,7 +16,7 @@ Tarih: 7 Kasım 2026. 2.1.2'de yaş ekranı kaldırıldı ve reklam modeli deği
 | SDK | Google Mobile Ads SDK `play-services-ads` 25.5.0: Families Self-Certified Ads SDK listesinde ("19.0.0 or later") | `app/build.gradle.kts` |
 | Yaş işlemi | Her istekte çocuğa yönelik işlem (TFCD) ve rıza yaşı altı (TFUA) açık. AdMob'a göre bu, çocuk işlemine (CHILD) karşılık gelir: kişiselleştirilmiş reklam ve yeniden pazarlama kapalı, reklam kimliği gönderilmez | `AdsManager.requestConfiguration`, testler: `DataFlowTest.adsAreChildSafeForEveryone`, `AdOnlineTest` |
 | İçerik düzeyi | G (genel izleyici) | Aynı |
-| Reklam kimliği | `com.google.android.gms.permission.AD_ID` izni manifestten kaldırıldı; test APK'da izin olmadığını doğrular | `AndroidManifest.xml` |
+| Reklam kimliği ve ilgi alanı | `com.google.android.gms.permission.AD_ID` ve SDK'nın eklediği Privacy Sandbox izinleri (`ACCESS_ADSERVICES_AD_ID`, `_TOPICS`, `_ATTRIBUTION`) manifestten kaldırıldı. CI her derlemede APK izinlerini denetler, cihaz testi de doğrular | `AndroidManifest.xml` |
 | Rıza formu | UMP isteği rıza yaşı altı etiketiyle yapılır | `AdsManager.onActivityStart` |
 | Kimlik ayrımı | Debug ve yan yükleme derlemesi Google test kimlikleri; Play derlemesi test kimliğiyle derlenemez | `app/build.gradle.kts` |
 | Reklamsız kullanıcı | Hak açıksa rıza istenmez, SDK başlatılmaz, reklam isteği yapılmaz | `AdsManager.onActivityStart`, test: `DataFlowTest.entitlementFlowAndAdsOff` |

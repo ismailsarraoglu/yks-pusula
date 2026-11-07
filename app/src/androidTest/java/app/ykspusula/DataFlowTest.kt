@@ -186,7 +186,8 @@ class DataFlowTest {
         assertEquals(com.google.android.gms.ads.RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE, cfg.tagForUnderAgeOfConsent)
         assertEquals(com.google.android.gms.ads.RequestConfiguration.MAX_AD_CONTENT_RATING_G, cfg.maxAdContentRating)
         val perms = app.packageManager.getPackageInfo(app.packageName, android.content.pm.PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty()
-        assertFalse("Reklam kimliği izni olmamalı: ${perms.toList()}", "com.google.android.gms.permission.AD_ID" in perms)
+        listOf("com.google.android.gms.permission.AD_ID", "android.permission.ACCESS_ADSERVICES_AD_ID", "android.permission.ACCESS_ADSERVICES_TOPICS", "android.permission.ACCESS_ADSERVICES_ATTRIBUTION")
+            .forEach { assertFalse("Reklam kimliği veya ilgi alanı izni olmamalı ($it): ${perms.toList()}", it in perms) }
         val prefs = app.settingsStore.data.first { it[androidx.datastore.preferences.core.intPreferencesKey("birth_year")] == null }
         assertNull(prefs[androidx.datastore.preferences.core.intPreferencesKey("birth_month")])
     }

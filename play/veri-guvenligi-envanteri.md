@@ -55,7 +55,7 @@ Ayrıntı ve kaynaklar: `docs/gizlilik-ve-reklam-raporu.md`.
 
 - Yaş ekranı kaldırıldı; cihazda kalan doğum ayı ve yılı silinir.
 - Reklam SDK'sı `play-services-ads` (Families sertifikalı). Her istek çocuk işlemiyle, içerik G.
-- `AD_ID` izni kaldırıldı: reklam kimliği beyanı "kullanılmıyor".
+- `AD_ID` izni ve Privacy Sandbox (AdServices) izinleri kaldırıldı: reklam kimliği beyanı "kullanılmıyor".
 
 ## Sürüm 2.1.1'de değişen
 

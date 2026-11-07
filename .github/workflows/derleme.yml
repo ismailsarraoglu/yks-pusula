@@ -118,6 +118,7 @@ jobs:
           $AAPT dump permissions $APK | tee ci/logs/apk-permissions.txt
           grep -E 'uses-permission' ci/logs/apk-permissions.txt | sed "s/.*name='//; s/'.*//" | sort > ci/logs/izinler.txt
           kontrol manifest-debuggable-degil "sideload APK hata ayıklanabilir değil" sh -c '! grep -q application-debuggable ci/logs/apk-badging.txt'
+          kontrol manifest-reklam-kimligi-yok "AD_ID ve AdServices izinleri yok" sh -c '! grep -qE "permission.AD_ID|ACCESS_ADSERVICES" ci/logs/izinler.txt'
           kontrol manifest-hedef-sdk "$(grep -o "targetSdkVersion:'[0-9]*'" ci/logs/apk-badging.txt)" grep -q "targetSdkVersion:'36'" ci/logs/apk-badging.txt
           $APKSIGNER verify --verbose $APK > ci/logs/apk-signature.txt 2>&1; k=$?
           kontrol apk-imza "$(head -1 ci/logs/apk-signature.txt)" [ $k = 0 ]
@@ -139,7 +140,7 @@ jobs:
         run: |
           source tools/kapi.sh derle
           # Çalışmayan aşamalar NOT_RUN olarak yazılır; böylece raporda boş kalmaz.
-          for a in plan birim-testleri derleme release-denetimi manifest-debuggable-degil manifest-hedef-sdk apk-imza; do
+          for a in plan birim-testleri derleme release-denetimi manifest-debuggable-degil manifest-reklam-kimligi-yok manifest-hedef-sdk apk-imza; do
             cut -f1 ci/logs/durum-derle.tsv | grep -qx "$a" || kayit "$a" NOT_RUN "önceki aşama başarısız olduğu için çalışmadı"
           done
           [ "$DURUM_IS" = success ] && echo 0 > ci/logs/cikis-derle.txt || echo 1 > ci/logs/cikis-derle.txt
