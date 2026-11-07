@@ -61,6 +61,9 @@ object Notifier {
         return PendingIntent.getBroadcast(c, code, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
+    /** Son kurulan alarm zamanları. Yalnızca teşhis ve test içindir; kalıcı değildir. */
+    val scheduledAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
     /** Tam zamanlı alarm izni gerektirmez; Android cihazın uygun anında çalıştırır. */
     private fun alarm(c: Context, at: Long, pi: PendingIntent) {
         c.getSystemService(AlarmManager::class.java).setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
@@ -70,11 +73,14 @@ object Notifier {
         val pi = pending(c, r.type)
         if (!r.enabled) {
             c.getSystemService(AlarmManager::class.java).cancel(pi)
+            scheduledAt.remove(r.type)
             return
         }
         val def = REMINDER_TYPES.firstOrNull { it.type == r.type } ?: return
         val frequency = r.frequency.ifBlank { if (def.weekly) "WEEKLY" else "DAILY" }
-        alarm(c, ReminderTime.nextFor(System.currentTimeMillis(), r.hour, r.minute, frequency, r.dayOfWeek), pi)
+        val at = ReminderTime.nextFor(System.currentTimeMillis(), r.hour, r.minute, frequency, r.dayOfWeek)
+        alarm(c, at, pi)
+        scheduledAt[r.type] = at
     }
 
     fun schedulePomodoro(c: Context, at: Long) = alarm(c, at, pending(c, "POMODORO"))

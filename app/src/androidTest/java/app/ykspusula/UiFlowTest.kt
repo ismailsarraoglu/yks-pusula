@@ -208,7 +208,8 @@ class UiFlowTest {
         listOf("home", "study", "exams", "stats").forEach { go(it); assertTrue(rule.onAllNodesWithText("Reklam").fetchSemanticsNodes().isEmpty()) }
     }
 
-    @Test fun allScreensOpenBothThemes() {
+    /** Ekran taramasında kullanılan örnek veri ve rota listesi. */
+    private fun seedAllAndRoutes(): List<String> {
         seedProfile(); seedActivity()
         runBlocking {
             r.user.saveNote(UserNote(id = "n1", title = "Limit notu", body = "x→2", createdAt = 1, updatedAt = 1))
@@ -218,7 +219,7 @@ class UiFlowTest {
         val mocks = runBlocking { r.user.mockSummariesNow() }
         val exam = mocks.first().id
         val wrong = runBlocking { r.user.wrongsNow().first().id }
-        val routes = listOf(
+        return listOf(
             "home", "study", "exams", "stats", "profile", "search", "subject/tyt-mat", "topic/tyt-mat-uslu-sayilar", "topic/ayt-mat-turev", "mastery", "priorities", "coach", "replan",
             "sources", "source/s1", "sourceEdit/new", "sourceEdit/s1", "sourceCompare", "log", "wrongs", "wrong/$wrong", "wrongEdit/new", "wrongEdit/$wrong", "wrongReview",
             "cards", "deck/Tarih", "review/_all", "review/_all?mix=1", "cardEdit/Kartlarım", "formulas", "notes", "note/n1", "note/new", "library", "pomodoro", "plan", "planSettings", "planHistory", "taskEdit/${today()}",
@@ -226,6 +227,10 @@ class UiFlowTest {
             "examHistory", "examCompare/${mocks[0].id}/${mocks[3].id}", "examAnalysis", "netGoals", "external", "examSettings", "obp", "reports", "motivation", "removeAds", "privacy", "terms", "about", "info",
             "profileEdit", "settings", "reminders", "backup", "targets", "packs", "badges", "topic/ayt-biy-evrim",
         )
+    }
+
+    @Test fun allScreensOpenBothThemes() {
+        val routes = seedAllAndRoutes()
         listOf("DARK", "LIGHT").forEach { theme ->
             runBlocking { r.updateSettings { it[Keys.theme] = theme } }
             launch()
@@ -239,6 +244,98 @@ class UiFlowTest {
             }
             scenario!!.close(); scenario = null
         }
+    }
+
+    /**
+     * Kenardan kenara düzen denetimi (Android 15 ve sonrası bunu zorunlu tutar).
+     * Her ekranda ekranda görünen metin ve dokunulabilir öğeler:
+     * 1) durum çubuğunun, gezinme çubuğunun ve kamera çentiğinin altına girmez,
+     * 2) yatayda ekranın dışına taşmaz (yatay kaydırma alanları hariç),
+     * 3) birbirinin üstüne binmez (biri diğerinin içinde değilse).
+     * Ayrıca durum ve gezinme çubuğu simge renginin temayla uyumu denetlenir.
+     * Sonuç files/e2e/<etiket>.txt dosyasına yazılır; ekran görüntüleri files/screens altına.
+     */
+    @Test fun systemBarsLayoutOnAllScreens() {
+        val label = InstrumentationRegistry.getArguments().getString("etiket") ?: "varsayilan"
+        val routes = seedAllAndRoutes()
+        val problems = ArrayList<String>()
+        val log = StringBuilder()
+        listOf("DARK", "LIGHT").forEach { theme ->
+            runBlocking { r.updateSettings { it[Keys.theme] = theme } }
+            launch()
+            waitText("Bugünkü Rotan")
+            val list = if (theme == "DARK") routes else listOf("home", "study", "plan", "backup")
+            list.forEachIndexed { i, route ->
+                rule.runOnUiThread { DebugNav.nav!!.navigate(route) }
+                rule.waitForIdle()
+                Thread.sleep(350)
+                val found = layoutProblems(route, theme, log)
+                problems += found
+                if (theme == "DARK") shot("e2e-$label-${"%02d".format(i)}-${route.substringBefore('?').replace('/', '_').replace("Kartlarım", "k").take(24)}")
+            }
+            scenario!!.close(); scenario = null
+        }
+        val dir = File(app.filesDir, "e2e").apply { mkdirs() }
+        File(dir, "$label.txt").writeText("etiket=$label\nsorun=${problems.size}\n" + log + "\n--- sorunlar ---\n" + problems.joinToString("\n"))
+        assertTrue("Düzen sorunları (${problems.size}):\n" + problems.take(40).joinToString("\n"), problems.isEmpty())
+    }
+
+    private fun layoutProblems(route: String, theme: String, log: StringBuilder): List<String> {
+        var safe = android.graphics.Rect()
+        var size = android.graphics.Point()
+        var lightStatus = false
+        var lightNav = false
+        scenario!!.onActivity { a ->
+            val decor = a.window.decorView
+            val ins = androidx.core.view.ViewCompat.getRootWindowInsets(decor)!!
+                .getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout())
+            size = android.graphics.Point(decor.width, decor.height)
+            safe = android.graphics.Rect(ins.left, ins.top, decor.width - ins.right, decor.height - ins.bottom)
+            val ctl = androidx.core.view.WindowCompat.getInsetsController(a.window, decor)
+            lightStatus = ctl.isAppearanceLightStatusBars
+            lightNav = ctl.isAppearanceLightNavigationBars
+        }
+        if (route == "home") log.append("tema=$theme pencere=${size.x}x${size.y} guvenli-alan=$safe acik-durum-simgesi=$lightStatus acik-gezinme-simgesi=$lightNav\n")
+        val out = ArrayList<String>()
+        val wantLight = theme == "LIGHT"
+        if (lightStatus != wantLight) out += "$route [$theme]: durum çubuğu simgeleri temaya uymuyor (açık simge beklenen=${!wantLight})"
+        if (lightNav != wantLight) out += "$route [$theme]: gezinme çubuğu simgeleri temaya uymuyor"
+        val visible = SemanticsMatcher("gorunur oge") { n ->
+            n.config.contains(SemanticsProperties.Text) || n.config.contains(androidx.compose.ui.semantics.SemanticsActions.OnClick) ||
+                n.config.contains(SemanticsProperties.EditableText) || n.config.contains(SemanticsProperties.ContentDescription)
+        }
+        val nodes = rule.onAllNodes(visible).fetchSemanticsNodes()
+        fun name(n: androidx.compose.ui.semantics.SemanticsNode) = (n.config.getOrNull(SemanticsProperties.Text)?.joinToString()
+            ?: n.config.getOrNull(SemanticsProperties.EditableText)?.text
+            ?: n.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString() ?: "#${n.id}").take(40)
+        fun ancestors(n: androidx.compose.ui.semantics.SemanticsNode) = generateSequence(n.parent) { it.parent }
+        fun inHorizontalScroll(n: androidx.compose.ui.semantics.SemanticsNode) = ancestors(n).any { it.config.contains(SemanticsProperties.HorizontalScrollAxisRange) }
+        val tol = 1f
+        val shown = nodes.filter { val b = it.boundsInWindow; b.width > 0.5f && b.height > 0.5f }
+        shown.forEach { n ->
+            val b = n.boundsInWindow
+            if (b.top < safe.top - tol) out += "$route: '${name(n)}' durum çubuğu veya çentik altında (üst=${b.top.toInt()}, güvenli=${safe.top})"
+            if (b.bottom > safe.bottom + tol) out += "$route: '${name(n)}' gezinme çubuğu altında (alt=${b.bottom.toInt()}, güvenli=${safe.bottom})"
+            if (b.left < safe.left - tol) out += "$route: '${name(n)}' sol sistem alanında (sol=${b.left.toInt()}, güvenli=${safe.left})"
+            if (b.right > safe.right + tol) out += "$route: '${name(n)}' sağ sistem alanında (sağ=${b.right.toInt()}, güvenli=${safe.right})"
+            if (!inHorizontalScroll(n)) {
+                val x = n.positionInWindow.x
+                if (x + n.size.width > size.x + tol || x < -tol) out += "$route: '${name(n)}' yatayda ekran dışına taşıyor (x=${x.toInt()}, genişlik=${n.size.width}, ekran=${size.x})"
+            }
+        }
+        val clickable = shown.filter { it.config.contains(androidx.compose.ui.semantics.SemanticsActions.OnClick) }
+        for (i in clickable.indices) for (j in i + 1 until clickable.size) {
+            val a = clickable[i]; val b = clickable[j]
+            if (ancestors(a).any { it.id == b.id } || ancestors(b).any { it.id == a.id }) continue
+            val ra = a.boundsInWindow; val rb = b.boundsInWindow
+            val w = minOf(ra.right, rb.right) - maxOf(ra.left, rb.left)
+            val h = minOf(ra.bottom, rb.bottom) - maxOf(ra.top, rb.top)
+            if (w <= 0f || h <= 0f) continue
+            val small = minOf(ra.width * ra.height, rb.width * rb.height)
+            if (w * h > 0.2f * small) out += "$route: '${name(a)}' ile '${name(b)}' üst üste biniyor (${(100 * w * h / small).toInt()}%)"
+        }
+        log.append("$route [$theme]: ${shown.size} öğe, ${out.size} sorun\n")
+        return out
     }
 
     private fun go(route: String) { rule.runOnUiThread { DebugNav.nav!!.navigate(route) }; rule.waitForIdle() }

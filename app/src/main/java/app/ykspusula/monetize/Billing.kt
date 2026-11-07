@@ -33,6 +33,9 @@ class BillingManager(context: Context, private val scope: CoroutineScope, privat
     private val _ui = MutableStateFlow(BillingUi())
     val ui: StateFlow<BillingUi> = _ui
     private var details: ProductDetails? = null
+    /** Play Billing bağlantısının son yanıt kodu; yalnızca teşhis ve test içindir. */
+    @Volatile var lastSetupCode: Int? = null
+        private set
 
     private val client: BillingClient = BillingClient.newBuilder(context.applicationContext)
         .setListener(this)
@@ -44,6 +47,7 @@ class BillingManager(context: Context, private val scope: CoroutineScope, privat
         if (client.isReady) { scope.launch { refresh() }; return }
         client.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(r: BillingResult) {
+                lastSetupCode = r.responseCode
                 if (r.responseCode == BillingClient.BillingResponseCode.OK) {
                     _ui.value = _ui.value.copy(connected = true, message = "")
                     scope.launch { refresh() }
