@@ -334,7 +334,9 @@ class SystemIntegrationTest {
         while (System.currentTimeMillis() - start < 30_000) {
             val dump = shell("dumpsys activity activities")
             top = dump.lineSequence().firstOrNull { it.contains("topResumedActivity") || it.contains("mResumedActivity") }?.trim() ?: ""
-            task = dump.lineSequence().firstOrNull { it.contains("act=android.intent.action.VIEW") && it.contains("osym.gov.tr") }?.trim() ?: ""
+            // Chrome isteği dağıtıp ilk açılış ekranına geçebilir; görevin kök isteği son görevler kaydında kalır.
+            val all = dump + "\n" + shell("dumpsys activity recents")
+            if (task.isEmpty()) task = all.lineSequence().firstOrNull { it.contains("osym.gov.tr") }?.trim() ?: ""
             if (task.isNotEmpty() && top.isNotEmpty() && !top.contains(" ${app.packageName}/")) break
             Thread.sleep(1000)
         }
