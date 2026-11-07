@@ -38,9 +38,11 @@ Testler: `DataFlowTest.adsAreChildSafeForEveryone` (çevrimdışı: yapılandır
 ## 4. Test altyapısı
 
 - Android'in sistem sürecinin yerel çökmesi (emülatörde görüldü) kanıtlı altyapı nedeni sayılır: test bir kez yeniden denenir, not düşülür.
-- Yeniden başlatmadan sonra geri gelmeyen emülatör aynı veriyle yeniden açılır; kalıcılık sonucu bunu not eder.
+- Play Hizmetleri'nin sistemce durdurulup bağlı uygulamayı kapatması kanıtlı altyapı nedeni sayılır.
+- Yeniden başlatmadan dönmeyen emülatörde önce adb bağlantısı yenilenir. Son çare olarak emülatör kapatılıp açılırsa bu gerçek bir yeniden başlatma sayılmaz; kalıcılık sırası baştan tekrarlanır ve not edilir.
 - CI derleme işine "reklam kimliği izni yok" aşaması eklendi.
-- Son turda bu kurtarmaların hiçbiri gerekmedi.
+- PDF ve ÖSYM testlerinde zamanlama düzeltmeleri.
+- Son turda (`42388476039`) bu kurtarmaların hiçbiri gerekmedi.
 
 ## 5. Belgeler
 

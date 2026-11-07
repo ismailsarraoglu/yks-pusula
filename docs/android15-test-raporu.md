@@ -1,5 +1,7 @@
 # Android 15 (API 35) test raporu
 
+> **2.1.2 güncellemesi:** sürüm 2.1.2 (kod `c181571`, tur `42388476039`) Android 15'te yine 35/35 aşama PASS verdi; reklam testi yeni SDK (`play-services-ads`) ile geçti. Aşağıdaki ayrıntılar 2.1.1 turuna aittir.
+
 Sürüm 2.1.1 (versionCode 4), kod `43b566f`, son tur `42363540765`, 7 Kasım 2026. **Sonuç: 35/35 aşama PASS.**
 
 Ortam: GitHub Actions, Android Emulator, `system-images;android-35;google_apis_playstore;x86_64`, Pixel 6 profili (1080×2400, 420 dpi), 4 GB bellek. **Gerçek telefonda denenmedi.**
@@ -82,7 +84,7 @@ Sistemle ilgili ayrıntılar:
 | Veri kaydetme | Yaz, zorla durdur, oku; cihazı yeniden başlat, oku |
 | Bildirim ve hatırlatma | Bildirimin gösterilmesi, zamanlanmış hatırlatmanın gerçekten gelmesi (gerçek bekleme), saat dilimi değişince yeniden kurulması, bildirim izni kaldırılınca uygulamanın çalışmaya devam etmesi |
 | Dosya seçici | Android'in kendi seçicisiyle PDF içe aktarma ve görüntüleme, fotoğrafı yanlış kaydına ekleme, yedeği dosyaya kaydedip aynı dosyadan geri yükleme |
-| Reklam SDK'sı | Google test kimliğiyle yerel reklamın yüklenmesi ve reklamsız hak sonrası kaybolması (18 yaş üstü doğrulanmış kullanıcıyla) |
+| Reklam SDK'sı | Google test kimliğiyle yerel reklamın yüklenmesi ve reklamsız hak sonrası kaybolması (2.1.2'de bütün kullanıcılar için, çocuk korumalı yapılandırmayla) |
 | Play Billing | Kitaplığın başlatılıp Play Store'a bağlanmayı denemesi; yanıt gelmezse satın alma düğmesinin kapalı kalması; doğrulanmış satın alma olmadan reklamsız hakkın açılmaması; çökme olmaması |
 | ÖSYM bağlantısı | Uçak modunda karta basınca uyarı ve uygulamanın önde kalması; çevrimiçiyken tarayıcının öne gelmesi ve isteğin resmî arşiv adresini taşıması |
 | Release ayarlı APK | Temiz kurulum, üç soğuk açılış, çökme ve ANR yok, süreç ayakta |

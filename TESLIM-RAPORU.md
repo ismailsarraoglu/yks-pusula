@@ -1,6 +1,6 @@
 # YKS Pusula 2.1.2 teslim raporu
 
-Sürüm 2.1.2 (versionCode 5). Kod: `KOD`, dal `surum-2.1.2`. Son tam test turu: `TUR`, 7 Kasım 2026. Önceki raporlar: `docs/teslim-raporu-2.1.1.md`, `docs/teslim-raporu-2.1.0.md`.
+Sürüm 2.1.2 (versionCode 5). Kod: `c181571`, dal `surum-2.1.2`. Son tam test turu: `42388476039`, 7 Kasım 2026. Önceki raporlar: `docs/teslim-raporu-2.1.1.md`, `docs/teslim-raporu-2.1.0.md`.
 
 ## Durum özeti
 
@@ -10,7 +10,7 @@ Sürüm 2.1.2 (versionCode 5). Kod: `KOD`, dal `surum-2.1.2`. Son tam test turu:
 | Reklamı bütün kitleye, Play ve AdMob kurallarıyla | Tamamlandı: Families sertifikalı SDK, her istek çocuk korumalı. **Politika riski var** (bölüm 3) |
 | Günlük rota tekrarı ve diğer gerçek hatalar | Tamamlandı (bölüm 2) |
 | Tasarım ve çalışan özellikler | Korundu; yeni özellik yok |
-| Bütün testler, başarısız test yok | Son turda 9 işin hepsi PASS (bölüm 4) |
+| Bütün testler, başarısız test yok | Son turda 9 işin hepsi PASS, yeniden deneme yok (bölüm 4) |
 | Sürüm 2.1.2, versionCode 5 | Tamamlandı |
 | Kaynak kod | Teslim edildi: `yks-pusula-kaynak-2.1.2.zip` |
 | **İmzalı Play AAB** | **Üretilemedi.** Yükleme anahtarınız, gerçek AdMob kimlikleri ve Play lisans anahtarı yok. Uydurulmadı. Gerekenler bölüm 5'te |
@@ -49,7 +49,17 @@ Ayrıntı: `docs/degisiklik-raporu-2.1.2.md`.
 
 Ayrıntı: `docs/test-raporu.md`.
 
-TEST_OZETI
+| İş | Sonuç |
+|---|---|
+| Derleme, 73 birim testi, release denetimi, manifest (reklam kimliği izni yok), imza | PASS |
+| Android 8, 11, 13, 14, 15, 16 | PASS |
+| Android 14 ve 16 Play imajı: yeni SDK ile gerçek test reklamı, kaydırma koruması, 6/6 temiz kurulum | PASS |
+
+Son turda yeniden deneme veya altyapı kurtarması olmadı; uygulama çökmesi 0, ANR 0.
+
+Son tura kadar 6 tur çalıştı. Düşen aşamalar test zamanlaması ve emülatör altyapısından kaynaklandı, uygulama hatası değildi; hepsi raporda.
+
+Bir gözlem: emülatör zorla kapatıldığında (ani güç kesilmesine benzer) son yazılan veri okunamadı. Normal yeniden başlatmada veri her sürümde korundu. Bu, SQLite'ın ani güç kesilmesindeki bilinen davranışıdır; gerçek telefonda denenmedi.
 
 ## 5. Play'e yüklenebilir AAB için sizden gerekenler
 
