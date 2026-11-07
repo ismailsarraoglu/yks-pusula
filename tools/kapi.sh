@@ -151,8 +151,15 @@ yeniden_baslat() {
   adb reboot; sleep 20; timeout 300 adb wait-for-device
   local i B=""
   for i in $(seq 1 100); do B=$(timeout 15 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break; sleep 3; done
+  if [ "$B" != "1" ]; then
+    # Emülatör çoğu zaman açıktır ama adb bağlantısı "offline" kalır; önce bağlantı yenilenir.
+    "$ANDROID_HOME/platform-tools/adb" kill-server; sleep 3; "$ANDROID_HOME/platform-tools/adb" start-server; timeout 300 adb wait-for-device
+    for i in $(seq 1 60); do B=$(timeout 15 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break; sleep 5; done
+    [ "$B" = "1" ] && echo "yeniden başlatma: adb bağlantısı yenilendi" >> "ci/logs/olcum-$KAPI_IS.txt"
+  fi
   if [ "$B" != "1" ] && [ -n "$EMU_NAME" ]; then
-    YENIDEN_NOT="emülatör yeniden başlatmadan geri gelmedi; kapatılıp aynı veriyle yeniden açıldı"
+    # Son çare: emülatör kapatılıp açılır. Bu bir yeniden başlatma değil, ani güç kesilmesidir; kalıcılık sırası baştan tekrarlanır.
+    YENIDEN_NOT="emülatör yeniden başlatmadan geri gelmedi; kapatılıp yeniden açıldı"
     echo "$YENIDEN_NOT" | tee -a "ci/logs/olcum-$KAPI_IS.txt"
     emulator_kapat
     emulator_baslat || YENIDEN_NOT="$YENIDEN_NOT; ikinci açılış da başarısız"
@@ -163,13 +170,26 @@ yeniden_baslat() {
 
 # Kalıcılık: yaz, zorla durdur, oku, cihazı yeniden başlat, oku.
 kalicilik() {
-  local P=$PKG.PersistenceTest
-  testi_calistir kalicilik-yaz ci/logs/kalicilik-yaz-$KAPI_IS.txt "$P#writeData" || { calismadi "veri yazılamadı" kalicilik-zorla-durdurma kalicilik-yeniden-baslatma; return 1; }
-  adb shell am force-stop $PKG
-  testi_calistir kalicilik-zorla-durdurma ci/logs/kalicilik-durdurma-$KAPI_IS.txt "$P#readData"
-  yeniden_baslat
-  cevrimdisi
-  testi_calistir kalicilik-yeniden-baslatma ci/logs/kalicilik-yeniden-$KAPI_IS.txt "$P#readData" && [ -n "$YENIDEN_NOT" ] && sed -i "\$ s/\$/; $YENIDEN_NOT/" "$DURUM"
+  local P=$PKG.PersistenceTest tur not=""
+  for tur in 1 2; do
+    testi_calistir kalicilik-yaz ci/logs/kalicilik-yaz-$KAPI_IS.txt "$P#writeData" || { calismadi "veri yazılamadı" kalicilik-zorla-durdurma kalicilik-yeniden-baslatma; return 1; }
+    adb shell am force-stop $PKG
+    testi_calistir kalicilik-zorla-durdurma ci/logs/kalicilik-durdurma-$KAPI_IS.txt "$P#readData"
+    yeniden_baslat
+    cevrimdisi
+    # Emülatör yeniden başlatmadan dönmeyip zorla kapatıldıysa bu tur gerçek bir yeniden başlatma sayılmaz:
+    # kayıtları atılır ve sıra bir kez baştan çalışır. Not sonuca yazılır.
+    if [ -n "$YENIDEN_NOT" ] && [ "$tur" = 1 ]; then
+      not="1. turda $YENIDEN_NOT, sıra tekrarlandı"
+      sed -i '/^kalicilik-yaz\tPASS\t/d; /^kalicilik-zorla-durdurma\tPASS\t/d' "$DURUM"
+      continue
+    fi
+    break
+  done
+  testi_calistir kalicilik-yeniden-baslatma ci/logs/kalicilik-yeniden-$KAPI_IS.txt "$P#readData"
+  local k=$?
+  [ -n "$not$YENIDEN_NOT" ] && sed -i "\$ s/\$/; ${not}${YENIDEN_NOT:+; 2. tur: $YENIDEN_NOT}/" "$DURUM"
+  return $k
 }
 
 # Yan yükleme (release ayarlı) APK: kurulum, açılış, uygulama çökmesi ve ANR yok.
