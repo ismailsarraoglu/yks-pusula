@@ -54,6 +54,9 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         private set
     /** Rıza ve başlatma zincirinde gelinen son adım. Yalnızca teşhis için tutulur. */
     @Volatile private var stage = "baslamadi"
+    /** Yaş bilgisi etkinlik açıldıktan sonra yüklenirse rıza akışı bu etkinlikle başlatılır. */
+    @Volatile private var lastActivity: java.lang.ref.WeakReference<Activity>? = null
+    @Volatile private var consentRequested = false
 
     /**
      * Reklam yalnızca yaşı 18 ve üstü olduğu doğrulanan kullanıcıya istenir; bu yüzden yaş işlemi UNSPECIFIED açıkça belirtilir.
@@ -65,10 +68,12 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         .build()
 
     fun onActivityStart(activity: Activity) {
+        lastActivity = java.lang.ref.WeakReference(activity)
         if (entitlement.value) { _can.value = false; return }
         // Yaşı doğrulanmamış kullanıcı için rıza formu da açılmaz, reklam SDK'sı başlatılmaz.
         if (!verifiedAdult.value) { step("yas dogrulanmadi"); _can.value = false; return }
         val params = ConsentRequestParameters.Builder().build()
+        consentRequested = true
         try {
             step("riza istendi")
             consent.requestConsentInfoUpdate(activity, params, {
@@ -162,5 +167,13 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         _can.value = false
     }
 
-    fun recheck() { update() }
+    /** Hak veya yaş bilgisi değişince çağrılır. Bu oturumda rıza hiç sorulmadıysa önce rıza akışı çalışır. */
+    fun recheck() {
+        val a = lastActivity?.get()
+        if (!consentRequested && verifiedAdult.value && !entitlement.value && a != null && !a.isFinishing && !a.isDestroyed) {
+            a.runOnUiThread { onActivityStart(a) }
+            return
+        }
+        update()
+    }
 }
