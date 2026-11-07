@@ -73,8 +73,9 @@ object EntitlementLogic {
         if (publicKey.isBlank()) return PurchaseCheck.NO_KEY
         if (signature.isBlank() || !verifySignature(jsonText, signature, publicKey)) return PurchaseCheck.BAD_SIGNATURE
         val f = fields(jsonText) ?: return PurchaseCheck.MALFORMED
+        // Zorunlu alanlardan biri yoksa kayıt bozuk sayılır; hiçbir alan varsayılan değerle tamamlanmaz.
+        if (f.products.isEmpty() || f.packageName == null || f.state == null || f.token.isNullOrBlank()) return PurchaseCheck.MALFORMED
         if (f.products != listOf(REMOVE_ADS_PRODUCT)) return PurchaseCheck.WRONG_PRODUCT
-        if (f.packageName == null || f.state == null || f.token.isNullOrBlank()) return PurchaseCheck.MALFORMED
         if (f.packageName != packageName) return PurchaseCheck.WRONG_PACKAGE
         if (f.state != 0) return PurchaseCheck.NOT_PURCHASED
         if (expectedToken != null && expectedToken != f.token) return PurchaseCheck.TOKEN_MISMATCH
