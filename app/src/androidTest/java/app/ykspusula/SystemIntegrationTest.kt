@@ -58,11 +58,14 @@ class SystemIntegrationTest {
     private val notes = StringBuilder()
     private val stamp = System.currentTimeMillis().toString().takeLast(6)
 
-    @Before fun setup() = runBlocking {
-        app.ready.first { it }
-        r.clearUserData()
-        r.updateSettings { it[Keys.theme] = "DARK" }
-        r.user.saveProfile(UserProfile(onboarded = true, name = "Test", field = "SAY"))
+    // JUnit @Before yöntemi void olmalı; runBlocking son ifadenin değerini döndürmesin diye gövde bloktur.
+    @Before fun setup() {
+        runBlocking {
+            app.ready.first { it }
+            r.clearUserData()
+            r.updateSettings { it[Keys.theme] = "DARK" }
+            r.user.saveProfile(UserProfile(onboarded = true, name = "Test", field = "SAY"))
+        }
     }
 
     @After fun tearDown() {
@@ -138,7 +141,7 @@ class SystemIntegrationTest {
 
     /* ---------- Bildirimler ---------- */
 
-    @Test fun notificationShownWhenAllowed() = runBlocking {
+    @Test fun notificationShownWhenAllowed() = runBlocking<Unit> {
         assertTrue("Bildirim izni bu testte verilmiş olmalı", Notifier.canNotify(app))
         Notifier.createChannels(app)
         Notifier.show(app, 4242, "Deneme bildirimi", "Android 15 testi")
@@ -151,7 +154,7 @@ class SystemIntegrationTest {
     }
 
     /** Gerçek bekleme: hatırlatma 2 dakika sonrasına kurulur, Android'in tetiklemesi beklenir (en çok 8 dakika). */
-    @Test fun scheduledReminderActuallyFires() = runBlocking {
+    @Test fun scheduledReminderActuallyFires() = runBlocking<Unit> {
         val nm = app.getSystemService(NotificationManager::class.java)
         nm.cancelAll()
         val zone = ZoneId.systemDefault()
@@ -178,7 +181,7 @@ class SystemIntegrationTest {
     }
 
     /** Saat dilimi değişince BootReceiver hatırlatmayı yeni yerel saate göre yeniden kurar. */
-    @Test fun timeZoneChangeReschedules() = runBlocking {
+    @Test fun timeZoneChangeReschedules() = runBlocking<Unit> {
         val ua = InstrumentationRegistry.getInstrumentation().uiAutomation
         val am = app.getSystemService(android.app.AlarmManager::class.java)
         val original = java.util.TimeZone.getDefault().id
@@ -205,7 +208,7 @@ class SystemIntegrationTest {
 
     /* ---------- Dosya ve fotoğraf seçici ---------- */
 
-    @Test fun pdfPickerImportsAndRenders() = runBlocking {
+    @Test fun pdfPickerImportsAndRenders() = runBlocking<Unit> {
         val fileName = "yks-ornek-$stamp.pdf"
         insertDownload(fileName, "application/pdf", samplePdf())
         launch("library")
@@ -228,7 +231,7 @@ class SystemIntegrationTest {
         note("pdf-acildi=1/2")
     }
 
-    @Test fun photoPickerAttachesToWrong() = runBlocking {
+    @Test fun photoPickerAttachesToWrong() = runBlocking<Unit> {
         val bmp = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.rgb(40, 120, 220)) }
         val cv = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "yks-soru-$stamp.jpg")
@@ -264,7 +267,7 @@ class SystemIntegrationTest {
     }
 
     /** Yedek Android'in kaydet ekranıyla dosyaya yazılır, sonra açma ekranıyla geri okunur. */
-    @Test fun backupSaveAndRestoreThroughPicker() = runBlocking {
+    @Test fun backupSaveAndRestoreThroughPicker() = runBlocking<Unit> {
         r.user.saveNote(UserNote(id = "yedek-notu", title = "Yedekten dönmeli", body = "x", createdAt = 1, updatedAt = 1))
         launch("backup")
         clickApp("Yedek oluştur")
@@ -298,7 +301,7 @@ class SystemIntegrationTest {
 
     /* ---------- Play Billing (çevrimiçi Play imajında çalıştırılır) ---------- */
 
-    @Test fun billingClientStarts() = runBlocking {
+    @Test fun billingClientStarts() = runBlocking<Unit> {
         val b = app.monetize.billing
         b.connect()
         var waited = 0

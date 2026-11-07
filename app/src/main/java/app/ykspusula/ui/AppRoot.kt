@@ -110,7 +110,8 @@ private class Holder(val p: UserProfile?)
 @Composable
 private fun BottomNavigationBar(route: String?, onSelect: (String) -> Unit) {
     val c = Yks.c
-    Column(Modifier.background(if (c.isDark) c.bg2 else c.card).navigationBarsPadding()) {
+    // Yatayda kamera kesiği ve gezinme çubuğu yanda kalır; sekmeler bu alanların altına girmesin (Android 15 kenardan kenara).
+    Column(Modifier.background(if (c.isDark) c.bg2 else c.card).windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)))) {
         HorizontalDivider(thickness = 0.5.dp, color = c.line)
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).selectableGroup()) {
             TABS.forEach { t ->

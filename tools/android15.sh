@@ -129,7 +129,9 @@ else
 
   # 7. Çevrimiçi: reklam SDK'sı (Google test kimlikleri) ve Play Billing bağlantısı.
   cevrimici
-  if kontrol cevrimici-ag "$(adb shell ping -c 1 -W 3 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" sh -c "adb shell ping -c 1 -W 3 8.8.8.8 > /dev/null 2>&1"; then
+  # GitHub sunucuları ICMP (ping) geçirmez; bağlantı Android'in doğrulanmış ağ bilgisinden okunur.
+  ag_dogrulandi() { local n; for n in $(seq 1 12); do adb shell dumpsys connectivity 2>/dev/null | grep -qE '&VALIDATED' && return 0; sleep 5; done; return 1; }
+  if kontrol cevrimici-ag "doğrulanmış ağ: $(adb shell dumpsys connectivity 2>/dev/null | grep -m1 -oE 'NetworkAgentInfo\{[^ ]* [^ ]*' | tr -d '\r')" ag_dogrulandi; then
     ANA=$DURUM; DURUM=$D/reklam-denemeleri.tsv; : > "$DURUM"
     sonuc=FAIL; aciklama=""
     for d in 1 2 3; do
