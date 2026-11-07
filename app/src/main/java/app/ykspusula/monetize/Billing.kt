@@ -131,7 +131,7 @@ class BillingManager(context: Context, private val scope: CoroutineScope, privat
         when {
             done != null -> {
                 // Önce Google Play imzası ve ürün denetlenir; geçmeyen kayıt onaylanmaz ve hak açmaz.
-                val check = EntitlementLogic.check(done.originalJson, done.signature, store.publicKey)
+                val check = EntitlementLogic.check(done.originalJson, done.signature, store.publicKey, expectedToken = done.purchaseToken)
                 if (check != PurchaseCheck.OK) {
                     store.apply(PurchaseQuery.Unavailable)
                     _ui.value = _ui.value.copy(message = EntitlementLogic.message(check))

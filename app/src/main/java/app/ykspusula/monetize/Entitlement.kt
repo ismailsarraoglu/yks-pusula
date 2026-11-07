@@ -29,10 +29,10 @@ sealed interface PurchaseQuery {
 data class CachedPurchase(val tokenHash: String, val json: String, val signature: String, val verifiedAt: Long)
 
 /** Satın alma kaydının JSON içinden okunan alanları. */
-data class PurchaseFields(val products: List<String>, val state: Int?, val packageName: String?)
+data class PurchaseFields(val products: List<String>, val state: Int?, val packageName: String?, val token: String?)
 
 /** Doğrulama sonucu. Kullanıcıya gösterilecek açıklamalar için ayrıntılı tutulur. */
-enum class PurchaseCheck { OK, NO_KEY, BAD_SIGNATURE, WRONG_PRODUCT, NOT_PURCHASED, WRONG_PACKAGE, MALFORMED }
+enum class PurchaseCheck { OK, NO_KEY, BAD_SIGNATURE, WRONG_PRODUCT, NOT_PURCHASED, WRONG_PACKAGE, TOKEN_MISMATCH, MALFORMED }
 
 /**
  * Android'e bağımlı olmayan karar mantığı; birim testleriyle doğrulanır.
@@ -59,26 +59,35 @@ object EntitlementLogic {
         fun str(k: String) = (o[k] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
         val list = (o["productIds"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
         val products = list ?: listOfNotNull(str("productId"))
-        val state = (o["purchaseState"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
-        PurchaseFields(products, state, str("packageName"))
+        val state = (o["purchaseState"] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { !it.isString }?.content?.toIntOrNull()
+        PurchaseFields(products, state, str("packageName"), str("purchaseToken"))
     } catch (e: Exception) { null }
 
     /**
-     * Açık anahtar boşsa satın alma hiçbir zaman geçerli sayılmaz. İmza, ürün kimliği, paket adı ve
-     * satın alma durumu (0 = tamamlandı) birlikte denetlenir.
+     * Kapalı varsayılan (fail-closed): herhangi bir alan eksik, bozuk veya tutarsızsa satın alma reddedilir.
+     * Açık anahtar zorunlu; imza, tek ve tam eşleşen ürün kimliği, uygulamanın paket adı, satın alma durumu
+     * (yalnızca 0 = PURCHASED) ve satın alma belirteci denetlenir. expectedToken verilirse JSON'daki belirteçle
+     * aynı olmalıdır (BillingClient'tan gelen belirteç).
      */
-    fun check(jsonText: String, signature: String, publicKey: String, packageName: String = APP_PACKAGE): PurchaseCheck {
+    fun check(jsonText: String, signature: String, publicKey: String, expectedToken: String? = null, packageName: String = APP_PACKAGE): PurchaseCheck {
         if (publicKey.isBlank()) return PurchaseCheck.NO_KEY
         if (signature.isBlank() || !verifySignature(jsonText, signature, publicKey)) return PurchaseCheck.BAD_SIGNATURE
         val f = fields(jsonText) ?: return PurchaseCheck.MALFORMED
-        if (REMOVE_ADS_PRODUCT !in f.products) return PurchaseCheck.WRONG_PRODUCT
-        if (f.packageName != null && f.packageName != packageName) return PurchaseCheck.WRONG_PACKAGE
-        if (f.state != null && f.state != 0) return PurchaseCheck.NOT_PURCHASED
+        if (f.products != listOf(REMOVE_ADS_PRODUCT)) return PurchaseCheck.WRONG_PRODUCT
+        if (f.packageName == null || f.state == null || f.token.isNullOrBlank()) return PurchaseCheck.MALFORMED
+        if (f.packageName != packageName) return PurchaseCheck.WRONG_PACKAGE
+        if (f.state != 0) return PurchaseCheck.NOT_PURCHASED
+        if (expectedToken != null && expectedToken != f.token) return PurchaseCheck.TOKEN_MISMATCH
         return PurchaseCheck.OK
     }
 
-    fun isValid(c: CachedPurchase?, publicKey: String): Boolean =
-        c != null && c.tokenHash.isNotBlank() && check(c.json, c.signature, publicKey) == PurchaseCheck.OK
+    /** Önbellekteki kayıt da aynı denetimden geçer; saklanan belirteç özeti JSON'daki belirteçle eşleşmelidir. */
+    fun isValid(c: CachedPurchase?, publicKey: String): Boolean {
+        if (c == null || c.tokenHash.isBlank()) return false
+        if (check(c.json, c.signature, publicKey) != PurchaseCheck.OK) return false
+        val token = fields(c.json)?.token ?: return false
+        return hash(token) == c.tokenHash
+    }
 
     fun verifySignature(json: String, signature: String, publicKey: String): Boolean = try {
         val key = KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(java.util.Base64.getDecoder().decode(publicKey)))
@@ -93,7 +102,7 @@ object EntitlementLogic {
         PurchaseCheck.OK -> ""
         PurchaseCheck.NO_KEY -> "Bu sürümde satın alma doğrulaması yapılandırılmamış. Uygulamayı Google Play'den kurarak satın alabilirsin."
         PurchaseCheck.BAD_SIGNATURE, PurchaseCheck.MALFORMED -> "Satın alma kaydı doğrulanamadı. Reklamlar kaldırılmadı."
-        PurchaseCheck.WRONG_PRODUCT, PurchaseCheck.WRONG_PACKAGE -> "Bu satın alma bu uygulamanın reklamsız ürününe ait değil."
+        PurchaseCheck.WRONG_PRODUCT, PurchaseCheck.WRONG_PACKAGE, PurchaseCheck.TOKEN_MISMATCH -> "Bu satın alma bu uygulamanın reklamsız ürününe ait değil."
         PurchaseCheck.NOT_PURCHASED -> "Ödeme henüz tamamlanmamış."
     }
 }

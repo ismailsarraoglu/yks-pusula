@@ -271,7 +271,7 @@ fun BackupScreen() {
                 val rep = a.backup.restore(f.data, replace, BuildConfig.VERSION_NAME, l.attachments, l.warnings)
                 Notifier.rescheduleAll(context)
                 isError = false
-                status = (if (replace) "Yedek geri yüklendi. Önceki verilerin fotoğraf ve PDF'lerle birlikte cihazda güvenlik kopyası olarak saklandı." else "Yedek mevcut verilerle birleştirildi.") +
+                status = (if (replace) "Yedek geri yüklendi." else "Yedek mevcut verilerle birleştirildi.") + " Önceki verilerin fotoğraf ve PDF'lerle birlikte cihazda güvenlik kopyası olarak saklandı." +
                     " ${rep.records} kayıt ve ${rep.files} dosya aktarıldı." + rep.warnings.joinToString("") { " $it" }
                 pending = null; safety = a.backup.safetyCopies()
             } catch (e: app.ykspusula.data.BackupRejected) { isError = true; status = e.message ?: "Geri yükleme yapılamadı."
@@ -286,6 +286,7 @@ fun BackupScreen() {
                 Text("PDF dosyalarını da dahil et", color = Yks.c.text, modifier = Modifier.weight(1f))
                 Switch(includePdf, { includePdf = it })
             }
+            if (a.recoveredRestore.collectAsStateWithLifecycle().value) InfoBanner("Önceki açılışta yarıda kalan bir geri yükleme vardı. Verilerin, dosyaların ve ayarların geri yükleme öncesindeki hâline döndürüldü.", Icons.Rounded.Info, Yks.c.warning)
             MainButton("Yedek oluştur", Modifier.fillMaxWidth(), icon = Icons.Rounded.Upload) { create.launch("yks-pusula-yedek-${today()}.zip") }
             SoftButton("Yedekten geri yükle", Modifier.fillMaxWidth(), icon = Icons.Rounded.Download) { open.launch(arrayOf("application/zip", "application/json", "text/plain", "application/octet-stream")) }
             if (status.isNotEmpty()) {

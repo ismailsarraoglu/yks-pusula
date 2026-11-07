@@ -190,7 +190,19 @@ data class LoadedBackup(val check: BackupCheck, val attachments: File?, val warn
 /** Geri yükleme sonucu: kaç kayıt ve dosyanın aktarıldığı. */
 data class RestoreReport(val records: Int, val files: Int, val warnings: List<String>, val safetyCopy: File?)
 
+/**
+ * Otomatik testlerin geri yüklemenin belirli adımlarında hata üretebilmesi için. Uygulamada boştur.
+ * Adımlar: "veritabani-sonrasi", "dosya:<ad>", "ayarlar", "ayarlar-sonrasi".
+ */
+fun interface RestoreFaults { fun at(stage: String) }
+
+/** Testte süreç ölümünü taklit eder: geri yükleme kendi temizliğini yapamadan durur. */
+class SimulatedProcessDeath : RuntimeException("test: süreç öldü")
+
 class BackupManager(private val repo: Repository, private val filesDir: File, private val cacheDir: File, val limits: BackupLimits = BackupLimits()) {
+    @Volatile var faults: RestoreFaults = RestoreFaults { }
+    /** Geri yükleme günlüğü: yarıda kalan işlem uygulama yeniden açıldığında geri alınır. */
+    private val journal get() = filesDir.resolve("geri-yukleme-gunlugu.txt")
     private val u get() = repo.user
 
     suspend fun snapshot(): BackupData = withContext(Dispatchers.IO) {
@@ -363,15 +375,20 @@ class BackupManager(private val repo: Repository, private val filesDir: File, pr
     fun safetyCopies(): List<File> = filesDir.resolve("safety").listFiles()?.filter { !it.name.endsWith(".yaziliyor") }?.sortedByDescending { it.lastModified() }.orEmpty()
 
     /**
-     * Aşamalı geri yükleme:
-     * 1. Ekler uygulama klasöründe geçici alana kopyalanır.
-     * 2. Değiştirme seçildiyse tam güvenlik kopyası alınır ve doğrulanır.
-     * 3. Veritabanı tek işlemde yazılır; hata olursa Room işlemi geri alır.
-     * 4. Ekler yerine taşınır. Bu adım başarısız olursa güvenlik kopyasından eski hâle dönülür.
-     * 5. Kayıt sayısı denetlenir, geçici dosyalar silinir.
+     * Aşamalı ve geri alınabilir geri yükleme (birleştirme ve değiştirme için aynı):
+     * 1. Ekler uygulama klasöründe geçici alana kopyalanır; mevcut verilere dokunulmaz.
+     * 2. Fotoğraf, PDF ve ayarlar dahil tam güvenlik kopyası alınır ve doğrulanır.
+     * 3. Diske geri yükleme günlüğü yazılır.
+     * 4. Veritabanı tek işlemde yazılır.
+     * 5. Ekler tek tek yerine konur: aynı adlı eski dosya silinmez, önce kenara alınır.
+     * 6. Değiştirmede ayarlar uygulanır.
+     * Herhangi bir adımda hata olursa dosyalar günlükten, veritabanı ve ayarlar güvenlik kopyasından eski hâline döner.
+     * Süreç yarıda ölürse uygulama açılışında [recoverIfInterrupted] aynısını yapar.
      */
     suspend fun restore(d: BackupData, replace: Boolean, appVersion: String, attachments: File? = null, warnings: List<String> = emptyList()): RestoreReport = withContext(Dispatchers.IO) {
+        recoverIfInterrupted()
         val staging = filesDir.resolve("geri-yukleme-${System.nanoTime()}")
+        var completed = false
         try {
             var staged = 0
             attachments?.let { a ->
@@ -384,21 +401,32 @@ class BackupManager(private val repo: Repository, private val filesDir: File, pr
                     }
                 }
             }
-            val safety = if (replace) safetyCopy(appVersion) else null
-            writeDatabase(d, replace, staging)
+            val safety = safetyCopy(appVersion)
+            journal.writeText("BASLA\t${safety.absolutePath}\n")
             try {
+                writeDatabase(d, replace, staging)
+                journal.appendText("VERITABANI\n")
+                faults.at("veritabani-sonrasi")
                 moveStaged(staging)
+                if (replace) applySettings(d.settings, fault = true)
+                faults.at("ayarlar-sonrasi")
+                commitJournal()
+            } catch (e: SimulatedProcessDeath) {
+                throw e
             } catch (e: Exception) {
-                if (safety != null) rollback(safety, appVersion)
-                throw BackupRejected("Dosyalar aktarılamadı. Veriler geri yükleme öncesindeki hâline döndürüldü.")
+                val back = runCatching { revertFromJournal() }.isSuccess
+                throw BackupRejected(
+                    if (back) "Geri yükleme tamamlanamadı. Verilerin, dosyaların ve ayarların geri yükleme öncesindeki hâline döndürüldü."
+                    else "Geri yükleme tamamlanamadı ve otomatik geri dönüş de başarısız oldu. Önceki verilerin şu güvenlik kopyasında: ${safety.name}",
+                )
             }
-            if (replace) applySettings(d.settings)
+            completed = true
             val records = d.logs.size + d.sessions.size + d.mocks.size + d.wrongs.size + d.notes.size + d.tasks.size + d.sources.size + d.progress.size
             val after = u.wrongsNow().size
             val extra = if (after < d.wrongs.size) listOf("Bazı yanlış kayıtları aktarılamadı (${d.wrongs.size - after}).") else emptyList()
             RestoreReport(records, staged, warnings + extra, safety)
         } finally {
-            staging.deleteRecursively()
+            if (completed || !journal.exists()) staging.deleteRecursively()
             attachments?.deleteRecursively()
         }
     }
@@ -427,34 +455,77 @@ class BackupManager(private val repo: Repository, private val filesDir: File, pr
         }
     }
 
+    /**
+     * Ekler yerine konur. Aynı adlı mevcut dosya silinmez: önce gizli bir ada taşınır ve günlüğe yazılır,
+     * yeni dosya yerine oturduktan ve bütün geri yükleme bittikten sonra silinir.
+     */
     private fun moveStaged(staging: File) {
         ATTACHMENT_DIRS.forEach { sub ->
             val target = filesDir.resolve(sub).apply { mkdirs() }
-            staging.resolve(sub).listFiles()?.forEach { f ->
+            staging.resolve(sub).listFiles()?.sortedBy { it.name }?.forEach { f ->
                 val dest = target.resolve(f.name)
-                if (dest.exists()) dest.delete()
-                if (!f.renameTo(dest)) { f.copyTo(dest, overwrite = true); f.delete() }
+                val old = if (dest.exists()) target.resolve(".eski-${System.nanoTime()}-${f.name}") else null
+                journal.appendText("DOSYA\t${dest.absolutePath}\t${old?.absolutePath ?: "-"}\n")
+                if (old != null && !dest.renameTo(old)) throw java.io.IOException("Eski dosya kenara alınamadı: ${f.name}")
+                faults.at("dosya:${f.name}")
+                if (!f.renameTo(dest)) {
+                    f.copyTo(dest, overwrite = false)
+                    if (dest.length() != f.length()) throw java.io.IOException("Dosya taşınamadı: ${f.name}")
+                    f.delete()
+                }
             }
         }
     }
 
-    /** Güvenlik kopyasından veritabanını ve ekleri eski hâline döndürür. */
-    private suspend fun rollback(safety: File, appVersion: String) {
+    /** Başarılı bitişte kenara alınan eski dosyalar ve günlük silinir. */
+    private fun commitJournal() {
+        journalEntries().forEach { (_, old) -> old?.delete() }
+        journal.delete()
+    }
+
+    private fun journalEntries(): List<Pair<File, File?>> = journal.takeIf { it.exists() }?.readLines().orEmpty()
+        .filter { it.startsWith("DOSYA\t") }.map { l -> val p = l.split('\t'); File(p[1]) to p[2].takeIf { it != "-" }?.let(::File) }
+
+    /**
+     * Günlükteki dosya taşımaları ters sırayla geri alınır; veritabanı ve ayarlar güvenlik kopyasından yüklenir.
+     * Güvenlik kopyası işlem başlamadan hemen önce alındığı için tekrar çalıştırılması güvenlidir.
+     */
+    private suspend fun revertFromJournal() {
+        val lines = journal.takeIf { it.exists() }?.readLines().orEmpty()
+        journalEntries().asReversed().forEach { (dest, old) ->
+            if (old != null) {
+                if (old.exists()) { dest.delete(); if (!old.renameTo(dest)) { old.copyTo(dest, true); old.delete() } }
+            } else dest.delete()
+        }
+        val safety = lines.firstOrNull { it.startsWith("BASLA\t") }?.substringAfter('\t')?.let(::File)
+        if (safety != null && safety.exists()) rollback(safety)
+        journal.delete()
+    }
+
+    /** Uygulama açılışında çağrılır: yarıda kalan bir geri yükleme varsa önceki hâle döner. */
+    suspend fun recoverIfInterrupted(): Boolean = withContext(Dispatchers.IO) {
+        if (!journal.exists()) return@withContext false
+        revertFromJournal()
+        filesDir.listFiles()?.filter { it.name.startsWith("geri-yukleme-") && it.isDirectory }?.forEach { it.deleteRecursively() }
+        true
+    }
+
+    /** Güvenlik kopyasından veritabanını ve ayarları eski hâline döndürür (ekler günlükten geri alınır). */
+    private suspend fun rollback(safety: File) {
         val l = load(safety.inputStream())
-        val ok = l.check as? BackupCheck.Ok ?: return
-        val staging = filesDir.resolve("geri-donus-${System.nanoTime()}")
+        val ok = l.check as? BackupCheck.Ok ?: throw BackupRejected("Güvenlik kopyası okunamadı.")
         try {
-            l.attachments?.let { a -> ATTACHMENT_DIRS.forEach { sub -> a.resolve(sub).listFiles()?.forEach { it.copyTo(staging.resolve(sub).apply { mkdirs() }.resolve(it.name), true) } } }
-            writeDatabase(ok.file.data, replace = true, staging)
-            moveStaged(staging)
+            writeDatabase(ok.file.data, replace = true, filesDir.resolve("yok"))
+            applySettings(ok.file.data.settings, fault = false)
         } finally {
-            staging.deleteRecursively(); l.attachments?.deleteRecursively()
+            l.attachments?.deleteRecursively()
         }
     }
 
-    private suspend fun applySettings(s: Map<String, String>) {
+    private suspend fun applySettings(s: Map<String, String>, fault: Boolean) {
         repo.updateSettings { p ->
             s["theme"]?.let { p[Keys.theme] = it }
+            if (fault) faults.at("ayarlar")
             s["fontScale"]?.toFloatOrNull()?.let { p[Keys.font] = it }
             s["pomodoroWork"]?.toIntOrNull()?.let { p[Keys.pWork] = it }
             s["pomodoroBreak"]?.toIntOrNull()?.let { p[Keys.pBreak] = it }

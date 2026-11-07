@@ -7,6 +7,7 @@ import app.ykspusula.data.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -197,5 +198,105 @@ class BackupSecurityTest {
         app.backup.restore((loaded.check as BackupCheck.Ok).file.data, false, "2.1.0", loaded.attachments)
         assertTrue(app.filesDir.listFiles()!!.none { it.name.startsWith("geri-yukleme-") })
         assertTrue(app.cacheDir.listFiles()!!.none { it.name.startsWith("gelen-") })
+    }
+
+    /* ---------- Geri alınabilir geri yükleme ---------- */
+
+    @After fun clearFaults() { app.backup.faults = RestoreFaults { } }
+
+    private val newBytes = "YENI-FOTO".toByteArray()
+    private val oldBytes = "ESKI-FOTO".toByteArray()
+
+    /** Yedekte: "Yedekteki" notu, foto.jpg = YENI, tema koyu. Cihazda: "Yerel" notu, foto.jpg = ESKI, tema açık. */
+    private suspend fun prepared(): LoadedBackup {
+        r.updateSettings { it[Keys.theme] = "DARK" }
+        r.photoFile("foto.jpg").writeBytes(newBytes)
+        r.saveWrong(r.newWrong("tyt-mat", null, null, "Kitap", 3, "4", "Dikkatsizlik", "", "foto.jpg", null))
+        r.user.saveNote(UserNote(id = "yedekteki", title = "Yedekteki", body = "y", createdAt = 3, updatedAt = 3))
+        val bytes = ByteArrayOutputStream().also { app.backup.exportZip(it, "2.1.1", false) }.toByteArray()
+        r.user.deleteNote("yedekteki")
+        r.user.saveNote(UserNote(id = "yerel", title = "Yerel", body = "z", createdAt = 4, updatedAt = 4))
+        r.photoFile("foto.jpg").writeBytes(oldBytes)
+        r.updateSettings { it[Keys.theme] = "LIGHT" }
+        return app.backup.load(ByteArrayInputStream(bytes)).also { assertTrue(it.check is BackupCheck.Ok) }
+    }
+
+    private fun data(l: LoadedBackup) = (l.check as BackupCheck.Ok).file.data
+
+    private suspend fun assertUntouched() {
+        val titles = r.user.notesNow().map { it.title }.toSet()
+        assertTrue("Yerel not kaybolmamalı: $titles", "Yerel" in titles)
+        assertFalse("Yedekteki not geri dönmemeli: $titles", "Yedekteki" in titles)
+        assertArrayEquals("Eski fotoğraf korunmalı", oldBytes, r.photoFile("foto.jpg").readBytes())
+        assertEquals("LIGHT", r.settings.first().theme)
+        assertNoLeftovers()
+    }
+
+    private fun assertNoLeftovers() {
+        assertFalse("Günlük kalmamalı", File(app.filesDir, "geri-yukleme-gunlugu.txt").exists())
+        assertTrue(File(app.filesDir, "photos").listFiles()!!.none { it.name.startsWith(".eski-") })
+        assertTrue(app.filesDir.listFiles()!!.none { it.name.startsWith("geri-yukleme-") })
+    }
+
+    @Test fun mergeReplacesSameNameFileSafely() = runBlocking {
+        val l = prepared()
+        app.backup.restore(data(l), false, "2.1.1", l.attachments, l.warnings)
+        assertArrayEquals(newBytes, r.photoFile("foto.jpg").readBytes())
+        assertTrue(r.user.notesNow().any { it.title == "Yedekteki" })
+        assertTrue(r.user.notesNow().any { it.title == "Yerel" })
+        assertNoLeftovers()
+    }
+
+    @Test fun fileMoveFailureKeepsOldFileAndData() = runBlocking {
+        val l = prepared()
+        app.backup.faults = RestoreFaults { if (it == "dosya:foto.jpg") throw java.io.IOException("test: taşıma hatası") }
+        val e = runCatching { app.backup.restore(data(l), false, "2.1.1", l.attachments, l.warnings) }.exceptionOrNull()
+        assertTrue("$e", e is BackupRejected && e.message!!.contains("döndürüldü"))
+        assertUntouched()
+    }
+
+    @Test fun databaseStepFailureRollsBack() = runBlocking {
+        val l = prepared()
+        app.backup.faults = RestoreFaults { if (it == "veritabani-sonrasi") throw IllegalStateException("test") }
+        assertTrue(runCatching { app.backup.restore(data(l), true, "2.1.1", l.attachments, l.warnings) }.exceptionOrNull() is BackupRejected)
+        assertUntouched()
+    }
+
+    /** DataStore yazımı hata verirse (değiştirme modu) veritabanı ve dosyalar da eski hâline döner. */
+    @Test fun settingsWriteFailureRollsBackEverything() = runBlocking {
+        val l = prepared()
+        app.backup.faults = RestoreFaults { if (it == "ayarlar") throw java.io.IOException("test: DataStore yazılamadı") }
+        assertTrue(runCatching { app.backup.restore(data(l), true, "2.1.1", l.attachments, l.warnings) }.exceptionOrNull() is BackupRejected)
+        assertUntouched()
+    }
+
+    /** Ayarlar yazıldıktan sonra hata olursa geri dönüş ayarları da eski hâline getirir. */
+    @Test fun failureAfterSettingsRestoresSettings() = runBlocking {
+        val l = prepared()
+        app.backup.faults = RestoreFaults { if (it == "ayarlar-sonrasi") throw IllegalStateException("test") }
+        assertTrue(runCatching { app.backup.restore(data(l), true, "2.1.1", l.attachments, l.warnings) }.exceptionOrNull() is BackupRejected)
+        assertUntouched()
+    }
+
+    /** Süreç geri yükleme ortasında ölürse açılıştaki kurtarma önceki hâli getirir. */
+    @Test fun interruptedRestoreRecoveredOnNextStart() = runBlocking {
+        val l = prepared()
+        app.backup.faults = RestoreFaults { if (it == "dosya:foto.jpg") throw SimulatedProcessDeath() }
+        assertTrue(runCatching { app.backup.restore(data(l), true, "2.1.1", l.attachments, l.warnings) }.exceptionOrNull() is SimulatedProcessDeath)
+        assertTrue("Günlük yarım işlemi göstermeli", File(app.filesDir, "geri-yukleme-gunlugu.txt").exists())
+        app.backup.faults = RestoreFaults { }
+        assertTrue(app.backup.recoverIfInterrupted())
+        assertUntouched()
+        assertFalse(app.backup.recoverIfInterrupted())
+    }
+
+    @Test fun successfulReplaceAppliesEverything() = runBlocking {
+        val l = prepared()
+        app.backup.restore(data(l), true, "2.1.1", l.attachments, l.warnings)
+        assertEquals("DARK", r.settings.first().theme)
+        assertArrayEquals(newBytes, r.photoFile("foto.jpg").readBytes())
+        assertTrue(r.user.notesNow().any { it.title == "Yedekteki" })
+        assertFalse(r.user.notesNow().any { it.title == "Yerel" })
+        assertNoLeftovers()
     }
 }

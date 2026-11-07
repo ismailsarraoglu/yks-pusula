@@ -46,7 +46,7 @@ android {
         versionName = "2.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Bu test internet ister; bağlantılı emülatörde ayrıca çalıştırılır.
-        testInstrumentationRunnerArguments["notClass"] = "app.ykspusula.AdOnlineTest,app.ykspusula.StresTest"
+        testInstrumentationRunnerArguments["notClass"] = "app.ykspusula.AdOnlineTest,app.ykspusula.StresTest,app.ykspusula.SystemIntegrationTest,app.ykspusula.NotificationDeniedTest,app.ykspusula.GateProbeTest"
         vectorDrawables { useSupportLibrary = true }
     }
 

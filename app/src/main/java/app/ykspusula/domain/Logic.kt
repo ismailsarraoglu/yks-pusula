@@ -402,6 +402,36 @@ object PlanGenerator {
     fun clock(m: Int) = "%02d:%02d".format(java.util.Locale.US, (m / 60) % 24, m % 60)
 }
 
+/* ---------- TARAFSIZ YAŞ EKRANI ---------- */
+
+/**
+ * Google Play hedef kitle politikası: kitle çocukları da içeriyorsa çocuklara uygun olmayan reklamlar yalnızca
+ * tarafsız yaş ekranıyla belirlenen büyüklere gösterilir. Türkiye'de 18 yaş altı çocuk sayıldığı ve kullanılan
+ * reklam SDK'sı Families listesinde bulunmadığı için reklam yalnızca 18 yaşını doldurduğu kesin olanlara gösterilir.
+ * birthYear: 0 girilmedi, -1 belirtmek istemedi.
+ */
+object AgeGate {
+    const val ADULT_AGE = 18
+    const val NOT_SET = 0
+    const val DECLINED = -1
+
+    /** Ay bilgisi gün içermediği için doğum ayında yaş dolmamış sayılır (ihtiyatlı). */
+    fun isVerifiedAdult(birthYear: Int, birthMonth: Int, today: LocalDate): Boolean {
+        if (birthYear <= 0 || birthMonth !in 1..12) return false
+        val age = today.year - birthYear - if (today.monthValue <= birthMonth) 1 else 0
+        return age >= ADULT_AGE
+    }
+
+    /** Serbest giriş denetimi; varsayılan değer yoktur. */
+    fun validate(month: String, year: String, today: LocalDate): Pair<Int, Int>? {
+        val m = month.trim().toIntOrNull() ?: return null
+        val y = year.trim().toIntOrNull() ?: return null
+        if (m !in 1..12 || y < today.year - 100 || y > today.year) return null
+        if (y == today.year && m > today.monthValue) return null
+        return y to m
+    }
+}
+
 /* ---------- EKSİK KONU ÖNCELİK SIRASI ---------- */
 
 data class GapTopic(

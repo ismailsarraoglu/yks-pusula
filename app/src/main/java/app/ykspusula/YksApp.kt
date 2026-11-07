@@ -23,6 +23,8 @@ class YksApp : Application() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val monetize by lazy { Monetize(this, scope) }
     val ready = MutableStateFlow(false)
+    /** Yarıda kalan geri yükleme açılışta geri alındıysa true; Yedekleme ekranı kullanıcıya bildirir. */
+    val recoveredRestore = MutableStateFlow(false)
     val startError = MutableStateFlow<String?>(null)
     /** Bildirim veya ana ekran bileşeninden gelen hedef ekran. */
     val pendingRoute = MutableStateFlow<String?>(null)
@@ -45,6 +47,8 @@ class YksApp : Application() {
         scope.launch {
             try {
                 repo.ensureSeeded()
+                // Önceki açılışta yarıda kalan bir geri yükleme varsa veriler önceki hâline döndürülür.
+                runCatching { if (backup.recoverIfInterrupted()) recoveredRestore.value = true }
                 repo.settlePomodoro()
                 ready.value = true
                 Widgets.updateAll(this@YksApp)

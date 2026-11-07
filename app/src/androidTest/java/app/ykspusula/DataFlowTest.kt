@@ -286,6 +286,8 @@ class DataFlowTest {
         assertFalse("Başka ürün hak vermemeli", m.entitlement.hasAdsFreeEntitlement.value)
         m.entitlement.apply(TestPurchase.purchased(state = 4))
         assertFalse("Tamamlanmamış ödeme hak vermemeli", m.entitlement.hasAdsFreeEntitlement.value)
+        m.entitlement.apply(TestPurchase.purchased(tokenOverride = "baska-belirtec"))
+        assertFalse("Belirteci tutmayan kayıt hak vermemeli", m.entitlement.hasAdsFreeEntitlement.value)
         m.entitlement.apply(TestPurchase.purchased())
         assertTrue(m.entitlement.hasAdsFreeEntitlement.value)
         m.entitlement.apply(PurchaseQuery.Unavailable)

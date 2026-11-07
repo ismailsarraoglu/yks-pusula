@@ -100,6 +100,7 @@ class UiFlowTest {
     }
 
     private fun seedProfile() = runBlocking {
+        app.monetize.saveBirth(2008, 3)
         r.user.saveProfile(UserProfile(onboarded = true, name = "Elif", targetDepartment = "Bilgisayar Mühendisliği", targetUniversity = "ODTÜ", weakSubjects = "tyt-mat"))
         r.generatePlan()
     }

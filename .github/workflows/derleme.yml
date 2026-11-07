@@ -1,17 +1,31 @@
 name: derleme
+# Kalite kapısı: birim testleri, derleme, release denetimi ve seçilen Android sürümleri.
+# Zorunlu aşamaların hiçbirinde continue-on-error yoktur. Bir aşama FAIL veya NOT RUN ise iş, sonra da "sonuc" işi
+# ve böylece bütün çalıştırma başarısız olur. Raporlar ve loglar hata durumunda da artifact olarak ve ci-results dalında saklanır.
 on:
   push:
-    branches: [main, surum-2.1]
+    branches: [main, surum-2.1, duzeltme-2.1.1]
   workflow_dispatch:
+    inputs:
+      tur:
+        description: "Cihaz turu: derleme (yalnız derleme), tam (bütün sürümler), emu (a11) veya virgüllü liste (a8,a11,a13,a14,a15,a16,a14p,a16p)"
+        default: derleme
+      kapi_denemesi:
+        description: "Kalite kapısı denemesi: hayir, birim (kasıtlı birim testi hatası) veya cihaz (kasıtlı cihaz testi hatası)"
+        default: hayir
 permissions:
   contents: write
 concurrency:
-  group: derleme
-  cancel-in-progress: true
+  group: derleme-${{ github.ref }}-${{ github.event_name }}-${{ github.event.inputs.tur }}-${{ github.event.inputs.kapi_denemesi }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+env:
+  KAPI_DENEMESI: ${{ github.event.inputs.kapi_denemesi != 'hayir' && github.event.inputs.kapi_denemesi || '' }}
 jobs:
-  build:
+  derle:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 60
+    outputs:
+      cihazlar: ${{ steps.plan.outputs.cihazlar }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -19,10 +33,34 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Hazirlik
+      - name: Plan
+        id: plan
+        env:
+          TUR: ${{ github.event.inputs.tur }}
         run: |
-          mkdir -p ci/logs ci/apk ci/screens
+          source tools/kapi.sh derle
           git log -1 --format='%h %s' > ci/logs/commit.txt
+          echo "run=$GITHUB_RUN_ID olay=$GITHUB_EVENT_NAME dal=$GITHUB_REF_NAME kapi_denemesi=${KAPI_DENEMESI:-yok}" >> ci/logs/commit.txt
+          if [ -z "$TUR" ]; then
+            MSG=$(git log -1 --format=%B)
+            case "$MSG" in *"[tam]"*) TUR=tam ;; *"[emu]"*) TUR=emu ;; *"[a15]"*) TUR=a15 ;; esac
+            L=$(echo "$MSG" | grep -o '\[cihaz:[^]]*\]' | head -1 | sed 's/^\[cihaz:\(.*\)\]$/\1/')
+            [ -n "$L" ] && TUR=$L
+          fi
+          case "$TUR" in tam) TUR=a8,a11,a13,a14,a15,a16,a14p,a16p ;; emu) TUR=a11 ;; derleme) TUR= ;; esac
+          JSON=$(python3 - "$TUR" <<'PY'
+          import json, sys
+          dk = {"a8": 60, "a11": 110, "a13": 60, "a14": 70, "a15": 170, "a16": 80, "a14p": 90, "a16p": 90}
+          names = [n.strip() for n in sys.argv[1].split(",") if n.strip()]
+          bad = [n for n in names if n not in dk]
+          if bad:
+              sys.exit("bilinmeyen cihaz: " + ",".join(bad))
+          print(json.dumps([{"ad": n, "dakika": dk[n]} for n in dict.fromkeys(names)]))
+          PY
+          ) || { kayit plan FAIL "geçersiz tur: $TUR"; exit 1; }
+          echo "cihazlar=$JSON" >> "$GITHUB_OUTPUT"
+          echo "$JSON" > ci/logs/plan.json
+          kayit plan PASS "cihazlar: ${TUR:-yok (yalnız derleme)}"
       - name: Yan yukleme anahtarini hazirla
         env:
           SIDELOAD_P12_B64: ${{ secrets.SIDELOAD_P12_B64 }}
@@ -36,95 +74,170 @@ jobs:
           else
             echo "imza=debug-anahtari (SIDELOAD_P12_B64 tanimli degil)" > ci/logs/imza-turu.txt
           fi
-      - name: Derle ve birim testleri calistir
-        id: gradle
-        continue-on-error: true
+      - name: Birim testleri
         run: |
-          set -o pipefail
-          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:assembleDebug :app:assembleSideload :app:assembleDebugAndroidTest 2>&1 | tee ci/logs/gradle.txt
+          set +e -o pipefail
+          source tools/kapi.sh derle
+          # --rerun: önbellekte sonuç olsa bile testler gerçekten yeniden çalışır.
+          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest --rerun 2>&1 | tee ci/logs/gradle-birim.txt; k=$?
+          SAYI=$(python3 -c "
+          import glob, xml.etree.ElementTree as E
+          t=f=e=s=0
+          for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+              r=E.parse(p).getroot(); t+=int(r.get('tests')); f+=int(r.get('failures')); e+=int(r.get('errors')); s+=int(r.get('skipped'))
+          print(f'{t} test, {f} başarısız, {e} hata, {s} atlandı')")
+          if [ $k = 0 ]; then kayit birim-testleri PASS "$SAYI"; else kayit birim-testleri FAIL "$SAYI; $(grep -m3 -E 'FAILED|What went wrong' ci/logs/gradle-birim.txt | tr '\n' ' ')"; fi
+          exit $k
+      - name: Derle
+        run: |
+          set +e -o pipefail
+          source tools/kapi.sh derle
+          ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleSideload :app:assembleDebugAndroidTest 2>&1 | tee ci/logs/gradle.txt; k=$?
           rm -f keystore.properties
+          if [ $k = 0 ]; then kayit derleme PASS "debug, sideload, androidTest APK"; else kayit derleme FAIL "$(grep -m3 -E '^e: |What went wrong' ci/logs/gradle.txt | tr '\n' ' ')"; fi
+          exit $k
       - name: Play derlemesi anahtarsiz durmali
-        if: steps.gradle.outcome == 'success'
         run: |
+          set +e
+          source tools/kapi.sh derle
           # Yukleme anahtari ve gercek kimlikler yokken bundleRelease hata vermeli; sessizce baska anahtarla imzalanmamali.
           if ./gradlew --no-daemon --console=plain :app:bundleRelease > ci/logs/release-denetimi.txt 2>&1; then
-            echo "release-denetimi: HATA, anahtarsiz AAB uretildi" | tee -a ci/logs/release-denetimi.txt; exit 1
+            kayit release-denetimi FAIL "anahtarsız AAB üretildi"; exit 1
           fi
           grep -A12 "Google Play derlemesi durduruldu" ci/logs/release-denetimi.txt | head -14 > ci/logs/release-denetimi-ozet.txt
-          grep -q "UPLOAD_STORE_FILE" ci/logs/release-denetimi-ozet.txt && echo "release-denetimi: beklenen hatayla durdu" | tee -a ci/logs/release-denetimi-ozet.txt
+          if grep -q "UPLOAD_STORE_FILE" ci/logs/release-denetimi-ozet.txt; then kayit release-denetimi PASS "beklenen hatayla durdu"
+          else kayit release-denetimi FAIL "beklenmeyen hatayla durdu: $(grep -m2 'What went wrong' -A2 ci/logs/release-denetimi.txt | tr '\n' ' ')"; exit 1; fi
       - name: Manifest denetimi
-        if: steps.gradle.outcome == 'success'
-        id: manifest
-        continue-on-error: true
         run: |
+          set +e
+          source tools/kapi.sh derle
           AAPT=$(ls -d $ANDROID_HOME/build-tools/*/aapt2 | tail -1)
+          APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/*/apksigner | tail -1)
           APK=app/build/outputs/apk/sideload/app-sideload.apk
           $AAPT dump badging $APK | grep -E "^(package|sdkVersion|targetSdkVersion|application-debuggable)" | tee ci/logs/apk-badging.txt
           $AAPT dump permissions $APK | tee ci/logs/apk-permissions.txt
           grep -E 'uses-permission' ci/logs/apk-permissions.txt | sed "s/.*name='//; s/'.*//" | sort > ci/logs/izinler.txt
-          ! grep -q application-debuggable ci/logs/apk-badging.txt
-          grep -q "targetSdkVersion:'36'" ci/logs/apk-badging.txt
-          APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/*/apksigner | tail -1)
-          $APKSIGNER verify --verbose $APK | tee ci/logs/apk-signature.txt
-      - name: APK dosyalarini kopyala
-        if: steps.gradle.outcome == 'success'
+          kontrol manifest-debuggable-degil "sideload APK hata ayıklanabilir değil" sh -c '! grep -q application-debuggable ci/logs/apk-badging.txt'
+          kontrol manifest-hedef-sdk "$(grep -o "targetSdkVersion:'[0-9]*'" ci/logs/apk-badging.txt)" grep -q "targetSdkVersion:'36'" ci/logs/apk-badging.txt
+          $APKSIGNER verify --verbose $APK > ci/logs/apk-signature.txt 2>&1; k=$?
+          kontrol apk-imza "$(head -1 ci/logs/apk-signature.txt)" [ $k = 0 ]
+          ! grep -qv $'\tPASS\t' ci/logs/durum-derle.tsv
+      - name: APK dosyalarini sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            app/build/outputs/apk/sideload/app-sideload.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Derleme raporu
+        if: always()
+        env:
+          DURUM_IS: ${{ job.status }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk ci/apk/yks-pusula-debug.apk
-          cp app/build/outputs/apk/sideload/app-sideload.apk ci/apk/yks-pusula-sideload.apk
+          source tools/kapi.sh derle
+          # Çalışmayan aşamalar NOT_RUN olarak yazılır; böylece raporda boş kalmaz.
+          for a in plan birim-testleri derleme release-denetimi manifest-debuggable-degil manifest-hedef-sdk apk-imza; do
+            cut -f1 ci/logs/durum-derle.tsv | grep -qx "$a" || kayit "$a" NOT_RUN "önceki aşama başarısız olduğu için çalışmadı"
+          done
+          [ "$DURUM_IS" = success ] && echo 0 > ci/logs/cikis-derle.txt || echo 1 > ci/logs/cikis-derle.txt
+          mkdir -p ci/logs/birim ci/apk
+          cp app/build/test-results/testDebugUnitTest/*.xml ci/logs/birim/ 2>/dev/null || true
+          cp -r app/schemas ci/logs/schemas 2>/dev/null || true
+          grep -hE '^e: |error:|FAILED|What went wrong|\[ksp\]' ci/logs/gradle*.txt 2>/dev/null | head -150 > ci/logs/hatalar.txt || true
+          cp app/build/outputs/apk/debug/app-debug.apk ci/apk/yks-pusula-debug.apk 2>/dev/null || true
+          cp app/build/outputs/apk/sideload/app-sideload.apk ci/apk/yks-pusula-sideload.apk 2>/dev/null || true
           ls -la ci/apk > ci/logs/apk-sizes.txt
+          cat ci/logs/durum-derle.tsv
+      - name: Derleme sonuclarini sakla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonuc-derle
+          path: ci/
+          retention-days: 30
+
+  cihaz:
+    needs: derle
+    if: needs.derle.result == 'success' && needs.derle.outputs.cihazlar != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 210
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.derle.outputs.cihazlar) }}
+    name: cihaz-${{ matrix.ad }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: apk
+          path: app/build/outputs/apk
       - name: KVM ayarla
-        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]') || contains(github.event.head_commit.message, '[reklam]') || contains(github.event.head_commit.message, '[a15]'))
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Disk alani ac
-        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]') || contains(github.event.head_commit.message, '[reklam]') || contains(github.event.head_commit.message, '[a15]'))
         run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup /usr/share/swift /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL /opt/hostedtoolcache/go /opt/hostedtoolcache/PyPy /opt/hostedtoolcache/Python /opt/hostedtoolcache/Ruby /usr/local/share/chromium /usr/local/share/powershell /usr/local/lib/node_modules
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup /usr/share/swift /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL /opt/hostedtoolcache/go /opt/hostedtoolcache/PyPy /opt/hostedtoolcache/Ruby /usr/local/share/chromium /usr/local/share/powershell /usr/local/lib/node_modules
           df -h / | tail -1
-      - name: Emulator testleri
-        id: emu
-        if: steps.gradle.outcome == 'success' && (contains(github.event.head_commit.message, '[emu]') || contains(github.event.head_commit.message, '[tam]'))
-        continue-on-error: true
-        timeout-minutes: 70
-        run: bash tools/run-emulator.sh
-      - name: Surum uyumlulugu
-        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[tam]')
-        continue-on-error: true
-        timeout-minutes: 105
-        run: bash tools/matris.sh
-      - name: Reklam teshisi
-        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[reklam]')
-        continue-on-error: true
-        timeout-minutes: 95
-        run: bash tools/reklam-teshis.sh
-      - name: Android 15
-        if: steps.gradle.outcome == 'success' && contains(github.event.head_commit.message, '[a15]')
-        continue-on-error: true
-        timeout-minutes: 170
-        run: bash tools/android15.sh
-      - name: Rapor
-        if: always()
+      - name: Testler
         run: |
-          cp -r app/schemas ci/logs/schemas 2>/dev/null || true
-          {
-            echo "gradle=${{ steps.gradle.outcome }}"
-            echo "manifest=${{ steps.manifest.outcome }}"
-            echo "emu=${{ steps.emu.outcome }}"
-            echo "run=${{ github.run_id }}"
-          } > ci/logs/ozet.txt
-          grep -E '^e: |error:|FAILED|What went wrong|\[ksp\]' ci/logs/gradle.txt | head -150 > ci/logs/hatalar.txt || true
-          for f in app/build/test-results/testDebugUnitTest/*.xml; do [ -f "$f" ] && cp "$f" ci/logs/; done
-      - name: Sonuclari ci-results dalina yaz
+          mkdir -p ci/logs
+          set +e
+          timeout -k 60 ${{ matrix.dakika }}m bash tools/cihaz.sh ${{ matrix.ad }}
+          k=$?
+          echo "$k" > ci/logs/cikis-${{ matrix.ad }}.txt
+          if [ $k = 124 ] || [ $k = 137 ]; then
+            printf 'zaman-siniri\tFAIL\t%s dakikada bitmedi\n' "${{ matrix.dakika }}" >> ci/logs/durum-${{ matrix.ad }}.tsv
+          fi
+          exit $k
+      - name: Cihaz sonuclarini sakla
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonuc-${{ matrix.ad }}
+          path: ci/
+          retention-days: 30
+
+  sonuc:
+    needs: [derle, cihaz]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sonuc-*
+          path: indirilen
+      - name: Ozet ve ci-results dali
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLAN: ${{ needs.derle.outputs.cihazlar }}
         run: |
+          mkdir -p ci
+          # Bütün işlerin raporları tek klasörde birleşir (aynı adlı dosyalar iş klasöründe kalır).
+          for d in indirilen/sonuc-*; do [ -d "$d" ] && cp -rn "$d"/. ci/ || true; done
+          set +e
+          python3 tools/ozet.py indirilen "${PLAN:-[]}" ci/logs/DURUM.md; k=$?
+          set -e
+          cat ci/logs/DURUM.md >> "$GITHUB_STEP_SUMMARY"
+          echo "$k" > ci/logs/kapi-sonucu.txt
           cd ci
           git init -q -b ci-results
           git config user.name ci
           git config user.email ci@users.noreply.github.com
           git add -A
-          git commit -qm "derleme $GITHUB_RUN_ID"
-          git push -qf "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-results
+          git commit -qm "derleme $GITHUB_RUN_ID ($GITHUB_REF_NAME) kapi=$k"
+          # Her dalın sonucu kendi dalına yazılır; kapı denemeleri ayrı dala gider, böylece birbirinin üstüne yazmaz.
+          HEDEF=ci-results-$GITHUB_REF_NAME${KAPI_DENEMESI:+-kapi-$KAPI_DENEMESI}
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/$HEDEF"
+          echo "sonuclar: $HEDEF"
+          exit $k

@@ -39,7 +39,7 @@ enum class AdPlacement { HOME, STUDY, EXAMS, STATS }
  * Rıza, reklam başlatma ve önbellek. Reklamsız hak açıldığında hiçbir istek yapılmaz.
  * Hata olursa uygulama çalışmaya devam eder; reklam alanı görünmez.
  */
-class AdsManager(private val context: Context, private val scope: CoroutineScope, private val entitlement: StateFlow<Boolean>) {
+class AdsManager(private val context: Context, private val scope: CoroutineScope, private val entitlement: StateFlow<Boolean>, private val verifiedAdult: StateFlow<Boolean>) {
     private val consent: ConsentInformation = UserMessagingPlatform.getConsentInformation(context.applicationContext)
     private val _can = MutableStateFlow(false)
     val canRequestAds: StateFlow<Boolean> = _can
@@ -55,13 +55,19 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
     /** Rıza ve başlatma zincirinde gelinen son adım. Yalnızca teşhis için tutulur. */
     @Volatile private var stage = "baslamadi"
 
-    /** Tüm uygulama için geçerli: içerik düzeyi gençlere uygun tutulur. */
+    /**
+     * Reklam yalnızca yaşı 18 ve üstü olduğu doğrulanan kullanıcıya istenir; bu yüzden yaş işlemi UNSPECIFIED açıkça belirtilir.
+     * İçerik düzeyi yine de PG ile sınırlı tutulur.
+     */
     private fun requestConfiguration() = RequestConfiguration.Builder()
         .setMaxAdContentRating(RequestConfiguration.MaxAdContentRating.MAX_AD_CONTENT_RATING_PG)
+        .setAgeRestrictedTreatment(com.google.android.libraries.ads.mobile.sdk.common.AgeRestrictedTreatment.UNSPECIFIED)
         .build()
 
     fun onActivityStart(activity: Activity) {
         if (entitlement.value) { _can.value = false; return }
+        // Yaşı doğrulanmamış kullanıcı için rıza formu da açılmaz, reklam SDK'sı başlatılmaz.
+        if (!verifiedAdult.value) { step("yas dogrulanmadi"); _can.value = false; return }
         val params = ConsentRequestParameters.Builder().build()
         try {
             step("riza istendi")
@@ -92,7 +98,7 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
 
     private fun update() {
         _privacyRequired.value = consent.privacyOptionsRequirementStatus == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
-        val allowed = consent.canRequestAds() && !entitlement.value
+        val allowed = consent.canRequestAds() && !entitlement.value && verifiedAdult.value
         if (allowed) initialize()
         _can.value = allowed && initialized
     }
@@ -121,7 +127,7 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
     }
 
     fun nativeFor(placement: AdPlacement, onReady: (NativeAd?) -> Unit) {
-        if (entitlement.value || !_can.value) { onReady(null); return }
+        if (entitlement.value || !verifiedAdult.value || !_can.value) { onReady(null); return }
         val now = System.currentTimeMillis()
         cache[placement]?.let { (ad, at) -> if (now - at < AdsConfig.MIN_REFRESH_MS * 3) { onReady(ad); return } }
         if (now - (failedAt[placement] ?: 0L) < AdsConfig.MIN_REFRESH_MS) { onReady(null); return }
@@ -130,7 +136,7 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
             NativeAdLoader.load(request, object : NativeAdLoaderCallback {
                 override fun onNativeAdLoaded(nativeAd: NativeAd) {
                     scope.launch(Dispatchers.Main) {
-                        if (entitlement.value) { nativeAd.destroy(); onReady(null); return@launch }
+                        if (entitlement.value || !verifiedAdult.value) { nativeAd.destroy(); onReady(null); return@launch }
                         cache.remove(placement)?.first?.destroy()
                         cache[placement] = nativeAd to System.currentTimeMillis()
                         onReady(nativeAd)

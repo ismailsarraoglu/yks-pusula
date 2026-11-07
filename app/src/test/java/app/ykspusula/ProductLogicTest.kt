@@ -196,7 +196,7 @@ class ProductLogicTest {
         assertFalse(EntitlementLogic.isValid(EntitlementLogic.next(null, PurchaseQuery.Pending, now), pub))
         assertFalse(EntitlementLogic.isValid(EntitlementLogic.next(null, PurchaseQuery.None, now), pub))
         val good = play()
-        val c = EntitlementLogic.next(null, PurchaseQuery.Purchased("tok", good, sign(good)), now)
+        val c = EntitlementLogic.next(null, PurchaseQuery.Purchased("t", good, sign(good)), now)
         assertTrue(EntitlementLogic.isValid(c, pub))
         assertFalse(EntitlementLogic.isValid(CachedPurchase("x", "{}", "", 1), pub))
     }
@@ -221,7 +221,42 @@ class ProductLogicTest {
         val other = java.security.KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         assertEquals(PurchaseCheck.BAD_SIGNATURE, EntitlementLogic.check(play(), sign(play(), other.private), pub))
         assertEquals(PurchaseCheck.BAD_SIGNATURE, EntitlementLogic.check(play(), "", pub))
-        assertEquals(PurchaseCheck.OK, EntitlementLogic.check("{\"productIds\":[\"$REMOVE_ADS_PRODUCT\"],\"purchaseState\":0}", sign("{\"productIds\":[\"$REMOVE_ADS_PRODUCT\"],\"purchaseState\":0}"), pub))
+        // 2.1.0'da paket adı olmayan bu kayıt OK sayılıyordu; artık reddedilir.
+        val noPkg = "{\"productIds\":[\"$REMOVE_ADS_PRODUCT\"],\"purchaseState\":0}"
+        assertEquals(PurchaseCheck.MALFORMED, EntitlementLogic.check(noPkg, sign(noPkg), pub))
+        val listForm = "{\"packageName\":\"app.ykspusula\",\"productIds\":[\"$REMOVE_ADS_PRODUCT\"],\"purchaseState\":0,\"purchaseToken\":\"t\"}"
+        assertEquals(PurchaseCheck.OK, EntitlementLogic.check(listForm, sign(listForm), pub, expectedToken = "t"))
+    }
+
+    /** Eksik, bozuk veya tutarsız her alan reddedilir (fail-closed). */
+    @Test fun missingOrInconsistentFieldsRejected() {
+        fun chk(t: String, token: String? = null) = EntitlementLogic.check(t, sign(t), pub, expectedToken = token)
+        val base = "\"orderId\":\"GPA.1\""
+        assertEquals(PurchaseCheck.MALFORMED, chk("{$base,\"productId\":\"$REMOVE_ADS_PRODUCT\",\"purchaseState\":0,\"purchaseToken\":\"t\"}"))
+        assertEquals(PurchaseCheck.MALFORMED, chk("{$base,\"packageName\":\"app.ykspusula\",\"productId\":\"$REMOVE_ADS_PRODUCT\",\"purchaseToken\":\"t\"}"))
+        assertEquals(PurchaseCheck.MALFORMED, chk("{$base,\"packageName\":\"app.ykspusula\",\"productId\":\"$REMOVE_ADS_PRODUCT\",\"purchaseState\":\"0\",\"purchaseToken\":\"t\"}"))
+        assertEquals(PurchaseCheck.MALFORMED, chk("{$base,\"packageName\":\"app.ykspusula\",\"productId\":\"$REMOVE_ADS_PRODUCT\",\"purchaseState\":0}"))
+        assertEquals(PurchaseCheck.MALFORMED, chk("{$base,\"packageName\":\"app.ykspusula\",\"productId\":\"$REMOVE_ADS_PRODUCT\",\"purchaseState\":0,\"purchaseToken\":\"\"}"))
+        assertEquals(PurchaseCheck.WRONG_PRODUCT, chk("{$base,\"packageName\":\"app.ykspusula\",\"productIds\":[\"$REMOVE_ADS_PRODUCT\",\"baska\"],\"purchaseState\":0,\"purchaseToken\":\"t\"}"))
+        assertEquals(PurchaseCheck.WRONG_PRODUCT, chk(play(product = REMOVE_ADS_PRODUCT.uppercase())))
+        assertEquals(PurchaseCheck.WRONG_PRODUCT, chk(play(product = "$REMOVE_ADS_PRODUCT ")))
+        assertEquals(PurchaseCheck.WRONG_PACKAGE, chk(play(pkg = "app.ykspusula.sahte")))
+        assertEquals(PurchaseCheck.NOT_PURCHASED, chk(play(state = 2)))
+        assertEquals(PurchaseCheck.TOKEN_MISMATCH, chk(play(), token = "baska-belirtec"))
+        assertEquals(PurchaseCheck.OK, chk(play(), token = "t"))
+        assertEquals(PurchaseCheck.MALFORMED, chk("[]"))
+        assertEquals(PurchaseCheck.MALFORMED, chk("{}"))
+    }
+
+    /** Önbellekteki belirteç özeti JSON'daki belirteçle eşleşmezse hak verilmez. */
+    @Test fun cachedTokenMustMatchJson() {
+        val good = play()
+        val sig = sign(good)
+        assertTrue(EntitlementLogic.isValid(CachedPurchase(EntitlementLogic.hash("t"), good, sig, 1), pub))
+        assertFalse(EntitlementLogic.isValid(CachedPurchase(EntitlementLogic.hash("baska"), good, sig, 1), pub))
+        val viaQuery = EntitlementLogic.next(null, PurchaseQuery.Purchased("baska", good, sig), now)
+        assertFalse(EntitlementLogic.isValid(viaQuery, pub))
+        assertTrue(EntitlementLogic.isValid(EntitlementLogic.next(null, PurchaseQuery.Purchased("t", good, sig), now), pub))
     }
 
     @Test fun entitlementSurvivesOfflineAndRevokesOnNone() {
@@ -234,8 +269,8 @@ class ProductLogicTest {
     @Test fun signatureMustMatch() {
         val good = play()
         val sig = sign(good)
-        assertTrue(EntitlementLogic.isValid(CachedPurchase("h", good, sig, 1), pub))
-        assertFalse(EntitlementLogic.isValid(CachedPurchase("h", good.replace("GPA.1", "GPA.2"), sig, 1), pub))
+        assertTrue(EntitlementLogic.isValid(CachedPurchase(EntitlementLogic.hash("t"), good, sig, 1), pub))
+        assertFalse(EntitlementLogic.isValid(CachedPurchase(EntitlementLogic.hash("t"), good.replace("GPA.1", "GPA.2"), sig, 1), pub))
     }
 
     /* ---------- Yedek ---------- */

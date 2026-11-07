@@ -1,167 +1,158 @@
 #!/bin/bash
 # Android 15 (API 35) ayrı test turu. Play Store'lu imaj: reklam SDK'sı ve Play Billing de denenebilsin.
-# Sonuçlar: ci/logs/a15/ (rapor.txt özet), ekranlar: ci/screens-a15/
-NAME=a15
+# Her aşama ci/logs/durum-a15.tsv dosyasına PASS/FAIL/NOT_RUN olarak yazılır; biri bile PASS değilse çıkış kodu 1.
+# Ayrıntılar: ci/logs/a15/, ekranlar: ci/screens-a15/
+source tools/kapi.sh a15
 IMG="system-images;android-35;google_apis_playstore;x86_64"
-PKG=app.ykspusula
 D=ci/logs/a15
-R=$D/rapor.txt
-mkdir -p "$D" ci/screens-a15
-export PATH="$ANDROID_HOME/platform-tools:$PATH"
-adb() {
-  local A="$ANDROID_HOME/platform-tools/adb"
-  case "$1" in
-    wait-for-device|emu|devices|start-server|kill-server) ;;
-    *) timeout 20 "$A" get-state > /dev/null 2>&1 || { echo "adb: cihaz yok ($1)" >&2; return 1; } ;;
-  esac
-  timeout 1500 "$A" "$@"
-}
-export ANDROID_AVD_HOME="$HOME/.android/avd"
-SDK="$ANDROID_HOME/cmdline-tools/latest/bin"
-mkdir -p "$ANDROID_AVD_HOME"
-yes | "$SDK/sdkmanager" --licenses > /dev/null 2>&1
-timeout 10 "$ANDROID_HOME/platform-tools/adb" emu kill 2>/dev/null; sleep 4
-pkill -f qemu-system; sleep 2
-"$SDK/sdkmanager" "$IMG" "emulator" "platform-tools" 2>&1 | tr '\r' '\n' | tail -3 > "$D/kurulum.txt"
-echo no | "$SDK/avdmanager" create avd -n "$NAME" -k "$IMG" -d pixel_6 --force >> "$D/kurulum.txt" 2>&1
-if [ ! -f "$ANDROID_AVD_HOME/$NAME.avd/config.ini" ]; then echo "acilis=yok sanal-cihaz-olusmadi" | tee "$R"; exit 0; fi
-printf 'hw.ramSize=4096\ndisk.dataPartition.size=6144M\nhw.keyboard=yes\n' >> "$ANDROID_AVD_HOME/$NAME.avd/config.ini"
-"$ANDROID_HOME/emulator/emulator" -avd "$NAME" -accel on -cores 3 -memory 4096 -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -camera-front none > "$D/emulator.txt" 2>&1 &
-EMU=$!
-B=""
-for i in $(seq 1 200); do
-  B=$(timeout 15 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break
-  kill -0 $EMU 2>/dev/null || { echo "emulator-kapandi deneme=$i" >> "$D/kurulum.txt"; break; }
-  sleep 5
-done
-echo "acilis=$B deneme=$i" | tee "$R"
-[ "$B" = "1" ] || { tail -40 "$D/emulator.txt" > "$D/emulator-son.txt"; exit 0; }
-echo "android=$(adb shell getprop ro.build.version.release | tr -d '\r') api=$(adb shell getprop ro.build.version.sdk | tr -d '\r') imaj=$IMG" >> "$R"
-echo "cihaz=$(adb shell getprop ro.product.model | tr -d '\r') yogunluk=$(adb shell wm density | tr -d '\r' | tr '\n' ' ') boyut=$(adb shell wm size | tr -d '\r' | tr '\n' ' ')" >> "$R"
+O=ci/logs/olcum-a15.txt
+mkdir -p "$D" ci/screens ci/screens-a15
+
+PLAN="test-kurulum ana-testler yasam-arka-plan yasam-surec-olumu yasam-bellek-baskisi yasam-cokme kalicilik-yaz kalicilik-zorla-durdurma kalicilik-yeniden-baslatma
+gezinme-hareket e2e-hareket-dikey e2e-hareket-dikey-yazi130 e2e-hareket-yatay kesik-etkin e2e-kesik-yatay gezinme-3dugme e2e-3dugme-yatay
+bildirim-goster hatirlatma-zamaninda saat-dilimi bildirim-izni-kaldirildi bildirim-izinsiz pdf-secici foto-secici yedek-secici
+cevrimici-ag reklam billing release-kurulum release-cokme release-anr release-acik-kaldi"
+
+if ! emulator_ac a15 "$IMG" 4096; then
+  kayit acilis FAIL "emülatör açılmadı ($IMG)"
+  calismadi "emülatör açılmadı" $PLAN
+  emulator_kapat; kapi_bitir; exit 3
+fi
+kayit acilis PASS "$(tail -1 ci/logs/kurulum-a15.txt)"
+echo "cihaz=$(adb shell getprop ro.product.model | tr -d '\r') $(adb shell wm density | tr -d '\r' | tr '\n' ' ') $(adb shell wm size | tr -d '\r' | tr '\n' ' ')" >> $O
 # Yeni açılan Play imajı uzun süre güncelleme yapar; sistem sakinleşsin.
 sleep 90
-adb shell settings put global window_animation_scale 0
-adb shell settings put global transition_animation_scale 0
-adb shell settings put global animator_duration_scale 0
-adb shell svc power stayon true
-adb shell settings put global hide_error_dialogs 1
-adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard
-
-cevrimdisi() { adb shell svc wifi disable; adb shell svc data disable; adb shell cmd connectivity airplane-mode enable 2>/dev/null; sleep 6; }
-cevrimici() { adb shell cmd connectivity airplane-mode disable; adb shell svc wifi enable; adb shell svc data enable; sleep 25; }
 cevrimdisi
-echo "ucak-modu: $(adb shell settings get global airplane_mode_on | tr -d '\r') ping: $(adb shell ping -c 1 -W 2 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" >> "$R"
+echo "ucak-modu: $(adb shell settings get global airplane_mode_on | tr -d '\r')" >> $O
 
-adb install -r -g app/build/outputs/apk/debug/app-debug.apk | tail -1 >> "$R"
-adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk | tail -1 >> "$R"
-
-# calistir <rapor-adı> <sınıf> [ek argümanlar...]
-# Altyapı kaynaklı kopma (süreç çöktü, çıktı yok) olursa bir kez yeniden denenir; ikisi de raporlanır.
-calistir() {
-  local ad=$1 cls=$2; shift 2
-  adb logcat -c
-  timeout 1800 adb shell am instrument -w -e class "$cls" "$@" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -80 > "$D/$ad.txt"
-  local son; son=$(tail -4 "$D/$ad.txt" | tr -d '\r' | tr '\n' ' ')
-  if ! echo "$son" | grep -qE 'OK \(|FAILURES'; then
-    echo "$ad (1. deneme, altyapı): $son" >> "$R"
-    adb logcat -d 2>/dev/null | grep -E -A30 'FATAL EXCEPTION|ANR in|Process crashed|DEPENDENCY' | head -150 | cut -c1-260 > "$D/$ad-kopma.txt"
-    sleep 30
-    adb logcat -c
-    timeout 1800 adb shell am instrument -w -e class "$cls" "$@" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -80 > "$D/$ad.txt"
-    son=$(tail -4 "$D/$ad.txt" | tr -d '\r' | tr '\n' ' ')
-  fi
-  echo "$ad: $son" >> "$R"
-  adb logcat -d 2>/dev/null | grep -E 'FATAL EXCEPTION|E AndroidRuntime' | head -80 | cut -c1-220 > "$D/$ad-crash.txt"
+# Gezinme biçimi: 0 = üç düğme, 2 = hareket. Değişiklik gerçekten olmadıysa aşama FAIL olur.
+gezinme() {
+  local hedef=$1 paket
+  [ "$hedef" = 2 ] && paket=com.android.internal.systemui.navbar.gestural || paket=com.android.internal.systemui.navbar.threebutton
+  adb shell cmd overlay enable-exclusive --category $paket; sleep 8
+  local m; m=$(adb shell settings get secure navigation_mode | tr -d '\r')
+  [ "$m" = "$hedef" ]
 }
-
-# 1. Açılış, gezinme, veri kaydetme, geçiş, yedek güvenliği, bütün ekranlar (3 düğmeli gezinme, dikey)
-T=$PKG.DataFlowTest,$PKG.MigrationTest,$PKG.AdTouchGuardTest,$PKG.LearningFlowTest,$PKG.BackupSecurityTest,$PKG.UiFlowTest
-calistir ana-testler "$T" -e etiket 3dugme-dikey
-
-# 2. Veri kalıcılığı: yaz, zorla durdur, oku, yeniden başlat, oku
-P=$PKG.PersistenceTest
-kisa() { timeout 300 adb shell am instrument -w -e class "$1" $PKG.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tail -3 | tr -d '\r' | tr '\n' ' '; }
-echo "kalicilik-yaz: $(kisa "$P#writeData")" >> "$R"
-adb shell am force-stop $PKG
-echo "kalicilik-durdurma: $(kisa "$P#readData")" >> "$R"
-adb reboot; sleep 20; timeout 300 adb wait-for-device
-for i in $(seq 1 80); do [ "$(timeout 15 adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 3; done
-sleep 60
-adb shell svc power stayon true; adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard
-cevrimdisi
-for d in 1 2 3; do SONUC=$(kisa "$P#readData"); echo "$SONUC" | grep -q 'OK (1 test)' && break; sleep 45; done
-echo "kalicilik-yeniden-baslatma: $SONUC (deneme $d)" >> "$R"
-
-# 3. Kenardan kenara düzen: farklı gezinme biçimi, yazı boyutu ve yön
 E=$PKG.UiFlowTest#systemBarsLayoutOnAllScreens
-adb shell cmd overlay enable com.android.internal.systemui.navbar.gestural; sleep 6
-echo "gezinme-modu: $(adb shell settings get secure navigation_mode | tr -d '\r') (2=hareket)" >> "$R"
-calistir e2e-hareket-dikey "$E" -e etiket hareket-dikey
-adb shell settings put system font_scale 1.3; sleep 3
-calistir e2e-hareket-dikey-yazi130 "$E" -e etiket hareket-dikey-yazi130
-adb shell settings put system font_scale 1.0
-adb shell settings put system accelerometer_rotation 0; adb shell settings put system user_rotation 1; sleep 4
-calistir e2e-hareket-yatay "$E" -e etiket hareket-yatay
-adb shell cmd overlay disable com.android.internal.systemui.navbar.gestural; sleep 6
-echo "gezinme-modu: $(adb shell settings get secure navigation_mode | tr -d '\r') (0=3 düğme)" >> "$R"
-calistir e2e-3dugme-yatay "$E" -e etiket 3dugme-yatay
-adb shell settings put system user_rotation 0; sleep 4
-
-# 4. Bildirimler ve zamanlanmış hatırlatmalar (izin verilmiş)
 S=$PKG.SystemIntegrationTest
-calistir bildirim-goster "$S#notificationShownWhenAllowed"
-calistir hatirlatma-zamaninda "$S#scheduledReminderActuallyFires"
-calistir saat-dilimi "$S#timeZoneChangeReschedules"
-adb shell dumpsys alarm 2>/dev/null | grep -B2 -A6 "app.ykspusula" | head -60 > "$D/alarm-kaydi.txt"
-# İzin reddedilmiş
-adb shell pm revoke $PKG android.permission.POST_NOTIFICATIONS
-echo "bildirim-izni-reddedildi: $(adb shell dumpsys package $PKG | grep -m1 'POST_NOTIFICATIONS' | tr -d '\r ')" >> "$R"
-calistir bildirim-izinsiz "$PKG.NotificationDeniedTest"
-adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS
 
-# 5. Dosya seçici, PDF ve fotoğraf
-calistir pdf-secici "$S#pdfPickerImportsAndRenders"
-calistir foto-secici "$S#photoPickerAttachesToWrong"
-calistir yedek-secici "$S#backupSaveAndRestoreThroughPicker"
+if ! apk_kur; then
+  calismadi "test APK kurulamadı" $(echo $PLAN | tr ' ' '\n' | grep -vE '^(test-kurulum|release-.*)$')
+else
+  # 1. Ana ekranlar (ana sayfa, profil, çalışma, plan, denemeler, yanlış defteri, istatistik, ayarlar ve diğerleri),
+  #    veri kaydetme, geçiş, yedek güvenliği, düzen denetimi: üç düğmeli gezinme, dikey.
+  gezinme 0 || echo "uyarı: 3 düğme moduna geçilemedi" >> $O
+  echo "ana-testler gezinme-modu: $(adb shell settings get secure navigation_mode | tr -d '\r')" >> $O
+  T=$PKG.DataFlowTest,$PKG.MigrationTest,$PKG.AdTouchGuardTest,$PKG.LearningFlowTest,$PKG.BackupSecurityTest,$PKG.UiFlowTest
+  [ "$KAPI_DENEMESI" = "cihaz" ] && T="$T,$PKG.GateProbeTest"
+  testi_calistir ana-testler $D/ana-testler.txt "$T" -e etiket 3dugme-dikey
 
-# Uygulama dosyalarını al (ekranlar, düzen raporları, sistem notları)
-adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens e2e sistem 2>/dev/null' 2>/dev/null | tar -x -C ci/screens-a15 2>/dev/null
-mv ci/screens-a15/e2e "$D/e2e" 2>/dev/null; mv ci/screens-a15/sistem "$D/sistem" 2>/dev/null
-
-# 6. Çevrimiçi: reklam SDK'sı ve Play Billing
-cevrimici
-echo "cevrimici-ping: $(adb shell ping -c 1 -W 3 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" >> "$R"
-for d in 1 2 3; do
-  calistir reklam-$d "$PKG.AdOnlineTest#testAdLoadsAndPurchaseRemovesIt"
-  adb logcat -d 2>/dev/null | grep -E 'YksAds|Ads|UserMessagingPlatform' | tail -60 | cut -c1-220 > "$D/reklam-$d-logcat.txt"
-  grep -q 'OK (1 test)' "$D/reklam-$d.txt" && break
-  sleep 30
-done
-adb exec-out run-as $PKG cat files/reklam-yerel.png > ci/screens-a15/reklam-yerel.png 2>/dev/null
-calistir billing "$S#billingClientStarts"
-adb exec-out run-as $PKG cat files/sistem/billingClientStarts.txt > "$D/sistem-billing.txt" 2>/dev/null
-adb logcat -d 2>/dev/null | grep -iE 'BillingClient|BillingLogger' | tail -40 | cut -c1-220 > "$D/billing-logcat.txt"
-
-# 7. Yan yükleme (release ayarlı) sürüm: temiz kurulum, soğuk açılış, çökme
-adb uninstall $PKG.test > /dev/null; adb uninstall $PKG > /dev/null
-echo "release-kurulum: $(adb install -r app/build/outputs/apk/sideload/app-sideload.apk 2>&1 | tail -1)" >> "$R"
-adb logcat -c
-for n in 1 2 3; do
+  # 2. Yaşam döngüsü: arka plana alma ve geri dönme, arka planda süreç öldürülmesi, bellek baskısı.
+  adb logcat -c
   adb shell am force-stop $PKG; sleep 2
-  echo "soguk-acilis-$n: $(adb shell am start -W -n $PKG/.MainActivity 2>&1 | grep -E 'TotalTime|Status' | tr -d '\r' | tr '\n' ' ')" >> "$R"
-  sleep 8
-done
-sleep 10
-echo "release-surec: $(adb shell pidof $PKG | tr -d '\r')" >> "$R"
-adb exec-out screencap -p > ci/screens-a15/release-acilis.png
-adb logcat -d | grep -E 'FATAL EXCEPTION|E AndroidRuntime' | head -120 | cut -c1-200 > "$D/release-crash.txt"
-echo "release-crash: $(grep -c 'Process: app.ykspusula' "$D/release-crash.txt")" >> "$R"
-echo "release-anr: $(adb logcat -d | grep -c 'ANR in app.ykspusula')" >> "$R"
-adb logcat -d 2>/dev/null | grep -E 'app\.ykspusula' | grep -E 'has died|Killing|ANR in|Force stopping' | cut -c1-260 > "$D/release-olum.txt"
-echo "release-olum-kaydi: $(wc -l < "$D/release-olum.txt")" >> "$R"
-adb shell dumpsys meminfo $PKG | grep -E 'TOTAL PSS|TOTAL:' | head -2 | tr -d '\r' >> "$R"
+  adb shell am start -W -n $PKG/.MainActivity > $D/yasam.txt 2>&1; sleep 5
+  p1=$(adb shell pidof $PKG | tr -d '\r')
+  adb shell input keyevent KEYCODE_HOME; sleep 5
+  adb shell am start -W -n $PKG/.MainActivity >> $D/yasam.txt 2>&1; sleep 4
+  p2=$(adb shell pidof $PKG | tr -d '\r')
+  ust=$(adb shell dumpsys activity activities | grep -m1 -E 'topResumedActivity|mResumedActivity' | tr -d '\r')
+  ayni_surec_onde() { [ -n "$p1" ] && [ "$p1" = "$p2" ] && echo "$ust" | grep -q "$PKG"; }
+  kontrol yasam-arka-plan "süreç $p1 -> $p2; $ust" ayni_surec_onde
+  adb shell input keyevent KEYCODE_HOME; sleep 4
+  adb shell am kill $PKG; sleep 3
+  p3=$(adb shell pidof $PKG | tr -d '\r')
+  adb shell am start -W -n $PKG/.MainActivity >> $D/yasam.txt 2>&1; sleep 6
+  p4=$(adb shell pidof $PKG | tr -d '\r')
+  adb exec-out screencap -p > ci/screens-a15/yasam-yeniden-acilis.png 2>/dev/null
+  kontrol yasam-surec-olumu "arka planda öldürüldü (kalan süreç: '${p3:-yok}'), yeniden açıldı: ${p4:-yok}" [ -z "$p3" -a -n "$p4" -a "$p4" != "$p1" ]
+  t=$(adb shell am send-trim-memory $PKG RUNNING_CRITICAL 2>&1 | tr -d '\r'); sleep 3
+  p5=$(adb shell pidof $PKG | tr -d '\r')
+  kontrol yasam-bellek-baskisi "trim-memory RUNNING_CRITICAL ${t:+($t) }sonrası süreç: ${p5:-yok}" [ -n "$p5" -a "$p5" = "$p4" ]
+  adb logcat -d > $D/yasam-logcat.txt 2>/dev/null
+  c=$(grep -A3 'FATAL EXCEPTION' $D/yasam-logcat.txt | grep -c "Process: $PKG"); a=$(grep -c "ANR in $PKG" $D/yasam-logcat.txt)
+  kontrol yasam-cokme "çökme: $c, ANR: $a" [ "$c" = 0 -a "$a" = 0 ]
 
-adb emu kill; sleep 5
-pkill -f qemu-system; sleep 2
-"$SDK/avdmanager" delete avd -n "$NAME" > /dev/null 2>&1
-true
+  # 3. Veri kalıcılığı: yaz, zorla durdur, oku, cihazı yeniden başlat, oku.
+  kalicilik
+
+  # 4. Kenardan kenara düzen: hareketle gezinme (dikey, büyük yazı, yatay), ekran kesiği, üç düğme (yatay).
+  gezinme 2; r=$?
+  if kontrol gezinme-hareket "navigation_mode=$(adb shell settings get secure navigation_mode | tr -d '\r') (2 bekleniyor)" [ $r = 0 ]; then
+    testi_calistir e2e-hareket-dikey $D/e2e-hareket-dikey.txt "$E" -e etiket hareket-dikey
+    adb shell settings put system font_scale 1.3; sleep 3
+    testi_calistir e2e-hareket-dikey-yazi130 $D/e2e-hareket-dikey-yazi130.txt "$E" -e etiket hareket-dikey-yazi130
+    adb shell settings put system font_scale 1.0
+    adb shell settings put system accelerometer_rotation 0; adb shell settings put system user_rotation 1; sleep 4
+    testi_calistir e2e-hareket-yatay $D/e2e-hareket-yatay.txt "$E" -e etiket hareket-yatay
+    adb shell settings put system user_rotation 0; sleep 3
+  else
+    calismadi "hareketle gezinmeye geçilemedi" e2e-hareket-dikey e2e-hareket-dikey-yazi130 e2e-hareket-yatay
+  fi
+  # Uzun ekran kesiği öykünmesi; yatayda kesik içeriğin yanına gelir, en zor durum budur.
+  adb shell cmd overlay enable-exclusive --category com.android.internal.display.cutout.emulation.tall; sleep 6
+  adb shell settings put system accelerometer_rotation 0; adb shell settings put system user_rotation 1; sleep 4
+  adb shell dumpsys window displays 2>/dev/null | grep -m2 -iE 'cutout' | tr -d '\r' | cut -c1-250 > $D/kesik.txt
+  if kontrol kesik-etkin "$(head -1 $D/kesik.txt | cut -c1-200)" sh -c "adb shell cmd overlay list | tr -d '\r' | grep -q '\[x\] com.android.internal.display.cutout.emulation.tall'"; then
+    testi_calistir e2e-kesik-yatay $D/e2e-kesik-yatay.txt "$E" -e etiket kesik-yatay
+  else
+    calismadi "kesik öykünmesi açılamadı" e2e-kesik-yatay
+  fi
+  adb shell cmd overlay disable com.android.internal.display.cutout.emulation.tall; sleep 4
+  gezinme 0; r=$?
+  if kontrol gezinme-3dugme "navigation_mode=$(adb shell settings get secure navigation_mode | tr -d '\r') (0 bekleniyor)" [ $r = 0 ]; then
+    testi_calistir e2e-3dugme-yatay $D/e2e-3dugme-yatay.txt "$E" -e etiket 3dugme-yatay
+  else
+    calismadi "üç düğmeye geçilemedi" e2e-3dugme-yatay
+  fi
+  adb shell settings put system user_rotation 0; sleep 4
+
+  # 5. Bildirimler ve zamanlanmış hatırlatmalar (izin verilmiş, sonra kaldırılmış).
+  testi_calistir bildirim-goster $D/bildirim-goster.txt "$S#notificationShownWhenAllowed"
+  testi_calistir hatirlatma-zamaninda $D/hatirlatma-zamaninda.txt "$S#scheduledReminderActuallyFires"
+  testi_calistir saat-dilimi $D/saat-dilimi.txt "$S#timeZoneChangeReschedules"
+  adb shell dumpsys alarm 2>/dev/null | grep -B2 -A6 "$PKG" | head -60 > $D/alarm-kaydi.txt
+  adb shell pm revoke $PKG android.permission.POST_NOTIFICATIONS
+  izin=$(adb shell dumpsys package $PKG | grep -m1 'android.permission.POST_NOTIFICATIONS: granted' | tr -d '\r ')
+  if kontrol bildirim-izni-kaldirildi "${izin:-bilgi yok}" sh -c "echo '$izin' | grep -q 'granted=false'"; then
+    testi_calistir bildirim-izinsiz $D/bildirim-izinsiz.txt "$PKG.NotificationDeniedTest"
+  else
+    calismadi "izin kaldırılamadı" bildirim-izinsiz
+  fi
+  adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS
+
+  # 6. Sistem dosya seçicisi: PDF içe aktarma ve görüntüleme, fotoğraf ekleme, yedeği dosyaya yazma ve geri yükleme.
+  testi_calistir pdf-secici $D/pdf-secici.txt "$S#pdfPickerImportsAndRenders"
+  testi_calistir foto-secici $D/foto-secici.txt "$S#photoPickerAttachesToWrong"
+  testi_calistir yedek-secici $D/yedek-secici.txt "$S#backupSaveAndRestoreThroughPicker"
+  adb exec-out run-as $PKG sh -c 'cd files && tar -cf - screens e2e sistem 2>/dev/null' 2>/dev/null | tar -x -C ci/screens-a15 2>/dev/null
+  mv ci/screens-a15/e2e $D/e2e 2>/dev/null; mv ci/screens-a15/sistem $D/sistem 2>/dev/null
+
+  # 7. Çevrimiçi: reklam SDK'sı (Google test kimlikleri) ve Play Billing bağlantısı.
+  cevrimici
+  if kontrol cevrimici-ag "$(adb shell ping -c 1 -W 3 8.8.8.8 2>&1 | tail -1 | tr -d '\r')" sh -c "adb shell ping -c 1 -W 3 8.8.8.8 > /dev/null 2>&1"; then
+    ANA=$DURUM; DURUM=$D/reklam-denemeleri.tsv; : > "$DURUM"
+    sonuc=FAIL; aciklama=""
+    for d in 1 2 3; do
+      if testi_calistir "reklam-deneme-$d" $D/reklam-$d.txt "$PKG.AdOnlineTest#testAdLoadsAndPurchaseRemovesIt"; then sonuc=PASS; aciklama="$d. denemede"; break; fi
+      adb logcat -d 2>/dev/null | grep -E 'YksAds|Ads|UserMessagingPlatform' | tail -60 | cut -c1-220 > $D/reklam-$d-logcat.txt
+      if ! grep -qE 'NO_FILL|No fill|code[=: ]3\b' $D/reklam-$d.txt; then aciklama="başarısız (NO_FILL değil): $(tail -1 "$DURUM" | cut -f3)"; break; fi
+      aciklama="3 denemede de reklam sunucusu reklam vermedi (NO_FILL)"
+      sleep 30
+    done
+    DURUM=$ANA
+    kayit reklam "$sonuc" "$aciklama"
+    adb exec-out run-as $PKG cat files/reklam-yerel.png > ci/screens-a15/reklam-yerel.png 2>/dev/null
+    testi_calistir billing $D/billing.txt "$S#billingClientStarts"
+    adb exec-out run-as $PKG cat files/sistem/billingClientStarts.txt > $D/sistem-billing.txt 2>/dev/null
+    adb logcat -d 2>/dev/null | grep -iE 'BillingClient|BillingLogger' | tail -40 | cut -c1-220 > $D/billing-logcat.txt
+  else
+    calismadi "emülatör internete çıkamadı" reklam billing
+  fi
+  cevrimdisi
+fi
+
+# 8. Yan yükleme (release ayarlı) sürüm: temiz kurulum, soğuk açılış, çökme, ANR.
+release_dene
+adb logcat -d > $D/logcat-son.txt 2>/dev/null
+emulator_kapat
+kapi_bitir

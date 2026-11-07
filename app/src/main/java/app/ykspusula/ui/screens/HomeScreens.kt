@@ -1,5 +1,7 @@
 package app.ykspusula.ui.screens
 
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import app.ykspusula.ui.currentDay
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
@@ -37,6 +39,7 @@ import app.ykspusula.monetize.AdPlacement
 import app.ykspusula.ui.LocalNav
 import app.ykspusula.ui.components.*
 import app.ykspusula.ui.repo
+import app.ykspusula.ui.app
 import app.ykspusula.ui.rememberUiScope
 import app.ykspusula.ui.shortDate
 import app.ykspusula.ui.theme.Gradients
@@ -258,6 +261,7 @@ fun HomeScreen() {
             }
         }
 
+        BirthDateCard()
         if (daysLeft != null && daysLeft in 1..app.ykspusula.domain.PlanGenerator.FINAL_DAYS) {
             InfoRow("Sınav öncesi modu", "Tekrar, eksik konu ve deneme odaklı liste", Icons.Rounded.Flag) { nav.navigate("priorities") }
         }
@@ -371,6 +375,49 @@ fun TaskRow(t: StudyTask, onToggle: (Boolean) -> Unit, onOpen: () -> Unit) {
             Text(t.title, style = MaterialTheme.typography.bodyLarge, color = if (t.done) Yks.c.muted else Yks.c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Muted("${t.time} • ${t.minutes} dk" + (if (t.questionGoal > 0) " • ${t.questionGoal} soru" else "") + if (t.movedCount > 0) " • Taşındı" else "")
             if (t.reason.isNotBlank()) Muted(t.reason, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * Tarafsız yaş ekranı: doğum ayı ve yılı serbestçe girilir, hiçbir değer önceden doldurulmaz, belirli bir yaşa
+ * yönlendiren metin yoktur. Cevap yalnızca cihazda saklanır ve bir kez sorulur.
+ */
+@Composable
+fun BirthDateCard() {
+    val a = app()
+    val birth by a.monetize.birth.collectAsStateWithLifecycle()
+    val b = birth ?: return
+    if (b.first != app.ykspusula.domain.AgeGate.NOT_SET) return
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var month by rememberSaveable { mutableStateOf("") }
+    var year by rememberSaveable { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+    var confirm by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    fun done(y: Int, m: Int) = scope.launch {
+        a.monetize.saveBirth(y, m)
+        (context as? android.app.Activity)?.let { a.monetize.ads.onActivityStart(it) }
+    }
+    YCard {
+        Text("Doğum tarihin", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
+        Muted("Uygulamada gösterilecek içeriği yaşına uygun hâle getirmek için bir kez sorulur. Bilgi yalnızca bu cihazda saklanır.")
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            NumberField(month, { month = it; error = false }, "Ay (1-12)", Modifier.weight(1f), max = 2)
+            NumberField(year, { year = it; error = false }, "Yıl", Modifier.weight(1f), max = 4)
+        }
+        if (error) Text("Geçerli bir ay ve yıl gir.", color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            MainButton("Kaydet", Modifier.weight(1f)) {
+                val v = app.ykspusula.domain.AgeGate.validate(month, year, today())
+                if (v == null) error = true else confirm = v
+            }
+            TextButton({ done(app.ykspusula.domain.AgeGate.DECLINED, 0) }, Modifier.weight(1f)) { Text("Belirtmek istemiyorum", color = Yks.c.muted) }
+        }
+    }
+    confirm?.let { (y, m) ->
+        ConfirmDialog("Doğum tarihin ${"%02d".format(m)}/$y", "Bu bilgi daha sonra değiştirilemez. Doğru mu?", "Onayla", false, { confirm = null }) {
+            confirm = null; done(y, m)
         }
     }
 }

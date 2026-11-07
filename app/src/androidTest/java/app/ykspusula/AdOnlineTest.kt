@@ -100,6 +100,8 @@ class AdOnlineTest {
         val m = app.monetize
         // Önceki denemeden kalan reklamsız hak bu testi anlamsız kılar: hak varken reklam izni hiç gelmez.
         runBlocking { m.entitlement.apply(PurchaseQuery.None) }
+        // Reklam yalnızca tarafsız yaş ekranında 18 yaşını doldurduğu belirlenen kullanıcıya istenir.
+        runBlocking { m.saveBirth(1990, 1); m.verifiedAdult.first { it } }
         val scenario = ActivityScenario.launch(MainActivity::class.java)
         try {
             showAd(m)

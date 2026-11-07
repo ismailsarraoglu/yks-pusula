@@ -19,11 +19,12 @@ object TestPurchase {
         return Signature.getInstance("SHA1withRSA").run { initSign(key); update(json.toByteArray()); Base64.getEncoder().encodeToString(sign()) }
     }
 
-    fun json(product: String = REMOVE_ADS_PRODUCT, state: Int = 0) =
-        "{\"orderId\":\"GPA.test\",\"packageName\":\"app.ykspusula\",\"productId\":\"$product\",\"purchaseState\":$state,\"purchaseToken\":\"tok\"}"
+    fun json(product: String = REMOVE_ADS_PRODUCT, state: Int = 0, token: String = "tok-$product") =
+        "{\"orderId\":\"GPA.test\",\"packageName\":\"app.ykspusula\",\"productId\":\"$product\",\"purchaseState\":$state,\"purchaseToken\":\"$token\"}"
 
-    fun purchased(product: String = REMOVE_ADS_PRODUCT, state: Int = 0): PurchaseQuery.Purchased {
+    /** BillingClient'tan gelen belirteç JSON'dakiyle aynıdır; tokenOverride farklı bir belirteç dener. */
+    fun purchased(product: String = REMOVE_ADS_PRODUCT, state: Int = 0, tokenOverride: String? = null): PurchaseQuery.Purchased {
         val j = json(product, state)
-        return PurchaseQuery.Purchased("tok-$product", j, sign(j))
+        return PurchaseQuery.Purchased(tokenOverride ?: "tok-$product", j, sign(j))
     }
 }
