@@ -34,7 +34,7 @@ kontrol() {
 calismadi() { local neden=$1; shift; for a in "$@"; do kayit "$a" NOT_RUN "$neden"; done; }
 
 # Test çıktısı yarım kaldığında neden: uygulama çökmesi FAIL'dir. Yalnızca kanıtlı altyapı nedeninde bir kez yeniden denenir:
-# - Google Play Hizmetleri ölürken Android'in bağlı süreçleri kapatması
+# - Google Play Hizmetleri ölürken veya sistem onu durdururken Android'in bağlı süreçleri kapatması
 # - Sistem arayüzü gibi başka süreçler de yanıt vermezken açılışın tamamlanamaması (aşırı yüklü emülatör)
 # - Android'in kendi sistem sürecinin (system_server) yerel çökmesi: emülatör sistemi yeniden başlar
 altyapi_nedeni() {
@@ -44,6 +44,7 @@ altyapi_nedeni() {
     sleep 20; echo "Android sistem süreci çöktü ve yeniden başladı (emülatör)"; return
   fi
   if grep -qE "Killing [0-9]+:$PKG[^ ]* .*depends on provider .* in dying proc" "$log"; then echo "Play Hizmetleri yeniden başladı (bağlı süreç kapatıldı)"; return; fi
+  if grep -qE "Killing [0-9]+:$PKG[^ ]* .*stop com.google.android.gms due to" "$log"; then echo "Play Hizmetleri sistem tarafından durduruldu (bağlı süreç kapatıldı)"; return; fi
   if grep -q "failed to complete startup" "$log" && grep -E 'ANR in ' "$log" | grep -vq "$PKG"; then echo "aşırı yüklü emülatör (sistem süreçleri de yanıt vermedi)"; return; fi
 }
 
