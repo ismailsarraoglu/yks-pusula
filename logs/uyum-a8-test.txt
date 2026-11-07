@@ -1,0 +1,24 @@
+
+app.ykspusula.DataFlowTest:....................
+app.ykspusula.MigrationTest:...
+app.ykspusula.AdTouchGuardTest:...
+app.ykspusula.LearningFlowTest:......
+app.ykspusula.BackupSecurityTest:.....................
+app.ykspusula.GateProbeTest:
+Error in deliberateFailureWhenAsked(app.ykspusula.GateProbeTest):
+java.lang.AssertionError: Kasıtlı hata: kalite kapısı denemesi
+	at org.junit.Assert.fail(Assert.java:89)
+	at app.ykspusula.GateProbeTest.deliberateFailureWhenAsked(GateProbeTest.kt:18)
+
+
+Time: 6.658
+There was 1 failure:
+1) deliberateFailureWhenAsked(app.ykspusula.GateProbeTest)
+java.lang.AssertionError: Kasıtlı hata: kalite kapısı denemesi
+	at org.junit.Assert.fail(Assert.java:89)
+	at app.ykspusula.GateProbeTest.deliberateFailureWhenAsked(GateProbeTest.kt:18)
+
+FAILURES!!!
+Tests run: 54,  Failures: 1
+
+

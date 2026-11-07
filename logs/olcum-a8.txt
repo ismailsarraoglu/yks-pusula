@@ -1,0 +1,5 @@
+ucak-modu: 0
+soguk-acilis-1=1029
+soguk-acilis-2=637
+soguk-acilis-3=725
+               TOTAL:    36896       TOTAL SWAP PSS:        0

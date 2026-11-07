@@ -1,0 +1,552 @@
+--------- beginning of main
+11-07 07:02:46.743  1676  1745 I InputReader: Reconfiguring input devices.  changes=0x00000010
+11-07 07:02:46.784  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:02:46.784  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:02:46.800  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:02:46.800  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:02:46.810  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:02:46.810  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:02:46.824  1917  1917 D CarrierSvcBindHelper: No carrier app for: 0
+--------- beginning of system
+11-07 07:02:46.825  1676  3098 I ActivityManager: Force stopping app.ykspusula appid=10067 user=0: from pid 3112
+11-07 07:02:46.830  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:02:46.830  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:02:46.839  1676  1690 W VoiceInteractionManagerService: no available voice interaction services found for user 0
+11-07 07:02:46.853  1676  1690 W VoiceInteractionManagerService: no available voice recognition services found for user 0
+11-07 07:02:46.856  1917  1917 D CarrierSvcBindHelper: No carrier app for: 0
+11-07 07:02:46.861  1917  1917 D ImsResolver: maybeAddedImsService, packageName: app.ykspusula
+11-07 07:02:46.862  1917  1917 D ImsResolver: maybeAddedImsService, packageName: app.ykspusula
+11-07 07:02:46.864  1917  1917 D CarrierSvcBindHelper: No carrier app for: 0
+11-07 07:02:46.864  1917  1917 D CarrierConfigLoader: mHandler: 9 phoneId: 0
+11-07 07:02:46.871  1409  1439 D hwcomposer: hw_composer sent 53 syncs in 62s
+11-07 07:02:48.683  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:02:48.683  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:02:48.857  1676  1981 I ActivityManager: START u0 {flg=0x10000000 cmp=app.ykspusula/.MainActivity} from uid 2000
+11-07 07:02:48.868  3119  3119 W zygote64: Unexpected CPU variant for X86 using defaults: x86_64
+11-07 07:02:48.873  1676  1688 I ActivityManager: Start proc 3119:app.ykspusula/u0a67 for activity app.ykspusula/.MainActivity
+11-07 07:02:48.894  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:48.898  1418  1449 D         : HostConnection::get() New Host Connection established 0x707652d1b200, tid 1449
+11-07 07:02:48.934  3119  3119 D WM-WrkMgrInitializer: Initializing WorkManager with default configuration.
+11-07 07:02:48.943  1676  1688 D PackageManager: Ephemeral installer not found with new action; try old one
+11-07 07:02:48.943  1676  1688 D PackageManager: Clear ephemeral installer activity
+11-07 07:02:49.052  2423  2501 D EGL_emulation: eglMakeCurrent: 0x79c9b403e3a0: ver 3 0 (tinfo 0x79c9b400d9e0)
+11-07 07:02:49.149  3119  3130 I zygote64: Background concurrent copying GC freed 13351(2MB) AllocSpace objects, 3(124KB) LOS objects, 49% free, 3MB/6MB, paused 3.871ms total 110.106ms
+11-07 07:02:49.193  3119  3119 I YksAds  : yas dogrulanmadi
+11-07 07:02:49.234  1418  1449 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+11-07 07:02:49.235  3119  3146 D OpenGLRenderer: HWUI GL Pipeline
+11-07 07:02:49.241  3119  3147 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:49.241  3119  3147 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@c31057a
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:49.241  3119  3147 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:49.242  3119  3145 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:49.245  3119  3147 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:49.332  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:49.345  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:49.348  3119  3146 D         : HostConnection::get() New Host Connection established 0x79c9bd8e6a00, tid 3146
+11-07 07:02:49.357  3119  3124 I zygote64: Do partial code cache collection, code=27KB, data=30KB
+11-07 07:02:49.357  3119  3124 I zygote64: After code cache collection, code=22KB, data=27KB
+11-07 07:02:49.358  3119  3124 I zygote64: Increasing code cache capacity to 128KB
+11-07 07:02:49.372  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:49.381  3119  3146 I OpenGLRenderer: Initialized EGL, version 1.4
+11-07 07:02:49.381  3119  3146 D OpenGLRenderer: Swap behavior 1
+11-07 07:02:49.382  3119  3146 D EGL_emulation: eglCreateContext: 0x79c9bd8a72e0: maj 3 min 0 rcv 3
+11-07 07:02:49.386  3119  3146 D EGL_emulation: eglMakeCurrent: 0x79c9bd8a72e0: ver 3 0 (tinfo 0x79c9b14b4980)
+11-07 07:02:49.499  3119  3124 I zygote64: Do partial code cache collection, code=59KB, data=43KB
+11-07 07:02:49.510  3119  3124 I zygote64: After code cache collection, code=59KB, data=42KB
+11-07 07:02:49.510  3119  3124 I zygote64: Increasing code cache capacity to 256KB
+11-07 07:02:49.708  3119  3146 D EGL_emulation: eglMakeCurrent: 0x79c9bd8a72e0: ver 3 0 (tinfo 0x79c9b14b4980)
+11-07 07:02:49.916  1676  1698 I ActivityManager: Displayed app.ykspusula/.MainActivity: +1s29ms
+11-07 07:02:49.983  3119  3119 I zygote64: Deoptimizing int tk.U(java.lang.Object, java.lang.Object[]) due to JIT inline cache
+11-07 07:02:50.039  3119  3124 I zygote64: Do full code cache collection, code=123KB, data=91KB
+11-07 07:02:50.039  3119  3124 I zygote64: After code cache collection, code=72KB, data=40KB
+11-07 07:02:50.073  3119  3124 I zygote64: Compiler allocated 5MB to compile void jd.<init>(java.lang.String, fs3, java.util.List, java.util.List, x21, ij0, boolean)
+11-07 07:02:50.095  3119  3124 I zygote64: Do partial code cache collection, code=109KB, data=74KB
+11-07 07:02:50.095  3119  3124 I zygote64: After code cache collection, code=109KB, data=74KB
+11-07 07:02:50.095  3119  3124 I zygote64: Increasing code cache capacity to 512KB
+11-07 07:02:50.097  3119  3119 I zygote64: Deoptimizing void qf3.d(java.lang.Object, o41, m41) due to JIT inline cache
+11-07 07:02:50.243  3119  3145 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:50.243  3119  3145 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@92756c5
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at wu4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:28)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:50.243  3119  3145 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:50.244  3119  3145 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:50.245  3119  3147 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:50.245  3119  3147 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@1db2f4b
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:50.245  3119  3147 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:50.246  3119  3147 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:50.411  3119  3119 I zygote64: Deoptimizing ci3 cf3.s(ci3, ai3) due to JIT inline cache
+11-07 07:02:52.244  3119  3145 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:52.244  3119  3145 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@bb85079
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at wu4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:28)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:52.244  3119  3145 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:52.245  3119  3145 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:52.245  3119  3145 W BillingClient: Max retries reached.
+11-07 07:02:52.246  3119  3147 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:52.246  3119  3147 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@682e96c
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:52.246  3119  3147 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:52.247  3119  3147 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:52.247  3119  3147 W BillingClient: Max retries reached.
+11-07 07:02:52.247  3119  3157 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:52.247  3119  3157 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@e50cbca
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:52.247  3119  3157 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:52.247  3119  3157 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:52.248  3119  3148 I zygote64: Deoptimizing java.lang.Object e50.invoke(java.lang.Object, java.lang.Object) due to JIT inline cache
+11-07 07:02:52.363  1676  1807 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+11-07 07:02:53.248  3119  3157 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:53.248  3119  3157 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@76b3058
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:53.248  3119  3157 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:53.249  3119  3157 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:53.382  1676  2377 D WificondControl: Scan result ready event
+11-07 07:02:54.310  1676  2886 I ActivityManager: Killing 2735:com.android.contacts/u0a6 (adj 906): empty #17
+11-07 07:02:54.678  3119  3159 D ProfileInstaller: Installing profile for app.ykspusula
+11-07 07:02:55.249  3119  3157 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:55.249  3119  3157 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@845f617
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:55.249  3119  3157 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:55.250  3119  3157 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:55.250  3119  3157 W BillingClient: Max retries reached.
+11-07 07:02:55.948  1676  2886 I ActivityManager: Force stopping app.ykspusula appid=10067 user=0: from pid 3162
+11-07 07:02:55.948  1676  2886 I ActivityManager: Killing 3119:app.ykspusula/u0a67 (adj 0): stop app.ykspusula
+11-07 07:02:55.949  1676  2886 W ActivityManager: Force removing ActivityRecord{4b07b8f u0 app.ykspusula/.MainActivity t5}: app died, no saved state
+11-07 07:02:55.953  1676  2886 I WindowManager: Failed to capture screenshot of Token{4645e1c ActivityRecord{4b07b8f u0 app.ykspusula/.MainActivity t5 f}} appWin=Window{adb2bb2 u0 app.ykspusula/app.ykspusula.MainActivity} drawState=4
+11-07 07:02:55.994  1917  1917 D CarrierSvcBindHelper: No carrier app for: 0
+11-07 07:02:55.999  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:56.014  1408  1408 I chatty  : uid=1000(system) allocator@2.0-s identical 1 line
+11-07 07:02:56.014  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:56.024  1676  1698 W ActivityManager: setHasOverlayUi called on unknown pid: 3119
+11-07 07:02:56.036  2423  2501 D EGL_emulation: eglMakeCurrent: 0x79c9b403e3a0: ver 3 0 (tinfo 0x79c9b400d9e0)
+11-07 07:02:56.551  2423  2501 W OpenGLRenderer: Incorrectly called buildLayer on View: ShortcutAndWidgetContainer, destroying layer...
+11-07 07:02:58.011  1676  2377 I ActivityManager: START u0 {flg=0x10000000 cmp=app.ykspusula/.MainActivity} from uid 2000
+11-07 07:02:58.020  3168  3168 W zygote64: Unexpected CPU variant for X86 using defaults: x86_64
+11-07 07:02:58.026  1676  1886 I ActivityManager: Start proc 3168:app.ykspusula/u0a67 for activity app.ykspusula/.MainActivity
+11-07 07:02:58.047  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:58.070  3168  3168 D WM-WrkMgrInitializer: Initializing WorkManager with default configuration.
+11-07 07:02:58.175  2423  2501 D EGL_emulation: eglMakeCurrent: 0x79c9b403e3a0: ver 3 0 (tinfo 0x79c9b400d9e0)
+11-07 07:02:58.299  3168  3179 I zygote64: Background concurrent copying GC freed 13842(2MB) AllocSpace objects, 0(0B) LOS objects, 49% free, 3MB/6MB, paused 18.657ms total 137.877ms
+11-07 07:02:58.332  3168  3168 I YksAds  : yas dogrulanmadi
+11-07 07:02:58.359  1418  1982 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+11-07 07:02:58.362  3168  3198 D OpenGLRenderer: HWUI GL Pipeline
+11-07 07:02:58.363  3168  3194 W BillingClient: Client is already in the process of connecting to billing service.
+11-07 07:02:58.368  3168  3194 W BillingClient: Reconnection failed with result: 5
+11-07 07:02:58.370  3168  3196 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:58.419  3168  3173 I zygote64: Do partial code cache collection, code=30KB, data=26KB
+11-07 07:02:58.420  3168  3173 I zygote64: After code cache collection, code=25KB, data=23KB
+11-07 07:02:58.420  3168  3173 I zygote64: Increasing code cache capacity to 128KB
+11-07 07:02:58.445  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:58.446  3168  3198 D         : HostConnection::get() New Host Connection established 0x79c9bd92ad00, tid 3198
+11-07 07:02:58.447  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:58.448  3168  3198 I OpenGLRenderer: Initialized EGL, version 1.4
+11-07 07:02:58.448  3168  3198 D OpenGLRenderer: Swap behavior 1
+11-07 07:02:58.449  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:02:58.450  3168  3198 D EGL_emulation: eglCreateContext: 0x79c9bd8a7560: maj 3 min 0 rcv 3
+11-07 07:02:58.452  3168  3198 D EGL_emulation: eglMakeCurrent: 0x79c9bd8a7560: ver 3 0 (tinfo 0x79c9b14beb80)
+11-07 07:02:58.454  3168  3173 I zygote64: Do partial code cache collection, code=62KB, data=42KB
+11-07 07:02:58.454  3168  3173 I zygote64: After code cache collection, code=62KB, data=42KB
+11-07 07:02:58.454  3168  3173 I zygote64: Increasing code cache capacity to 256KB
+11-07 07:02:58.495  3168  3198 D EGL_emulation: eglMakeCurrent: 0x79c9bd8a7560: ver 3 0 (tinfo 0x79c9b14beb80)
+11-07 07:02:58.653  1676  1698 I ActivityManager: Displayed app.ykspusula/.MainActivity: +637ms
+11-07 07:02:58.722  3168  3168 I zygote64: Deoptimizing int tk.U(java.lang.Object, java.lang.Object[]) due to JIT inline cache
+11-07 07:02:58.835  3168  3173 I zygote64: Do full code cache collection, code=121KB, data=101KB
+11-07 07:02:58.836  3168  3173 I zygote64: After code cache collection, code=70KB, data=49KB
+11-07 07:02:58.836  3168  3173 I zygote64: Compiler allocated 5MB to compile void jd.<init>(java.lang.String, fs3, java.util.List, java.util.List, x21, ij0, boolean)
+11-07 07:02:58.955  1676  1745 I InputReader: Reconfiguring input devices.  changes=0x00000010
+11-07 07:02:58.960  1676  1676 I Telecom : DefaultDialerCache: Refreshing default dialer for user 0: now com.android.dialer: DDC.oR@AGs
+11-07 07:02:58.966  1676  1690 W VoiceInteractionManagerService: no available voice interaction services found for user 0
+11-07 07:02:58.993  1917  1917 D CarrierSvcBindHelper: No carrier app for: 0
+11-07 07:02:58.994  1917  1917 D ImsResolver: maybeAddedImsService, packageName: app.ykspusula
+11-07 07:02:59.179  3168  3168 I zygote64: Deoptimizing ci3 cf3.f(ci3) due to JIT inline cache
+11-07 07:02:59.236  3168  3173 I zygote64: Do partial code cache collection, code=118KB, data=90KB
+11-07 07:02:59.236  3168  3173 I zygote64: After code cache collection, code=117KB, data=90KB
+11-07 07:02:59.236  3168  3173 I zygote64: Increasing code cache capacity to 512KB
+11-07 07:02:59.369  3168  3194 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:59.369  3168  3194 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@1ef5ad1
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at wu4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:28)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:59.369  3168  3194 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:59.370  3168  3194 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:59.370  3168  3196 W BillingClient: There was an exception while unbinding service!
+11-07 07:02:59.370  3168  3196 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@5ec1037
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:02:59.370  3168  3196 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:02:59.370  3168  3196 W BillingClient: Reconnection failed with result: 3
+11-07 07:02:59.960  1676  1807 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+11-07 07:03:01.370  3168  3194 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:01.370  3168  3194 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@43dd30d
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at wu4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:28)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:01.370  3168  3194 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:01.370  3168  3194 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:01.370  3168  3194 W BillingClient: Max retries reached.
+11-07 07:03:01.371  3168  3196 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:01.371  3168  3196 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@a6778d3
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:01.371  3168  3196 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:01.372  3168  3196 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:01.372  3168  3196 W BillingClient: Max retries reached.
+11-07 07:03:01.373  3168  3186 I zygote64: Deoptimizing java.lang.Object e50.invoke(java.lang.Object, java.lang.Object) due to JIT inline cache
+11-07 07:03:01.376  3168  3205 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:01.376  3168  3205 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@dee890e
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:01.376  3168  3205 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:01.376  3168  3186 I zygote64: Deoptimizing t02 t02.f() due to JIT same target
+11-07 07:03:01.376  3168  3205 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:02.377  3168  3205 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:02.377  3168  3205 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@b93c
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:02.377  3168  3205 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:02.377  3168  3205 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:04.257  3168  3207 D ProfileInstaller: Skipping profile installation for app.ykspusula
+11-07 07:03:04.378  3168  3205 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:04.378  3168  3205 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@1db2f4b
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:04.378  3168  3205 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:04.379  3168  3205 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:04.379  3168  3205 W BillingClient: Max retries reached.
+11-07 07:03:04.677  1676  2886 I ActivityManager: Force stopping app.ykspusula appid=10067 user=0: from pid 3210
+11-07 07:03:04.677  1676  2886 I ActivityManager: Killing 3168:app.ykspusula/u0a67 (adj 0): stop app.ykspusula
+11-07 07:03:04.678  1676  2886 W ActivityManager: Force removing ActivityRecord{ae034c8 u0 app.ykspusula/.MainActivity t6}: app died, no saved state
+11-07 07:03:04.679  1676  2886 I WindowManager: Failed to capture screenshot of Token{c3b9961 ActivityRecord{ae034c8 u0 app.ykspusula/.MainActivity t6 f}} appWin=Window{4fcda72 u0 app.ykspusula/app.ykspusula.MainActivity} drawState=4
+11-07 07:03:04.684  1676  2886 I ActivityManager: Killing 2567:com.android.managedprovisioning/u0a17 (adj 906): empty #17
+11-07 07:03:04.702  1917  1917 D CarrierSvcBindHelper: No carrier app for: 0
+11-07 07:03:04.739  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:03:04.739  1676  1698 W ActivityManager: setHasOverlayUi called on unknown pid: 3168
+11-07 07:03:04.742  1408  1408 I chatty  : uid=1000(system) allocator@2.0-s identical 1 line
+11-07 07:03:04.743  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:03:04.756  2423  2501 D EGL_emulation: eglMakeCurrent: 0x79c9b403e3a0: ver 3 0 (tinfo 0x79c9b400d9e0)
+11-07 07:03:05.271  2423  2501 W OpenGLRenderer: Incorrectly called buildLayer on View: ShortcutAndWidgetContainer, destroying layer...
+11-07 07:03:06.733  1676  1886 I ActivityManager: START u0 {flg=0x10000000 cmp=app.ykspusula/.MainActivity} from uid 2000
+11-07 07:03:06.746  3220  3220 W zygote64: Unexpected CPU variant for X86 using defaults: x86_64
+11-07 07:03:06.753  1676  2153 I ActivityManager: Start proc 3220:app.ykspusula/u0a67 for activity app.ykspusula/.MainActivity
+11-07 07:03:06.775  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:03:06.846  2423  2501 D EGL_emulation: eglMakeCurrent: 0x79c9b403e3a0: ver 3 0 (tinfo 0x79c9b400d9e0)
+11-07 07:03:06.875  3220  3220 D WM-WrkMgrInitializer: Initializing WorkManager with default configuration.
+11-07 07:03:06.938  1676  3213 I BackgroundDexOptService: Pinning optimized code {}
+11-07 07:03:07.033  3220  3231 I zygote64: Background concurrent copying GC freed 13402(2MB) AllocSpace objects, 0(0B) LOS objects, 49% free, 3MB/7MB, paused 1.798ms total 100.907ms
+11-07 07:03:07.041  3220  3220 I YksAds  : yas dogrulanmadi
+11-07 07:03:07.080  3220  3249 W BillingClient: Client is already in the process of connecting to billing service.
+11-07 07:03:07.093  3220  3249 W BillingClient: Reconnection failed with result: 5
+11-07 07:03:07.095  1418  1449 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+11-07 07:03:07.095  3220  3251 D OpenGLRenderer: HWUI GL Pipeline
+11-07 07:03:07.096  3220  3248 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:07.150  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:03:07.152  1408  1408 I chatty  : uid=1000(system) allocator@2.0-s identical 1 line
+11-07 07:03:07.153  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:03:07.239  3220  3251 D         : HostConnection::get() New Host Connection established 0x79c9b4039780, tid 3251
+11-07 07:03:07.240  3220  3225 I zygote64: Do partial code cache collection, code=24KB, data=29KB
+11-07 07:03:07.240  3220  3225 I zygote64: After code cache collection, code=19KB, data=26KB
+11-07 07:03:07.240  3220  3225 I zygote64: Increasing code cache capacity to 128KB
+11-07 07:03:07.242  3220  3251 I OpenGLRenderer: Initialized EGL, version 1.4
+11-07 07:03:07.242  3220  3251 D OpenGLRenderer: Swap behavior 1
+11-07 07:03:07.244  3220  3251 D EGL_emulation: eglCreateContext: 0x79c9b403e3a0: maj 3 min 0 rcv 3
+11-07 07:03:07.245  3220  3251 D EGL_emulation: eglMakeCurrent: 0x79c9b403e3a0: ver 3 0 (tinfo 0x79c9b4115a60)
+11-07 07:03:07.303  3220  3251 D EGL_emulation: eglMakeCurrent: 0x79c9b403e3a0: ver 3 0 (tinfo 0x79c9b4115a60)
+11-07 07:03:07.308  3220  3225 I zygote64: Do partial code cache collection, code=56KB, data=47KB
+11-07 07:03:07.308  3220  3225 I zygote64: After code cache collection, code=53KB, data=45KB
+11-07 07:03:07.308  3220  3225 I zygote64: Increasing code cache capacity to 256KB
+11-07 07:03:07.468  1676  1698 I ActivityManager: Displayed app.ykspusula/.MainActivity: +725ms
+11-07 07:03:07.552  3220  3220 I zygote64: Deoptimizing int tk.U(java.lang.Object, java.lang.Object[]) due to JIT inline cache
+11-07 07:03:07.663  3220  3225 I zygote64: Do full code cache collection, code=120KB, data=86KB
+11-07 07:03:07.664  3220  3225 I zygote64: After code cache collection, code=67KB, data=37KB
+11-07 07:03:07.676  3220  3225 I zygote64: Do partial code cache collection, code=73KB, data=67KB
+11-07 07:03:07.676  3220  3225 I zygote64: After code cache collection, code=73KB, data=67KB
+11-07 07:03:07.676  3220  3225 I zygote64: Increasing code cache capacity to 512KB
+11-07 07:03:07.677  3220  3225 I zygote64: Compiler allocated 5MB to compile void jd.<init>(java.lang.String, fs3, java.util.List, java.util.List, x21, ij0, boolean)
+11-07 07:03:08.094  3220  3249 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:08.094  3220  3249 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@b5cf3d4
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:08.094  3220  3249 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:08.094  3220  3249 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:08.097  3220  3248 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:08.097  3220  3248 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@bd1a072
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at wu4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:28)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:08.097  3220  3248 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:08.099  3220  3248 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:08.684  1676  1807 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+11-07 07:03:10.095  3220  3249 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:10.095  3220  3249 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@37f7940
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:10.095  3220  3249 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:10.095  3220  3249 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:10.095  3220  3249 W BillingClient: Max retries reached.
+11-07 07:03:10.096  3220  3247 I zygote64: Deoptimizing java.lang.Object e50.invoke(java.lang.Object, java.lang.Object) due to JIT inline cache
+11-07 07:03:10.099  3220  3248 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:10.099  3220  3248 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@c9551be
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at wu4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:28)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:10.099  3220  3248 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:10.100  3220  3248 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:10.100  3220  3248 W BillingClient: Max retries reached.
+11-07 07:03:10.101  3220  3258 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:10.101  3220  3258 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@e647b35
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:10.101  3220  3258 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:10.102  3220  3258 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:11.102  3220  3258 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:11.102  3220  3258 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@eba813b
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:11.102  3220  3258 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:11.103  3220  3258 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:12.331  3220  3259 D ProfileInstaller: Skipping profile installation for app.ykspusula
+11-07 07:03:13.103  3220  3258 W BillingClient: There was an exception while unbinding service!
+11-07 07:03:13.103  3220  3258 W BillingClient: java.lang.IllegalArgumentException: Service not registered: fz4@197da96
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at android.app.LoadedApk.forgetServiceDispatcher(LoadedApk.java:1466)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at android.app.ContextImpl.unbindService(ContextImpl.java:1622)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at android.content.ContextWrapper.unbindService(ContextWrapper.java:697)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at fq.B(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:13)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at fq.A(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:70)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at fq.k(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:45)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at fq.C(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:43)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at ny4.call(r8-map-id-a89902c4fb21fc87bf849a5f81dabcef92c038f32a706c3015d1bbc374613092:7)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+11-07 07:03:13.103  3220  3258 W BillingClient: 	at java.lang.Thread.run(Thread.java:764)
+11-07 07:03:13.104  3220  3258 W BillingClient: Reconnection failed with result: 3
+11-07 07:03:13.104  3220  3258 W BillingClient: Max retries reached.
+11-07 07:03:13.742  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:03:13.742  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:03:14.044  1416  1416 I boot-pipe: done populating /dev/random
+11-07 07:03:15.316  2245  2848 I Dialer  : OmtpVvmCarrierCfgHlpr - OmtpEvent:CONFIG_STATUS_SMS_TIME_OUT
+11-07 07:03:15.316  2245  2245 I Dialer  : RetryPolicy - discarding deferred status: configuration_state=4
+11-07 07:03:15.317  2245  2245 I Dialer  : VvmTaskExecutor - no more tasks, stopping service if no task are added in 5000 millis
+11-07 07:03:15.318  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:03:15.318  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:03:15.318  2245  2245 I Dialer  : VvmTaskReceiver - task received
+11-07 07:03:15.318  2245  2245 I Dialer  : VvmTaskReceiver - TaskExecutor already running
+11-07 07:03:15.318  2245  2245 I Dialer  : Task.createTask - create task:com.android.voicemail.impl.ActivationTask
+11-07 07:03:15.318  2245  2245 I Dialer  : RetryPolicy - retry #1 for com.android.voicemail.impl.ActivationTask@2c6312f queued, executing in 5000
+11-07 07:03:15.318  2245  2245 I Dialer  : VvmTaskExecutor - com.android.voicemail.impl.ActivationTask@2c6312f added
+11-07 07:03:15.318  2245  2245 I Dialer  : VvmTaskExecutor - minimal wait time:5000
+11-07 07:03:15.318  2245  2245 I Dialer  : VvmTaskExecutor - sleep for 5000 millis
+11-07 07:03:15.321  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:03:15.321  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:03:15.324  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:03:15.324  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:03:15.327  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:03:15.327  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:03:15.330  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:03:15.330  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:03:20.323  2245  2848 I Dialer  : VvmTaskExecutor - executing task com.android.voicemail.impl.ActivationTask@2c6312f
+11-07 07:03:20.323  2245  2848 I Dialer  : PreOMigrationHandler - ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, [e2f7d48dd2b5ca523e7313cf4ba0f6ea830b6281], UserHandle{0} already migrated
+11-07 07:03:20.327  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:03:20.327  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:03:20.335  1676  1690 E memtrack: Couldn't load memtrack module
+11-07 07:03:20.335  1676  1690 W android.os.Debug: failed to get memory consumption info: -1
+11-07 07:03:20.335  2245  2848 I Dialer  : VvmActivationTask - VVM content provider configured - vvm_type_cvvm
+11-07 07:03:20.336  2245  2848 I Dialer  : OmtpVvmCarrierCfgHlpr - OmtpEvent:CONFIG_ACTIVATING
+11-07 07:03:20.348  2245  2848 I Dialer  : TelephonyMangerCompat.setVisualVoicemailSmsFilterSettings - using TelephonyManager
+11-07 07:03:20.349  2245  2848 I Dialer  : TelephonyMangerCompat.sendVisualVoicemailSms - using TelephonyManager
+11-07 07:03:21.525  1418  1449 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+11-07 07:03:21.525  1418  1449 D PermissionCache: checking android.permission.READ_FRAME_BUFFER for uid=2000 => granted (106 us)
+11-07 07:03:21.534  1408  1408 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 10371072
+11-07 07:03:21.535  3266  3266 D         : HostConnection::get() New Host Connection established 0x7a23c202f780, tid 3266

@@ -1,0 +1,2 @@
+e8d6c3b Cihaz testinde paket adı gölgelenmesi düzeltildi [tam]
+run=42348617485 olay=workflow_dispatch dal=duzeltme-2.1.1 kapi_denemesi=cihaz

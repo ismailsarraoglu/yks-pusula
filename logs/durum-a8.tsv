@@ -1,0 +1,7 @@
+acilis	PASS	android=8.0.0 api=26 imaj=system-images;android-26;default;x86_64
+test-kurulum	PASS	Success / Success
+testler	FAIL	Tests run: 54,  Failures: 1 1) deliberateFailureWhenAsked(app.ykspusula.GateProbeTest)
+release-kurulum	PASS	Success
+release-cokme	PASS	uygulama çökmesi: 0
+release-anr	PASS	ANR: 0
+release-acik-kaldi	PASS	süreç 3220
