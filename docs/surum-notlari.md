@@ -1,5 +1,21 @@
 # Sürüm notları
 
+## 2.1.2 (versionCode 5)
+
+### Play Console "Bu sürümdeki yenilikler" metni
+
+```
+• Ana sayfadaki günlük rotada aynı önerinin iki kez görünmesi düzeltildi.
+• Doğum tarihi sorusu kaldırıldı.
+• Reklamlar herkes için kişiselleştirilmemiş ve genel izleyiciye uygun gösterilir.
+```
+
+### Öğrenci için değişenler
+
+- Günlük rota artık tekrarlanmıyor; yarına taşınan öneri yarının rotasının oluşmasını engellemiyor.
+- Ana sayfadaki doğum tarihi kartı kaldırıldı; daha önce girilen bilgi telefondan silinir.
+- Reklamsız satın alma, yedekleme ve diğer bütün özellikler aynı.
+
 ## 2.1.1 (versionCode 4)
 
 Düzeltme sürümü; yeni özellik yok.

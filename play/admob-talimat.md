@@ -6,13 +6,13 @@ Kod şu anda Google'ın test kimlikleriyle derlenir. Gerçek reklam için aşağ
 2. **Uygulamalar > Uygulama ekle**: Android, uygulama adı "YKS Pusula: Plan ve Takip". Uygulama Play'de yayımlandığında mağaza bağlantısıyla eşleştirin.
 3. **Reklam birimleri > Yerel gelişmiş (Native advanced)**: bir birim oluşturun. Tek birim dört alanda da kullanılır; alan bazlı rapor isterseniz dört ayrı birim açabilirsiniz.
 4. **Gizlilik ve mesajlaşma**: GDPR iletisi oluşturup yayımlayın. UMP formu bu iletiyi gösterir.
-5. **Engelleme kontrolleri > İçerik sınırı**: Genel izleyici (PG) seçin. Hassas kategorileri engelleyin.
+5. **Engelleme kontrolleri > İçerik sınırı**: **G (genel izleyici)** seçin. Hassas kategorileri engelleyin. Uygulama her istekte çocuk işlemini (TFCD, TFUA) ve G sınırını koddan gönderir; panel ayarı bununla çelişmemeli.
+   Uygulama ayarlarında hedef kitle çocukları içeriyorsa AdMob'un "Google Play Families politikası" uyarılarını kontrol edin.
 6. Proje kök klasöründe `keystore.properties` dosyası oluşturun (depoya eklenmez):
 
 ```
 ADMOB_APP_ID=ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX
 ADMOB_NATIVE_ID=ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX
-ADMOB_BANNER_ID=ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX
 PLAY_PUBLIC_KEY=Play Console > Para kazanma > Lisanslama bölümündeki Base64 anahtar
 ```
 

@@ -13,7 +13,9 @@ Bu işler hesabınıza, kimliğinize veya gerçek cihaza bağlı olduğu için t
 6. **Play Console'da uygulama oluşturun.** Mağaza metinleri `play/magaza-metinleri.md`, görseller `play/gorseller/`. Ekran görselleri örnek veriyle hazırlandı.
 7. **`remove_ads_lifetime` ürününü** oluşturun ve fiyatını belirleyin.
 8. **Beyanları doldurun:** veri güvenliği, reklam kimliği, hedef kitle, içerik derecelendirmesi. Dayanak: `play/veri-guvenligi-envanteri.md`.
-   - **Hedef kitle (2.1.1'de değişti):** gerçek kitlenizi seçin: 16-17 ve 18+; 9. ve 10. sınıf kullanıcılar da varsa 13-15. 2.1.0 raporundaki "16-17 ve 18+ seçilirse yaş ekranı gerekmez" önerisi yanlıştı ve geri çekildi. Kitle karma olduğu için Families politikası uygulanır; uygulama tarafsız yaş ekranı gösterir ve 18 yaş altına reklam göstermez. Gerekçe: `docs/gizlilik-ve-reklam-raporu.md`.
+   - **Hedef kitle:** gerçek kitlenizi seçin: 16-17 ve 18+; 9. ve 10. sınıf kullanıcılar da varsa 13-15. Families politikası uygulanır. 2.1.2'de yaş ekranı yok; bütün reklamlar çocuk korumasıyla gösterilir. Play incelemesinin bunu tarafsız yaş ekranı yerine kabul edeceği garanti değil (`docs/gizlilik-ve-reklam-raporu.md`).
+   - **Reklam kimliği beyanı:** "kullanılmıyor". 2.1.2'de AD_ID izni yok.
+   - **İçerik derecelendirmesi anketi:** uygulamada reklam olduğunu belirtin.
    - Families politikası ve yaş konusundaki hukuki yükümlülükler (KVKK, farklı ülkeler) için bir hukukçuya danışın. Google da yaş işlemi seçimi için hukuk danışmanı öneriyor.
 
 ## Gerçek cihaz ve Play ile denenmesi gerekenler
@@ -27,8 +29,8 @@ Bunlar otomatik testlerde denenemedi. Dahili test kanalında lisans test hesabı
 - [ ] Uygulama silinip yeniden kurulunca satın alma geri yükleniyor
 - [ ] Uçak modunda reklamsız hak korunuyor
 - [ ] Avrupa Ekonomik Alanı konumunda rıza formu çıkıyor, Profil'den yeniden açılıyor
-- [ ] Gerçek reklam kimlikleriyle reklam görünüyor (kendi reklamınıza tıklamayın). Önce yaş ekranında 18 yaşından büyük bir doğum tarihi girin; 18 altında reklam hiç çıkmaz
-- [ ] Yaş ekranı: 18 altı ve "Belirtmek istemiyorum" seçilince reklam ve rıza formu hiç çıkmıyor (gerçek telefonda)
+- [ ] Gerçek reklam kimlikleriyle reklam görünüyor (kendi reklamınıza tıklamayın). Reklamlar kişiselleştirilmemiş ve G içerikli olmalı
+- [ ] 2.1.1 kurulu telefona 2.1.2 kurulunca doğum tarihi kartı görünmüyor, veriler duruyor
 - [ ] YKS bilgi merkezinde ÖSYM kartı telefonunuzun tarayıcısında ÖSYM'nin "Sınav Soru ve Cevapları" sayfasını açıyor; sayfadan YKS yılı seçilip TYT, AYT ve YDT temel soru kitapçıklarına ve cevap anahtarlarına ulaşılabiliyor. Emülatörde yalnızca tarayıcının bu adresle açıldığı doğrulandı; sayfanın içeriği görülmedi
 - [ ] Play Billing gerçek bağlantı: emülatörde Google hesabı olmadığı için hiç kurulamadı. Dahili testte fiyatın görünmesi ilk denetim olsun
 - [ ] Test reklamı görünürken parmağınızı reklamın üstüne koyup sayfayı hızlıca kaydırın, reklam açılmamalı. Bunu Google test kimlikli sürümle yapın, gerçek reklamda denemeyin

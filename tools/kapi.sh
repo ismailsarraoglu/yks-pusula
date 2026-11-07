@@ -36,8 +36,13 @@ calismadi() { local neden=$1; shift; for a in "$@"; do kayit "$a" NOT_RUN "$nede
 # Test çıktısı yarım kaldığında neden: uygulama çökmesi FAIL'dir. Yalnızca kanıtlı altyapı nedeninde bir kez yeniden denenir:
 # - Google Play Hizmetleri ölürken Android'in bağlı süreçleri kapatması
 # - Sistem arayüzü gibi başka süreçler de yanıt vermezken açılışın tamamlanamaması (aşırı yüklü emülatör)
+# - Android'in kendi sistem sürecinin (system_server) yerel çökmesi: emülatör sistemi yeniden başlar
 altyapi_nedeni() {
   local log=$1
+  if grep -q "system_server_native_crash" "$log" || grep -q "INSTRUMENTATION_ABORTED: System has crashed" "${log%.logcat}"; then
+    timeout 300 adb wait-for-device; local j; for j in $(seq 1 60); do [ "$(timeout 15 adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 5; done
+    sleep 20; echo "Android sistem süreci çöktü ve yeniden başladı (emülatör)"; return
+  fi
   if grep -qE "Killing [0-9]+:$PKG[^ ]* .*depends on provider .* in dying proc" "$log"; then echo "Play Hizmetleri yeniden başladı (bağlı süreç kapatıldı)"; return; fi
   if grep -q "failed to complete startup" "$log" && grep -E 'ANR in ' "$log" | grep -vq "$PKG"; then echo "aşırı yüklü emülatör (sistem süreçleri de yanıt vermedi)"; return; fi
 }
@@ -94,14 +99,9 @@ emulator_ac() {
   echo no | "$SDKBIN/avdmanager" create avd -n "$NAME" -k "$IMG" -d pixel_6 --force >> "ci/logs/kurulum-$NAME.txt" 2>&1
   [ -f "$ANDROID_AVD_HOME/$NAME.avd/config.ini" ] || { echo "sanal cihaz oluşmadı" >> "ci/logs/kurulum-$NAME.txt"; return 1; }
   printf 'hw.ramSize=%s\ndisk.dataPartition.size=6144M\nhw.keyboard=yes\n' "$MEM" >> "$ANDROID_AVD_HOME/$NAME.avd/config.ini"
-  "$ANDROID_HOME/emulator/emulator" -avd "$NAME" -accel on -cores 3 -memory "$MEM" -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -camera-front none > "ci/logs/emulator-$NAME.txt" 2>&1 &
-  EMU_PID=$!
-  local B="" i
-  for i in $(seq 1 200); do
-    B=$(timeout 15 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break
-    kill -0 $EMU_PID 2>/dev/null || { echo "emülatör kapandı (deneme $i)" >> "ci/logs/kurulum-$NAME.txt"; break; }
-    sleep 5
-  done
+  EMU_NAME=$NAME; EMU_MEM=$MEM
+  emulator_baslat_bekle
+  local B=$EMU_BOOT
   [ "$B" = "1" ] || { tail -40 "ci/logs/emulator-$NAME.txt" > "ci/logs/emulator-son-$NAME.txt"; return 1; }
   adb shell settings put global window_animation_scale 0
   adb shell settings put global transition_animation_scale 0
@@ -113,6 +113,28 @@ emulator_ac() {
   return 0
 }
 
+# EMU_NAME sanal cihazını başlatır ve açılmasını bekler; EMU_BOOT=1 açıldı demektir.
+emulator_baslat_bekle() {
+  "$ANDROID_HOME/emulator/emulator" -avd "$EMU_NAME" -accel on -cores 3 -memory "$EMU_MEM" -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -camera-front none >> "ci/logs/emulator-$EMU_NAME.txt" 2>&1 &
+  EMU_PID=$!
+  EMU_BOOT=""
+  local i
+  for i in $(seq 1 200); do
+    EMU_BOOT=$(timeout 15 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$EMU_BOOT" = "1" ] && break
+    kill -0 $EMU_PID 2>/dev/null || { echo "emülatör kapandı (deneme $i)" >> "ci/logs/kurulum-$EMU_NAME.txt"; break; }
+    sleep 5
+  done
+}
+
+# Yeniden açılıştan sonra test ortamı ayarlarını tekrar uygular.
+emulator_baslat() {
+  emulator_baslat_bekle
+  [ "$EMU_BOOT" = "1" ] || return 1
+  adb shell settings put global window_animation_scale 0; adb shell settings put global transition_animation_scale 0
+  adb shell settings put global animator_duration_scale 0; adb shell settings put global hide_error_dialogs 1
+  return 0
+}
+
 emulator_kapat() {
   timeout 20 "$ANDROID_HOME/platform-tools/adb" emu kill > /dev/null 2>&1; sleep 5
   pkill -f qemu-system; sleep 2
@@ -121,10 +143,19 @@ emulator_kapat() {
 cevrimdisi() { adb shell svc wifi disable; adb shell svc data disable; adb shell cmd connectivity airplane-mode enable 2>/dev/null; sleep 6; }
 cevrimici() { adb shell cmd connectivity airplane-mode disable; adb shell svc wifi enable; adb shell svc data enable; sleep 25; }
 
+# Cihazı yeniden başlatır. Emülatör yeniden başlatmadan geri gelmezse (bilinen emülatör sorunu) aynı sanal cihaz
+# kapatılıp yeniden açılır; veri bölümü korunur, yani bu da bir yeniden başlatmadır. Durum YENIDEN_NOT değişkenine yazılır.
 yeniden_baslat() {
+  YENIDEN_NOT=""
   adb reboot; sleep 20; timeout 300 adb wait-for-device
-  local i
-  for i in $(seq 1 100); do [ "$(timeout 15 adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 3; done
+  local i B=""
+  for i in $(seq 1 100); do B=$(timeout 15 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$B" = "1" ] && break; sleep 3; done
+  if [ "$B" != "1" ] && [ -n "$EMU_NAME" ]; then
+    YENIDEN_NOT="emülatör yeniden başlatmadan geri gelmedi; kapatılıp aynı veriyle yeniden açıldı"
+    echo "$YENIDEN_NOT" | tee -a "ci/logs/olcum-$KAPI_IS.txt"
+    emulator_kapat
+    emulator_baslat || YENIDEN_NOT="$YENIDEN_NOT; ikinci açılış da başarısız"
+  fi
   sleep 60
   adb shell svc power stayon true; adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard
 }
@@ -137,7 +168,7 @@ kalicilik() {
   testi_calistir kalicilik-zorla-durdurma ci/logs/kalicilik-durdurma-$KAPI_IS.txt "$P#readData"
   yeniden_baslat
   cevrimdisi
-  testi_calistir kalicilik-yeniden-baslatma ci/logs/kalicilik-yeniden-$KAPI_IS.txt "$P#readData"
+  testi_calistir kalicilik-yeniden-baslatma ci/logs/kalicilik-yeniden-$KAPI_IS.txt "$P#readData" && [ -n "$YENIDEN_NOT" ] && sed -i "\$ s/\$/; $YENIDEN_NOT/" "$DURUM"
 }
 
 # Yan yükleme (release ayarlı) APK: kurulum, açılış, uygulama çökmesi ve ANR yok.

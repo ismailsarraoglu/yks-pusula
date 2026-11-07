@@ -13,7 +13,7 @@ Bu tablo uygulamanın gerçek davranışından çıkarıldı. SDK davranışlar�
 
 | Veri türü | Toplanıyor | Paylaşılıyor | Amaç | SDK |
 |---|---|---|---|---|
-| Cihaz veya diğer kimlikler (reklam kimliği) | Evet | Evet | Reklam, sahtecilik önleme | AdMob |
+| Cihaz veya diğer kimlikler | AdMob'un güncel beyanına göre işaretleyin | AdMob'un güncel beyanına göre | Reklam, sahtecilik önleme | AdMob. **Reklam kimliği (AAID) kullanılmaz:** AD_ID izni yok ve her istek çocuk işlemiyle yapılır |
 | Uygulama etkileşimleri (reklam gösterimi, tıklama) | Evet | Evet | Reklam, analiz | AdMob |
 | Yaklaşık konum (IP'den) | Evet | Evet | Reklam | AdMob |
 | Teşhis verileri (kilitlenme, performans) | Evet | Evet | Reklam, analiz | AdMob |
@@ -31,28 +31,31 @@ Bu veriler cihazdan çıkmaz, Veri Güvenliği formunda "toplanıyor" sayılmaz:
 | POST_NOTIFICATIONS | Uygulama | Yerel hatırlatıcılar |
 | RECEIVE_BOOT_COMPLETED | Uygulama | Yeniden başlatma sonrası hatırlatıcıları kurmak |
 | com.android.vending.BILLING | Play Billing | Tek seferlik satın alma |
-| com.google.android.gms.permission.AD_ID | Reklam SDK'sı | Reklam kimliği. Play Console'da "Reklam kimliği kullanılıyor" beyanı gerekir |
+| ~~com.google.android.gms.permission.AD_ID~~ | Reklam SDK'sı ekler, 2.1.2'de manifestten kaldırıldı | Play Console'da reklam kimliği beyanı: kullanılmıyor |
 | FOREGROUND_SERVICE, WAKE_LOCK | Reklam SDK'sı bağımlılıkları | Uygulama kodu kullanmaz; SDK kütüphaneleri ekler |
 | app.ykspusula.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION | AndroidX | Uygulama içi yayın koruması |
 
 Geniş dosya izni, kamera izni veya konum izni istenmez. Fotoğraf ve PDF sistem seçicisiyle alınır.
 
-## Hedef kitle ve Families politikası
+## Hedef kitle ve Families politikası (2.1.2)
 
-Kaynaklar: [Hedef kitle ve uygulama içeriği](https://support.google.com/googleplay/android-developer/answer/9867159?hl=en), [Families politikası](https://support.google.com/googleplay/android-developer/answer/9893335?hl=en), [Families Self-Certified Ads SDK listesi](https://support.google.com/googleplay/android-developer/answer/9283445?hl=en), [Next-Gen SDK yaş işlemi](https://developers.google.com/admob/android/next-gen/targeting). 7 Kasım 2026'da okundu. Ayrıntılı değerlendirme: `docs/gizlilik-ve-reklam-raporu.md`.
+Ayrıntı ve kaynaklar: `docs/gizlilik-ve-reklam-raporu.md`.
 
-- 13-15 ve 16-17 grupları bazı bölgelerde çocuk sayılabilir. YKS kullanıcılarının önemli kısmı 18 yaşından küçük olduğu için hedef kitle karma kitledir. **2.1.0'daki "16-17 ve 18+ seçilirse yaş ekranı gerekmez" önerisi geri çekildi.**
-- **Play Console'da gerçek kitleyi seçin:** 16-17 ve 18+; 9. ve 10. sınıf kullanıcılar da hedefleniyorsa 13-15. Families politikası uygulanır.
-- Uygulama karma kitle şartları için şunları yapar: tarafsız yaş ekranı (boş ay ve yıl alanı, varsayılan yok, "Belirtmek istemiyorum" seçeneği); reklam ve rıza SDK'sı yalnızca 18 yaşını doldurmuş kullanıcı için başlatılır; 18 altındaki veya yaşını belirtmeyen kullanıcıdan reklam kimliği aktarılmaz.
-- Uygulamanın reklam SDK'sı (GMA Next-Gen) Families sertifikalı listede değildir; bu yüzden çocuk sayılabilecek kullanıcılara hiç reklam gösterilmez.
-- Yetişkin isteklerinde `AgeRestrictedTreatment.UNSPECIFIED` ve `MAX_AD_CONTENT_RATING_PG` kullanılır. AdMob panelinde de PG seçin.
-- Veri Güvenliği formu için: AdMob verileri yalnızca 18+ kullanıcılardan toplanır. Doğum ayı ve yılı cihazdan çıkmaz, "toplanıyor" sayılmaz.
-- Bu beyanlar hukuki danışmanlık değildir. Türkiye'de reşit olmayanların verileriyle ilgili yükümlülükler için bir uzmana danışın.
+- Hedef kitle gerçeğe göre seçilmeli: 16-17 ve 18+; 9. ve 10. sınıf kullanıcılar da varsa 13-15. Karma kitle olduğu için Families politikası uygulanır.
+- Uygulama yaş sormaz. Her kullanıcı yaşı bilinmeyen sayılır ve bütün reklamlar çocuk korumasıyla gösterilir: Families sertifikalı Google Mobile Ads SDK, kişiselleştirilmemiş reklam, reklam kimliği yok, içerik derecesi G.
+- **Risk:** Families politikası karma kitle için tarafsız yaş ekranından açıkça söz ediyor; herkese çocuk korumasının bunun yerine kabul edileceği garanti değil.
+- Uygulama yaş, kimlik, telefon veya e-posta istemez. Bu beyanlar hukuki danışmanlık değildir.
 
 ## Sürüm 2.1.0'da değişen
 
 - Yeni veri türü toplanmadı, yeni SDK veya izin eklenmedi. Saat ve saat dilimi değişikliğinde hatırlatıcıları yeniden kurmak için sistem yayını dinlenir; bu bir izin gerektirmez.
 - Satın alma doğrulaması artık Play açık anahtarı olmadan hak vermez. Satın alma kaydı (JSON ve imza) yalnızca cihazda saklanır.
+
+## Sürüm 2.1.2'de değişen
+
+- Yaş ekranı kaldırıldı; cihazda kalan doğum ayı ve yılı silinir.
+- Reklam SDK'sı `play-services-ads` (Families sertifikalı). Her istek çocuk işlemiyle, içerik G.
+- `AD_ID` izni kaldırıldı: reklam kimliği beyanı "kullanılmıyor".
 
 ## Sürüm 2.1.1'de değişen
 
