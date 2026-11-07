@@ -26,6 +26,7 @@ import androidx.test.uiautomator.Until
 import app.ykspusula.data.*
 import app.ykspusula.domain.ReminderTime
 import app.ykspusula.notify.Notifier
+import app.ykspusula.notify.REMINDER_TYPES
 import app.ykspusula.notify.ReminderReceiver
 import app.ykspusula.ui.DebugNav
 import kotlinx.coroutines.flow.first
@@ -163,7 +164,7 @@ class SystemIntegrationTest {
         val pi = PendingIntent.getBroadcast(app, 1, Intent(app, ReminderReceiver::class.java).setAction("app.ykspusula.REMINDER"), PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
         note("hatirlatma-kuruldu=${Instant.ofEpochMilli(at)} alarm-kaydi=${pi != null}")
         assertNotNull("Alarm kaydı bulunamadı", pi)
-        val code = 100 + app.ykspusula.notify.REMINDER_TYPES.indexOfFirst { it.type == "DAILY" }
+        val code = 100 + REMINDER_TYPES.indexOfFirst { it.type == "DAILY" }
         val deadline = at + 6 * 60_000
         var firedAt = 0L
         while (System.currentTimeMillis() < deadline) {
