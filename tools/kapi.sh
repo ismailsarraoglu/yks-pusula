@@ -55,6 +55,7 @@ testi_calistir() {
     if grep -q 'FAILURES!!!' "$out"; then
       # Hata ayrıntısı iş loguna da yazılır (artifact indirilemese bile okunabilsin).
       echo "--- $asama hata ayrıntısı ---"; grep -A25 -m3 -E '^[0-9]+\) ' "$out" | cut -c1-400 | head -80
+      grep -E 'Caused by|Exception:|Error:|at app\.ykspusula' "$out" | grep -v 'testThread=' | cut -c1-400 | head -25
       kayit "$asama" FAIL "$(grep -E 'Tests run:' "$out" | tail -1) $(grep -m2 -E '^[0-9]+\) ' "$out" | tr '\n' ' ')${notu:+; $notu}"; return 1
     fi
     adb logcat -d > "$out.logcat" 2>/dev/null

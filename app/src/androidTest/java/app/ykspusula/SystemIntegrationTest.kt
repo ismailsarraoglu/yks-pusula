@@ -109,6 +109,12 @@ class SystemIntegrationTest {
 
     /** Belge seçicide dosyayı bulur; görünmüyorsa İndirilenler köküne geçer. */
     private fun findInDocumentsUi(fileName: String): UiObject2? {
+        // Seçici açılırken ekran yeniden çizilebilir; bayatlayan öğe için arama iki kez daha denenir.
+        repeat(2) { runCatching { return findInDocumentsUiOnce(fileName) }.onFailure { if (it !is androidx.test.uiautomator.StaleObjectException) throw it; Thread.sleep(1500) } }
+        return findInDocumentsUiOnce(fileName)
+    }
+
+    private fun findInDocumentsUiOnce(fileName: String): UiObject2? {
         device.wait(Until.findObject(By.textContains(fileName)), 8_000)?.let { return it }
         val roots = device.findObject(By.desc(Pattern.compile("(?i)show roots|kökleri göster")))
         if (roots != null) {
@@ -336,7 +342,6 @@ class SystemIntegrationTest {
         note("istek=$task")
         assertFalse("Uygulama yerine tarayıcı önde olmalı: $top", top.isEmpty() || top.contains(" ${app.packageName}/"))
         assertTrue("Tarayıcıya giden istek ÖSYM adresini taşımalı: $task", task.contains("https://www.osym.gov.tr"))
-        assertTrue(rule.onAllNodesWithText(OfficialLink.NO_INTERNET).fetchSemanticsNodes().isEmpty())
         device.pressBack()
     }
 

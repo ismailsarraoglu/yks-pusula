@@ -1,5 +1,28 @@
 # Sürüm notları
 
+## 2.1.1 (versionCode 4)
+
+Düzeltme sürümü; yeni özellik yok.
+
+### Play Console "Bu sürümdeki yenilikler" metni (500 karakter altı)
+
+```
+• Yedekten geri yükleme daha güvenli: bir adım başarısız olursa veriler, dosyalar ve ayarlar eski hâline döner; yarıda kalan işlem bir sonraki açılışta düzeltilir.
+• Reklamsız satın alma doğrulaması sıkılaştırıldı.
+• Reklamlar yalnızca 18 yaşını doldurmuş kullanıcılara gösterilir.
+• Profilde YDT dili yalnızca Dil alanında görünür.
+• Bilgi merkezindeki ÖSYM bağlantısı çıkmış soru ve cevap arşivini açar.
+• Android 15 yatay ekran düzeltmesi.
+```
+
+### Öğrenci için değişenler
+
+- Ana sayfada bir kez doğum ayı ve yılı sorulur (isteğe bağlı, "Belirtmek istemiyorum" seçilebilir). Bilgi telefonda kalır; 18 yaşından küçükler ve yaşını belirtmeyenler reklam görmez.
+- Profil düzenlemede YDT dili seçimi yalnızca hedef alan Dil iken görünür. Önceki seçim silinmez.
+- YKS bilgi merkezinde ÖSYM kartı, ÖSYM'nin sınav soru ve cevapları sayfasını telefonun tarayıcısında açar. İnternet yoksa uyarı gösterilir.
+- Yatay ekranda alt menü kamera kesiğinin altına girmez.
+- Yedekten geri yükleme sırasında hata olursa hiçbir veri, fotoğraf, PDF veya ayar kaybolmaz.
+
 ## 2.1.0 (versionCode 3)
 
 ### Play Console "Bu sürümdeki yenilikler" metni (500 karakter altı)
