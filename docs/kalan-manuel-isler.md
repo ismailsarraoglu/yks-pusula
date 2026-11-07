@@ -29,6 +29,8 @@ Bunlar otomatik testlerde denenemedi. Dahili test kanalında lisans test hesabı
 - [ ] Avrupa Ekonomik Alanı konumunda rıza formu çıkıyor, Profil'den yeniden açılıyor
 - [ ] Gerçek reklam kimlikleriyle reklam görünüyor (kendi reklamınıza tıklamayın). Önce yaş ekranında 18 yaşından büyük bir doğum tarihi girin; 18 altında reklam hiç çıkmaz
 - [ ] Yaş ekranı: 18 altı ve "Belirtmek istemiyorum" seçilince reklam ve rıza formu hiç çıkmıyor (gerçek telefonda)
+- [ ] YKS bilgi merkezinde ÖSYM kartı telefonunuzun tarayıcısında ÖSYM'nin "Sınav Soru ve Cevapları" sayfasını açıyor; sayfadan YKS yılı seçilip TYT, AYT ve YDT temel soru kitapçıklarına ve cevap anahtarlarına ulaşılabiliyor. Emülatörde yalnızca tarayıcının bu adresle açıldığı doğrulandı; sayfanın içeriği görülmedi
+- [ ] Play Billing gerçek bağlantı: emülatörde Google hesabı olmadığı için hiç kurulamadı. Dahili testte fiyatın görünmesi ilk denetim olsun
 - [ ] Test reklamı görünürken parmağınızı reklamın üstüne koyup sayfayı hızlıca kaydırın, reklam açılmamalı. Bunu Google test kimlikli sürümle yapın, gerçek reklamda denemeyin
 - [ ] Yanlış defterinde fotoğraf seçme, PDF ekleme, yedeği dosyaya kaydetme ve dosyadan geri yükleme (Android dosya seçicisi)
 - [ ] Ana ekrana dört bileşeni ekleme

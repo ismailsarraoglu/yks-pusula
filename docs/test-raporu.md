@@ -1,107 +1,87 @@
-# Test raporu (2.1.0)
+# Test raporu (2.1.1)
 
-Sürüm 2.1.0 (versionCode 3). Test edilen kod: `83130c3`, tam tur `42304857639`, 6-7 Kasım 2026.
-Testler GitHub Actions üzerindeki Android emülatörlerinde çalıştı. **Gerçek telefonda ve gerçek Google Play bağlantısıyla hiçbir test yapılmadı.** 2.0.0 raporu: `docs/test-raporu-2.0.md`.
+Sürüm 2.1.1 (versionCode 4). Test edilen kod: `43b566f`, son tam tur `42363540765`, 7 Kasım 2026. Dal: `duzeltme-2.1.1`.
+Testler GitHub Actions üzerindeki Android emülatörlerinde çalıştı. **Gerçek telefonda ve gerçek Google Play hesabıyla hiçbir test yapılmadı.** Önceki raporlar: `docs/test-raporu-2.1.0.md`, `docs/test-raporu-2.0.md`.
 
-İşaretler: ✅ otomatik test geçti · ⚠ kısmen denendi, sınırı yanında yazıyor · ❌ denenmedi
+Her aşama PASS, FAIL veya NOT RUN olarak kaydedildi. Ham kayıtlar: GitHub'daki `ci-results-duzeltme-2.1.1` dalında `logs/DURUM.md` ve `logs/durum-*.tsv`.
 
-## Son tam tur
+## Son tam tur: kalite kapısı PASS
 
-| Test | Ortam | Sonuç |
+| İş | Sonuç | Kapsam |
 |---|---|---|
-| Birim testleri | Bilgisayar | 70/70 (plan süresi 19, ürün mantığı 27, genel mantık 19, analiz 5) |
-| Tam cihaz testleri | Android 11 | 54/54 |
-| Ana düğmeler, art arda 5 kez | Android 11 | 5/5 |
-| Geçiş sırasında kapanma stresi, 3 tur × 35 geçiş | Android 11 | 3/3 |
-| Ekran taraması: 5 yapılandırma, açık ve koyu tema | Android 11 | Tamamı açıldı, 467 görüntü (yeni: Öncelikli konular, karışık kart tekrarı) |
-| Veri yazma, zorla durdurma, yeniden başlatma | Android 11, 14, 16 | Hepsi geçti |
-| Veri, geçiş, yedek güvenliği, öğrenme akışı | Android 8 ve 13 | 46/46, ilk denemede |
-| Aynısı ve arayüz testleri | Android 14 ve 16 | 52/52, ilk denemede |
-| Room geçişi | Android 14 ve 16 Play imajı | 3/3 (1 → 2, 2 → 3, 1 → 3) |
-| Çevrimiçi test reklamı ve reklamsız hak sonrası kapanma | Android 14 ve 16 Play imajı | İkisi de 1. denemede geçti |
-| Yan yükleme (release ayarlı) temiz kurulum ve açılış | Android 8, 11, 13, 14, 16 | Kuruldu, açıldı, uygulama çökme satırı 0 |
-| Art arda temiz kurulum | Android 14 ve 16 Play imajı | 6/6 ve 6/6 |
-| Play derlemesi anahtarsız | CI | Beklenen hatayla durdu; eksik 7 değeri listeledi, AAB üretmedi |
+| Derleme | PASS (7/7 aşama) | Birim testleri, debug + sideload + test APK'sı, Play derlemesinin anahtarsız durması, manifest (hata ayıklanamaz, hedef SDK 36), APK imzası |
+| Android 8 (API 26) | PASS (7/7) | 53 cihaz testi (veri, geçiş, reklam dokunma koruması, öğrenme akışı, yedek güvenliği), release ayarlı APK |
+| Android 11 (API 30) | PASS (26/26) | Bütün cihaz testleri (63), 3 akış testi, ana düğmeler 5 kez, geçiş stresi 3 tur, 5 ekran yapılandırması (standart, yazı %150, yatay, küçük ekran, tablet; toplam 691 ekran görüntüsü), büyük yazı ve yatayda düzen denetimi, kalıcılık (zorla durdurma, yeniden başlatma), release APK |
+| Android 13 (API 33) | PASS (7/7) | 53 cihaz testi, release APK |
+| Android 14 (API 34) | PASS (10/10) | 62 cihaz testi (arayüz testleri dahil, hareketle gezinme), kalıcılık, release APK |
+| **Android 15 (API 35)** | **PASS (35/35)** | Ayrı rapor: `docs/android15-test-raporu.md` |
+| Android 16 (API 36) | PASS (10/10) | 62 cihaz testi (hareketle gezinme), kalıcılık, release APK |
+| Android 14 Play imajı | PASS (10/10) | Room geçişi, çevrimiçi test reklamı, reklamın üstünden başlayan kaydırma reklamı açmıyor, art arda 6 temiz kurulum |
+| Android 16 Play imajı | PASS (10/10) | Aynısı |
 
-Ölçümler (Android 11 emülatörü): soğuk açılış 1272, 1014, 1062 ms; bellek 71,1 MB PSS; ANR 0; test APK'sı 4,8 MB.
+Birim testleri: 76 test, 75 çalıştı ve geçti, 1 atlandı (kalite kapısı denemesi testi; yalnızca deneme modunda çalışır). Gradle önbelleği kullanılmadan (`--rerun`) yeniden çalıştırıldı.
 
-Android 8'de uçak modu komutu çalışmadı; bu sürümde Wi-Fi ve mobil veri kapatılarak test edildi. Android 9, 10, 12 ve 15 denenmedi.
+Ölçümler (release ayarlı APK, emülatör): soğuk açılış Android 11'de 720, 707, 662 ms; Android 15'te 1504, 1346, 1418 ms. Bellek 31,7-36,2 MB PSS. Hiçbir sürümde uygulama çökmesi veya ANR yok.
 
-## Bu turdan önce bulunan ve düzeltilen sorunlar
+Android 9, 10 ve 12 denenmedi.
 
-| Sorun | Neden | Düzeltme |
+## Kalite kapısının gerçekten durdurduğunun kanıtı
+
+Kasıtlı hata denemeleri (`workflow_dispatch`, `kapi_denemesi`). Normal çalıştırmada bu denemeler hiçbir şey yapmaz.
+
+| Deneme | Çalıştırma | Beklenen | Sonuç |
+|---|---|---|---|
+| `birim`: bir birim testi kasıtlı başarısız | `42348249351` | Derleme durur, cihaz testleri çalışmaz, CI başarısız | birim-testleri FAIL (76 testten 1); derleme ve sonraki 5 aşama NOT RUN; Android 8 işi NOT RUN; kapı FAIL; GitHub sonucu: failure |
+| `cihaz`: bir cihaz testi kasıtlı başarısız | `42348617485` | Derleme geçer, cihaz işi ve CI başarısız | Derleme PASS; Android 8'de 54 testten yalnızca kasıtlı test FAIL; kapı FAIL; GitHub sonucu: failure |
+| `emulator`: emülatör oluşturulamaz (var olmayan imaj) | `42349762196` | `smoke.sh` 3 ile biter, CI başarısız | `acilis` FAIL, çıkış kodu 3; kapı FAIL; GitHub sonucu: failure |
+
+Ayrıca gerçek hatalar da kapıyı durdurdu: geliştirme sırasında iki birim testi hatası ve bir derleme hatası CI'yı kırmızıya düşürdü, sonraki aşamalar NOT RUN göründü. Bu çalıştırmalar `docs/degisiklik-raporu-2.1.1.md` dönemine aittir; kayıt kimlikleri geçmiş temizliğinden önceki kimliklerdir.
+
+## Yedekleme ve geri yükleme testleri (yeniden çalıştırıldı)
+
+`BackupSecurityTest`, 21 test, son turda Android 8, 11, 13, 14, 15 ve 16'da geçti.
+
+| Senaryo | Test | Sonuç |
 |---|---|---|
-| Yedek güvenlik testleri hiç çalışmadı (1. tur) | İki test metodu `Unit` yerine değer döndürüyordu; JUnit sınıfı reddetti | Düzeltildi |
-| Aynı adlı ZIP girişi testi kurulamadı (2. tur) | Java'nın ZIP yazıcısı aynı adı iki kez yazmıyor | Test dosyası bayt düzeyinde hazırlanıyor |
-| Android 14 ve 16'da yol aşımı testi "dosya bozuk" mesajı aldı (2. tur) | Android 14 ve sonrası `..` içeren ZIP girişini kendisi reddediyor; uygulama genel mesaj gösteriyordu. Veri değişmiyordu | Bu durumda da "Yedekte geçersiz dosya yolu var" mesajı gösteriliyor |
-| Öncelik listesi başlanmamış bütün konuları alfabetik sıralıyordu (ekran incelemesinde görüldü) | "Başlanmadı" tek başına puan veriyordu | Yalnızca gerçek sinyali olan konular listelenir |
+| Birleştirmede aynı adlı ek dosya güvenle değişir | `mergeReplacesSameNameFileSafely` | PASS |
+| Dosya taşıma hatası: eski dosya ve veriler korunur | `fileMoveFailureKeepsOldFileAndData` | PASS |
+| Veritabanı adımında hata: tam geri dönüş | `databaseStepFailureRollsBack` | PASS |
+| DataStore (ayarlar) yazma hatası: veriler, dosyalar ve ayarlar geri döner | `settingsWriteFailureRollsBackEverything` | PASS |
+| Ayarlardan sonra hata: ayarlar da geri döner | `failureAfterSettingsRestoresSettings` | PASS |
+| Yarım kalan geri yükleme sonraki açılışta kurtarılır | `interruptedRestoreRecoveredOnNextStart` | PASS (süreç gerçekten öldürülmedi; işlem ortasında durma benzetildi) |
+| Başarılı tam değiştirme her şeyi uygular | `successfulReplaceAppliesEverything` | PASS |
+| Önceki güvenlik testleri (yol aşımı, ZIP bombası, boyut ve sayı sınırları, bozuk ek ve JSON, eksik fotoğraf, güvenlik kopyası, geçici dosya kalmaması) | 14 test | PASS |
+| Yedeği Android dosya seçicisiyle kaydedip geri yükleme | `SystemIntegrationTest` (Android 15) | PASS |
 
-## Bölüm 20 listesi
+## Satın alma doğrulaması testleri (yeniden çalıştırıldı)
 
-### İş mantığı
-
-| Madde | Durum | Dayanak |
+| Senaryo | Test | Sonuç |
 |---|---|---|
-| Plan süresi hesaplama | ✅ | 30, 45, 60, 90, 120, 180, 240, 300 dk: her gün planlanan = hedef |
-| Mola hesaplama | ✅ | Molalar süreye eklenmiyor, görevler üst üste binmiyor; plan ekranında ayrı gösteriliyor |
-| Çalışma hedefi | ✅ | Saat yetersiz gün, en fazla süre sınırı, haftalık hedef, tamamlanmış görevler düşülerek (birim ve cihaz testi) |
-| Dinlenme günü, sınava az kalan gün | ✅ | Birim testleri |
-| Günlük ve haftalık ilerleme | ⚠ | Ana sayfa hesabı kod incelemesi ve ekran taramasıyla; ayrı otomatik testi yok |
-| Deneme neti | ✅ | Birim testi; arayüzde 28,00 net |
-| Konu bazlı analiz, öncelik sırası | ✅ | Birim testi ve cihaz testi |
-| Tekrar tarihleri | ✅ | 1-3-7-14-30, hatırladım/hatırlayamadım |
-| Alana göre ders listesi | ⚠ | Plan ayarlarında alana göre listeleniyor; ekran taraması yalnızca SAY profiliyle |
+| Paket adı eksik kayıt reddedilir (2.1.0'da OK kabul ediliyordu) | `purchaseChecksProductStateAndPackage` | PASS |
+| Eksik veya yanlış türde durum, eksik veya boş belirteç, fazla ürün, büyük harf veya boşluk farkı, yanlış paket, PENDING, belirteç uyuşmazlığı, `[]`, `{}` | `missingOrInconsistentFieldsRejected` | PASS |
+| Saklanan kaydın belirteç özeti JSON'la eşleşmeli | `cachedTokenMustMatchJson` | PASS |
+| İmza, açık anahtar eksikliği, çevrimdışı hak korunması | 4 birim testi | PASS |
+| Cihazda: belirteç uyuşmazlığında hak açılmaz | `DataFlowTest` | PASS |
+| Play Billing kitaplığının başlatılması (Android 15 Play imajı) | `billingClientStarts` | PASS, sınırıyla: Google hesabı olmadığı için Play satın almayı desteklemediğini bildirdi; uygulama çökmedi, satın alma düğmesi kapalı kaldı, hak açılmadı. **Gerçek bağlantı kurulamadı** |
 
-### Veri güvenliği
+## Bu sürümde eklenen diğer testler
 
-| Madde | Durum | Dayanak |
+| Konu | Test | Sonuç |
 |---|---|---|
-| Yedek oluşturma ve geri yükleme | ✅ | Fotoğraflı ZIP gidiş-dönüş |
-| Bozuk JSON | ✅ | Bütünlük denetimi reddediyor |
-| Bozuk ZIP | ✅ | Bozuk ek dosyası, eksik ek, aynı adlı giriş reddediliyor |
-| Çok büyük ZIP, ZIP bombası | ✅ | Girdi, tek dosya, açılmış toplam, JSON ve dosya sayısı sınırları (testte küçültülmüş sınırlarla, aynı kod) |
-| ZIP yol aşımı | ✅ | Uygulama ve Android 14+ ayrı ayrı reddediyor |
-| Eksik PDF, eksik fotoğraf | ✅ | Uyarıyla aktarılıyor, yedek reddedilmiyor |
-| Yarım kalan geri yükleme | ⚠ | Güvenlik kopyasından eski hâle dönüş testi geçti. Dosya kopyalama sırasında yapay hata üretilmedi |
-| Geçici dosya kalmaması | ✅ | Cihaz testi |
-| Room migration | ✅ | 1 → 2, 2 → 3, 1 → 3 |
-
-### Uygulama kullanımı
-
-| Madde | Durum | Dayanak |
-|---|---|---|
-| İlk kurulum, profil | ✅ | Arayüz akışı |
-| Çalışma kaydı, görev tamamlama | ✅ | Veri ve arayüz testleri |
-| Deneme oluşturma, yanlış konuların deftere geçmesi | ✅ | `LearningFlowTest` |
-| Yanlış defteri kaydı | ✅ | Arayüz ve veri testleri |
-| Arka plana alma, yeniden başlatma | ✅ | Zorla durdurma, cihaz yeniden başlatma |
-| Gece yarısı tarih değişmesi | ⚠ | Gün yenileme işlevi test edildi; gerçek gece yarısı geçişi beklenmedi |
-| Saat dilimi değişikliği | ❌ | Kod var; emülatörde saat dilimi değiştirilerek denenmedi |
-| Bildirim izni reddi | ❌ | Denenmedi |
-| Widget güncellemesi | ⚠ | Çizim test edildi; gerçek ana ekrana eklenmedi |
-| İnternet yokken kullanım | ✅ | Tüm veri ve arayüz testleri uçak modunda |
-
-### Reklam ve satın alma
-
-| Madde | Durum | Dayanak |
-|---|---|---|
-| Test reklamı | ✅ | Android 14 ve 16 Play imajı |
-| Reklam yüklenemedi | ⚠ | Kod yolu var; sunucudan hata üretilmedi |
-| UMP rıza durumu | ⚠ | Emülatör konumunda form gerekmedi; Avrupa formu denenmedi |
-| Reklam alanı kaydırma davranışı | ✅ | 2.0.0'da 396 kaydırma testi; koruma kodu değişmedi, 3 dokunma testi bu turda geçti |
-| İmzasız, başka ürün, tamamlanmamış satın alma reddi | ✅ | Birim ve cihaz testi |
-| Açık anahtar eksikliği | ✅ | Hak açılmıyor; satın alma ekranı kapalı olduğunu söylüyor |
-| Gerçek satın alma, iptal, bekleyen ödeme, geri yükleme, yeniden sorgu | ❌ | Play ürünü ve lisans test hesabı gerekir. **Para harcanmadı** |
-
-Canlı reklama hiç tıklanmadı; yalnızca Google test kimlikleri kullanıldı.
+| Tarafsız yaş ekranı: alanlar boş, 16 yaş ve "Belirtmek istemiyorum" reklam SDK'sını başlatmaz, 30 yaş doğrulanır | `UiFlowTest.neutralAgeScreenGatesAds` | PASS (Android 11, 14, 15, 16) |
+| Yaş hesabı ve giriş denetimi | `AgeGateTest` (3 birim testi) | PASS |
+| Profil: YDT dili yalnızca Dil alanında görünür, gizlemek seçimi silmez | `UiFlowTest.profileEditShowsYdtLanguageOnlyForDil` | PASS (Android 11, 14, 15, 16) |
+| ÖSYM kartı: internet yokken uyarı | `SystemIntegrationTest.osymLinkOfflineShowsWarning` | PASS (Android 15) |
+| ÖSYM kartı: tarayıcı resmî arşiv adresiyle açılır | `SystemIntegrationTest.osymLinkOpensBrowser` | PASS (Android 15, Chrome). Sayfanın içeriği görüntülenip denetlenmedi |
 
 ## Ara sıra görülen olaylar
 
 | Olay | Sıklık | Durum |
 |---|---|---|
-| Android 14 Play imajında release açılışından sonra uygulama kapatıldı | 1 kez (son tur) | Android kaydı: `depends on provider com.google.android.gms/.fonts.provider.FontsProvider in dying proc`. Google Play Hizmetleri yeniden başlarken Android ona bağlı uygulamaları kapatıyor; uygulama çökmesi değil. Aynı imajda 6/6 temiz kurulum geçti |
-| Android 16 Play imajında test süreci açılamadı | Önceki bir turda 1 kez | Aynı anda sistem arayüzü ve Play Hizmetleri de açılamadı (aşırı yüklü emülatör); ikinci denemede geçti. Son turda görülmedi |
+| Android 15'te deneme ekranının yeniden oluşturulma testi başarısız oldu | Yeni betikle yapılan 6 Android 15 turunun 1'inde | Nedeni logda görünmedi (log kısaltması). Hata nedeni artık iş loguna da yazılıyor. Diğer bütün turlarda ve sürümlerde geçti |
+| Android 15'te belge seçicide öğe bayatladı | 1 kez | Test seçiciyi yeniden arar. Uygulama hatası değil |
+| Önceki sürümde görülen Play Hizmetleri kaynaklı kapanma | Bu sürümün son turunda görülmedi | Kanıtlı altyapı nedeninde tek yeniden deneme kuralı korunuyor; yeniden deneme olursa sonuca yazılır |
 
-## Denenemeyenlerin kısa listesi
+## Denenemeyenler
 
-Gerçek telefon, Android 9, 10, 12, 15, gerçek satın alma ve geri yükleme, üretim reklam kimlikleri, Avrupa rıza formu, Android dosya seçicileri, ana ekrana bileşen ekleme, bildirimin saatinde gelmesi, saat dilimi değişikliği, bildirim izni reddi, gerçek 2.0.0 kurulumunun üstüne 2.1.0, kendi anahtarınızla `yayin-aab` işi. Yapılacaklar: `docs/kalan-manuel-isler.md`.
+Gerçek telefon; Android 9, 10, 12; gerçek Play Billing bağlantısı, satın alma, iptal, bekleyen ödeme ve geri yükleme; üretim AdMob kimlikleri ve gerçek reklam; Avrupa rıza formu; ÖSYM sayfasının içeriği; ana ekrana bileşen ekleme; gerçek bir 2.1.0 kurulumunun üstüne 2.1.1; geri yükleme sırasında gerçek güç kaybı; kendi anahtarınızla `yayin-aab` işi. Yapılacaklar: `docs/kalan-manuel-isler.md`.

@@ -69,6 +69,14 @@ GitHub Actions'ın ücretsiz dakikaları bittiği için depo testler süresince 
 - Profil düzenlemede "YDT dili" bölümü yalnızca hedef alan Dil iken görünür; alan değişince hemen açılır veya gizlenir. Seçim eskisi gibi isteğe bağlıdır (varsayılan İngilizce).
 - Bölüm gizliyken kayıttaki dil değişmez; veritabanı yapısı aynı. Dosya: `ui/screens/ProfileScreens.kt`. Test: `UiFlowTest.profileEditShowsYdtLanguageOnlyForDil`.
 
+## YKS bilgi merkezi: ÖSYM bağlantısı (ek talimat)
+
+- ÖSYM kartı artık `https://www.osym.gov.tr/sinav-soru-ve-cevaplari` genel arşiv sayfasını açar; yıla bağlı PDF bağlantısı kullanılmaz.
+- Sayfa telefonun varsayılan tarayıcısında açılır (tarayıcı seçicili `ACTION_VIEW`, WebView yok). ÖSYM adresini sahiplenen başka bir uygulama olsa bile istek tarayıcıya gider.
+- İnternet yoksa kartın altında uyarı: "İnternet bağlantısı yok. ÖSYM sayfasını açmak için internete bağlanıp tekrar dene." Tarayıcı açılamazsa "Tarayıcı açılamadı…" uyarısı; uygulama çökmez.
+- Kartın başlığı, açıklaması, ikonu ve tasarımı aynı. YÖK Atlas kartı, sınav bilgileri ve ekranın geri kalanı değişmedi.
+- Değişen dosyalar: `ui/screens/ExtraScreens.kt` (uygulama), `SystemIntegrationTest.kt` ve `tools/android15.sh` (testler).
+
 ## Android 15 testinde bulunup düzeltilenler
 
 - Yatay ekranda alt menü kamera kesiğinin altına giriyordu (hareketle gezinme, üç düğme ve kesik öykünmesinde). Alt menü artık gezinme çubuğu ile yatay ekran kesiği boşluğunu birlikte uygular. Dosya: `ui/AppRoot.kt`.
@@ -77,4 +85,4 @@ GitHub Actions'ın ücretsiz dakikaları bittiği için depo testler süresince 
 
 ## Sürüm numarası
 
-Sürüm numarası yalnızca bütün tur geçtikten sonra yükseltilir (versionCode 4, versionName 2.1.1). Durumu: `docs/test-raporu.md`.
+Önceki tam tur (`42360735885`) bütün sürümlerde geçti; Android 15'teki tek başarısızlık ÖSYM testinin kendi içindeki fazla bir denetimdi ve düzeltildi. Bunun ardından sürüm 2.1.1'e (versionCode 4) yükseltildi ve son tam tur (`42363540765`, kayıt `43b566f`) 9 işin hepsinde PASS verdi. Ayrıntı: `docs/test-raporu.md`.
