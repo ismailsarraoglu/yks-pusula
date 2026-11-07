@@ -1,0 +1,88 @@
+etiket=3dugme-yatay
+sorun=7
+tema=DARK pencere=2400x1080 guvenli-alan=Rect(128, 63 - 2274, 1080) acik-durum-simgesi=false acik-gezinme-simgesi=false
+home [DARK]: 13 öğe, 1 sorun
+study [DARK]: 12 öğe, 1 sorun
+exams [DARK]: 12 öğe, 1 sorun
+stats [DARK]: 17 öğe, 1 sorun
+profile [DARK]: 9 öğe, 1 sorun
+search [DARK]: 3 öğe, 0 sorun
+subject/tyt-mat [DARK]: 11 öğe, 0 sorun
+topic/tyt-mat-uslu-sayilar [DARK]: 21 öğe, 0 sorun
+topic/ayt-mat-turev [DARK]: 19 öğe, 0 sorun
+mastery [DARK]: 16 öğe, 0 sorun
+priorities [DARK]: 6 öğe, 0 sorun
+coach [DARK]: 15 öğe, 0 sorun
+replan [DARK]: 8 öğe, 0 sorun
+sources [DARK]: 12 öğe, 0 sorun
+source/s1 [DARK]: 20 öğe, 0 sorun
+sourceEdit/new [DARK]: 14 öğe, 0 sorun
+sourceEdit/s1 [DARK]: 14 öğe, 0 sorun
+sourceCompare [DARK]: 5 öğe, 0 sorun
+log [DARK]: 13 öğe, 0 sorun
+wrongs [DARK]: 10 öğe, 0 sorun
+wrong/bda65951-76bd-42c0-bdc3-8799b6c7584b [DARK]: 23 öğe, 0 sorun
+wrongEdit/new [DARK]: 9 öğe, 0 sorun
+wrongEdit/bda65951-76bd-42c0-bdc3-8799b6c7584b [DARK]: 10 öğe, 0 sorun
+wrongReview [DARK]: 21 öğe, 0 sorun
+cards [DARK]: 11 öğe, 0 sorun
+deck/Tarih [DARK]: 17 öğe, 0 sorun
+review/_all [DARK]: 6 öğe, 0 sorun
+review/_all?mix=1 [DARK]: 6 öğe, 0 sorun
+cardEdit/Kartlarım [DARK]: 6 öğe, 0 sorun
+formulas [DARK]: 12 öğe, 0 sorun
+notes [DARK]: 6 öğe, 0 sorun
+note/n1 [DARK]: 7 öğe, 0 sorun
+note/new [DARK]: 5 öğe, 0 sorun
+library [DARK]: 7 öğe, 0 sorun
+pomodoro [DARK]: 5 öğe, 0 sorun
+plan [DARK]: 12 öğe, 0 sorun
+planSettings [DARK]: 7 öğe, 0 sorun
+planHistory [DARK]: 4 öğe, 0 sorun
+taskEdit/2026-11-07 [DARK]: 8 öğe, 0 sorun
+examStart/ALL [DARK]: 8 öğe, 0 sorun
+examStart/TYT [DARK]: 8 öğe, 0 sorun
+examStart/AYT [DARK]: 8 öğe, 0 sorun
+examStart/YDT [DARK]: 8 öğe, 0 sorun
+examStart/BRANCH [DARK]: 8 öğe, 0 sorun
+examStart/TOPIC [DARK]: 8 öğe, 0 sorun
+examStart/PERSONAL [DARK]: 7 öğe, 0 sorun
+examStart/CUSTOM [DARK]: 7 öğe, 0 sorun
+examEntry/f5d7578e-3c4a-4131-a13d-ab8793f727d3 [DARK]: 11 öğe, 0 sorun
+result/f5d7578e-3c4a-4131-a13d-ab8793f727d3 [DARK]: 15 öğe, 0 sorun
+examHistory [DARK]: 15 öğe, 0 sorun
+examCompare/f5d7578e-3c4a-4131-a13d-ab8793f727d3/79c5c895-ff6f-499f-b08e-38e22c71c5db [DARK]: 18 öğe, 0 sorun
+examAnalysis [DARK]: 12 öğe, 0 sorun
+netGoals [DARK]: 10 öğe, 0 sorun
+external [DARK]: 13 öğe, 0 sorun
+examSettings [DARK]: 10 öğe, 0 sorun
+obp [DARK]: 9 öğe, 0 sorun
+reports [DARK]: 19 öğe, 0 sorun
+motivation [DARK]: 11 öğe, 0 sorun
+removeAds [DARK]: 10 öğe, 0 sorun
+privacy [DARK]: 3 öğe, 0 sorun
+terms [DARK]: 3 öğe, 0 sorun
+about [DARK]: 11 öğe, 0 sorun
+info [DARK]: 24 öğe, 0 sorun
+profileEdit [DARK]: 20 öğe, 0 sorun
+settings [DARK]: 16 öğe, 0 sorun
+reminders [DARK]: 14 öğe, 0 sorun
+backup [DARK]: 10 öğe, 0 sorun
+targets [DARK]: 17 öğe, 0 sorun
+packs [DARK]: 10 öğe, 0 sorun
+badges [DARK]: 13 öğe, 0 sorun
+topic/ayt-biy-evrim [DARK]: 18 öğe, 0 sorun
+tema=LIGHT pencere=2400x1080 guvenli-alan=Rect(128, 63 - 2274, 1080) acik-durum-simgesi=true acik-gezinme-simgesi=true
+home [LIGHT]: 13 öğe, 1 sorun
+study [LIGHT]: 12 öğe, 1 sorun
+plan [LIGHT]: 12 öğe, 0 sorun
+backup [LIGHT]: 10 öğe, 0 sorun
+
+--- sorunlar ---
+home: 'Ana Sayfa' sol sistem alanında (sol=0, güvenli=128)
+study: 'Ana Sayfa' sol sistem alanında (sol=0, güvenli=128)
+exams: 'Ana Sayfa' sol sistem alanında (sol=0, güvenli=128)
+stats: 'Ana Sayfa' sol sistem alanında (sol=0, güvenli=128)
+profile: 'Ana Sayfa' sol sistem alanında (sol=0, güvenli=128)
+home: 'Ana Sayfa' sol sistem alanında (sol=0, güvenli=128)
+study: 'Ana Sayfa' sol sistem alanında (sol=0, güvenli=128)

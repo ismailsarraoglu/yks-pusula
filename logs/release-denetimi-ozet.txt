@@ -1,0 +1,14 @@
+> Google Play derlemesi durduruldu. Eksik yapılandırma:
+  - UPLOAD_STORE_FILE tanımlı değil
+  - UPLOAD_STORE_PASSWORD tanımlı değil
+  - UPLOAD_KEY_ALIAS tanımlı değil
+  - UPLOAD_KEY_PASSWORD tanımlı değil
+  - ADMOB_APP_ID tanımlı değil
+  - ADMOB_NATIVE_ID tanımlı değil
+  - PLAY_PUBLIC_KEY tanımlı değil
+  Değerleri keystore.properties dosyasına veya ortam değişkenlerine girin (play/play-yayin-talimat.md). Telefonda denemek için assembleSideload kullanın.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+release-denetimi: beklenen hatayla durdu

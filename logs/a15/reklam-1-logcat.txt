@@ -1,0 +1,60 @@
+11-07 06:29:29.777  4979  5314 I GoogleMobileAdsNetwork: GMA(BG) 2: GMA Debug FINISH
+11-07 06:29:29.830  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug BEGIN
+11-07 06:29:29.831  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug CONTENT {"timestamp":1794032969830,"event":"onNetworkRequest","components":["network_request_112a139c-f5b1-41ac-a854-da2eea1c677e"],"params":{
+11-07 06:29:29.835  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug FINISH
+11-07 06:29:29.855  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug BEGIN
+11-07 06:29:29.865  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug CONTENT {"timestamp":1794032969855,"event":"onNetworkResponse","components":["network_request_d900ff59-3026-4e17-b479-7bb73db24a27"],"params":
+11-07 06:29:29.866  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug FINISH
+11-07 06:29:29.867  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug BEGIN
+11-07 06:29:29.886  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug CONTENT {"timestamp":1794032969867,"event":"onNetworkResponseBody","components":["network_request_d900ff59-3026-4e17-b479-7bb73db24a27"],"para
+11-07 06:29:29.886  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: 7+9\n77+9IXhNK++/veGzve+/vWDvv70P77+977+977+9Je+/vVAEAFnvv71377+9Me+/ve+/vS5D77+9\n24Pvv71t77+9yJIO77+9F++/ve+/ve+/vW5uDRcX77+977+9QV/vv73vv71Gf2cJ77+97
+11-07 06:29:29.886  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug FINISH
+11-07 06:29:29.887  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug BEGIN
+11-07 06:29:29.892  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug CONTENT {"timestamp":1794032969873,"event":"onNetworkResponse","components":["network_request_112a139c-f5b1-41ac-a854-da2eea1c677e"],"params":
+11-07 06:29:29.892  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug FINISH
+11-07 06:29:29.904  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug BEGIN
+11-07 06:29:29.932  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug CONTENT {"timestamp":1794032969903,"event":"onNetworkResponseBody","components":["network_request_112a139c-f5b1-41ac-a854-da2eea1c677e"],"para
+11-07 06:29:29.932  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: 71j\nSXrvv70A77+9MSzKowDvv70eLUvvv71Z77+977+977+9wrwO77+9Wizvv70177+9Cu+/vShPFwLv\nv73vv73vv70F77+9F++/ve+/ve+/ve+/ve+/ve+/vcmQ77+977+9Ij0V77+9Au+/vTLvv
+11-07 06:29:29.932  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: e+/vXUY77+977+9Tirvv73vv71d77+977+9LA5RViclQe+/vS8C77+9L++/\nvULvv71ET++/vXkT77+9Ru+/vVt8Hu+/ve+/ve+/ve+/vdOT77+977+977+9YWfNhO+/vUYoHu+/\nvTfvv71Z77+9T
+11-07 06:29:29.932  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: vv73vv73vv73vv73vv70sLUwN77+977+9PnB2\n77+977+9WEbvv71L77+9fO+/vWt4Ie+/ve+/vUFBHBbvv73vv71Xa++/vXvvv73vv70oISbvv73v\nv70H77+977+977+977+977+9ae+/vSYv77+
+11-07 06:29:29.932  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: u+/ve+/vT7vv70x\nKxRz77+9Pl4efWrvv73vv73vv70g77+977+977+9AQPvv73vv71SNifvv71u77+9au+/ve+/vSkW\n77+9Kx4S77+9B++/ve+/ve+/vciz77+9QAfvv71477+9Ynbvv73vv73vv
+11-07 06:29:29.932  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: O+/vWzvv70477+9Ze+/ve+/ve+/ve+/ve+/ve+/vXvvv73Yi++/vXAsWe+/vRcw77+977+9\n77+9cu+/ve+/ve+/vUcR77+977+9NEB377+977+9eTLvv70n77+9S++/ve+/vWY71KTvv716x7Dv\nv
+11-07 06:29:29.945  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug FINISH
+11-07 06:29:30.017  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.031  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970016,"event":"onNetworkRequest","components":["network_request_2c5514d9-e821-49cc-8c86-7ba57c97bda2"],"par
+11-07 06:29:30.033  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:30.034  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.035  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970030,"event":"onNetworkRequest","components":["network_request_f6c231f5-4fab-455d-a468-1d3043e9de13"],"par
+11-07 06:29:30.035  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:30.061  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.073  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970060,"event":"onNetworkResponse","components":["network_request_2c5514d9-e821-49cc-8c86-7ba57c97bda2"],"pa
+11-07 06:29:30.074  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:30.076  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.083  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970075,"event":"onNetworkResponseBody","components":["network_request_2c5514d9-e821-49cc-8c86-7ba57c97bda2"]
+11-07 06:29:30.084  4979  5248 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:30.104  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.124  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970103,"event":"onNetworkResponse","components":["network_request_f6c231f5-4fab-455d-a468-1d3043e9de13"],"pa
+11-07 06:29:30.124  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:30.125  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.136  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970125,"event":"onNetworkResponseBody","components":["network_request_f6c231f5-4fab-455d-a468-1d3043e9de13"]
+11-07 06:29:30.138  4979  5258 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:30.140  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug BEGIN
+11-07 06:29:30.142  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug CONTENT {"timestamp":1794032970134,"event":"onNetworkRequest","components":["network_request_5a2da199-202d-4ada-888a-4fd7b0664998"],"params":{
+11-07 06:29:30.142  4979  5313 I GoogleMobileAdsNetwork: GMA(BG) 1: GMA Debug FINISH
+11-07 06:29:30.268  4979  5314 I GoogleMobileAdsNetwork: GMA(BG) 2: GMA Debug BEGIN
+11-07 06:29:30.274  4979  5314 I GoogleMobileAdsNetwork: GMA(BG) 2: GMA Debug CONTENT {"timestamp":1794032970268,"event":"onNetworkResponse","components":["network_request_5a2da199-202d-4ada-888a-4fd7b0664998"],"params":
+11-07 06:29:30.274  4979  5314 I GoogleMobileAdsNetwork: GMA(BG) 2: GMA Debug FINISH
+11-07 06:29:30.278  4979  5314 I GoogleMobileAdsNetwork: GMA(BG) 2: GMA Debug BEGIN
+11-07 06:29:30.278  4979  5314 I GoogleMobileAdsNetwork: GMA(BG) 2: GMA Debug CONTENT {"timestamp":1794032970274,"event":"onNetworkResponseBody","components":["network_request_5a2da199-202d-4ada-888a-4fd7b0664998"],"para
+11-07 06:29:30.278  4979  5314 I GoogleMobileAdsNetwork: GMA(BG) 2: GMA Debug FINISH
+11-07 06:29:30.319  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.320  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970296,"event":"onNetworkRequest","components":["network_request_cdfa2c16-f912-4619-a7a2-1747f1ee2176"],"par
+11-07 06:29:30.320  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:30.402  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.410  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970402,"event":"onNetworkResponse","components":["network_request_cdfa2c16-f912-4619-a7a2-1747f1ee2176"],"pa
+11-07 06:29:30.415  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:30.423  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug BEGIN
+11-07 06:29:30.428  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug CONTENT {"timestamp":1794032970423,"event":"onNetworkResponseBody","components":["network_request_cdfa2c16-f912-4619-a7a2-1747f1ee2176"]
+11-07 06:29:30.428  4979  5246 I GoogleMobileAdsNetwork: ThreadPoolForeg: GMA Debug FINISH
+11-07 06:29:32.813  1368  1877 I ModuleSetResolution: Computing pending module set with APKs: [[MapsCoreDynamite.integ:241610202100800], [MlkitBarcodeUi.optional:242335100800], [TfliteDynamiteDynamite.integ:2640104051008
+11-07 06:29:35.341  1368  1878 I ModuleSetResolution: Computing pending module set with APKs: [[MapsCoreDynamite.integ:241610202100800], [MlkitBarcodeUi.optional:242335100800], [MlkitOcrCommon.optional:242335100800], [Tf

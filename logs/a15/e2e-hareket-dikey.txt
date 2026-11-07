@@ -1,0 +1,8 @@
+
+app.ykspusula.UiFlowTest:.
+
+Time: 119.693
+
+OK (1 test)
+
+

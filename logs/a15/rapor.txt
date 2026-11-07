@@ -1,0 +1,36 @@
+acilis=1 deneme=17
+android=15 api=35 imaj=system-images;android-35;google_apis_playstore;x86_64
+cihaz=sdk_gphone64_x86_64 yogunluk=Physical density: 420  boyut=Physical size: 1080x2400 
+ucak-modu: 1 ping: connect: Network is unreachable
+Success
+Success
+ana-testler:  OK (53 tests)   
+kalicilik-yaz: OK (1 test)   
+kalicilik-durdurma: OK (1 test)   
+kalicilik-yeniden-baslatma: OK (1 test)    (deneme 1)
+gezinme-modu: 2 (2=hareket)
+e2e-hareket-dikey:  OK (1 test)   
+e2e-hareket-dikey-yazi130:  OK (1 test)   
+e2e-hareket-yatay: FAILURES!!! Tests run: 1,  Failures: 1   
+gezinme-modu: 0 (0=3 düğme)
+e2e-3dugme-yatay: FAILURES!!! Tests run: 1,  Failures: 1   
+bildirim-goster: FAILURES!!! Tests run: 1,  Failures: 1   
+hatirlatma-zamaninda: FAILURES!!! Tests run: 1,  Failures: 1   
+saat-dilimi: FAILURES!!! Tests run: 1,  Failures: 1   
+bildirim-izni-reddedildi: android.permission.POST_NOTIFICATIONS
+bildirim-izinsiz:  OK (1 test)   
+pdf-secici: FAILURES!!! Tests run: 1,  Failures: 1   
+foto-secici: FAILURES!!! Tests run: 1,  Failures: 1   
+yedek-secici: FAILURES!!! Tests run: 1,  Failures: 1   
+cevrimici-ping: 
+reklam-1:  OK (1 test)   
+billing: FAILURES!!! Tests run: 1,  Failures: 1   
+release-kurulum: Success
+soguk-acilis-1: Status: ok TotalTime: 3326 
+soguk-acilis-2: Status: ok TotalTime: 3604 
+soguk-acilis-3: Status: ok TotalTime: 3196 
+release-surec: 6156
+release-crash: 0
+release-anr: 0
+release-olum-kaydi: 5
+           TOTAL PSS:    83525            TOTAL RSS:   267724      TOTAL SWAP (KB):        0

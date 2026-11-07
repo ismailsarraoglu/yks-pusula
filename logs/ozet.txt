@@ -1,0 +1,4 @@
+gradle=success
+manifest=success
+emu=skipped
+run=42344528976

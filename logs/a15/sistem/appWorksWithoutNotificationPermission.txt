@@ -1,0 +1,1 @@
+izin=false gosterilen-bildirim=0 hatirlatma-kuruldu=true ekranlar-acildi=true

@@ -1,0 +1,5 @@
+11-07 06:29:56.998   556   843 I ActivityManager: Force stopping app.ykspusula appid=10211 user=0: from pid 5764
+11-07 06:30:10.602   556  2236 I ActivityManager: Force stopping app.ykspusula appid=10211 user=0: from pid 5957
+11-07 06:30:10.604   556  2236 I ActivityManager: Killing 5792:app.ykspusula/u0a211 (adj 0): stop app.ykspusula due to from pid 5957
+11-07 06:30:24.679   556  2047 I ActivityManager: Force stopping app.ykspusula appid=10211 user=0: from pid 6141
+11-07 06:30:24.684   556  2047 I ActivityManager: Killing 5975:app.ykspusula/u0a211 (adj 0): stop app.ykspusula due to from pid 6141

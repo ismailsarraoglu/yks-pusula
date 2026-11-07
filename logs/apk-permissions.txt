@@ -1,0 +1,11 @@
+package: app.ykspusula
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.ACCESS_NETWORK_STATE'
+uses-permission: name='android.permission.POST_NOTIFICATIONS'
+uses-permission: name='android.permission.RECEIVE_BOOT_COMPLETED'
+uses-permission: name='com.android.vending.BILLING'
+uses-permission: name='com.google.android.gms.permission.AD_ID'
+uses-permission: name='android.permission.WAKE_LOCK'
+uses-permission: name='android.permission.FOREGROUND_SERVICE'
+permission: app.ykspusula.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission: name='app.ykspusula.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'

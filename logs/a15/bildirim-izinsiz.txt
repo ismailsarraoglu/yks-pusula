@@ -1,0 +1,8 @@
+
+app.ykspusula.NotificationDeniedTest:.
+
+Time: 13.588
+
+OK (1 test)
+
+
