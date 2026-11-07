@@ -1,0 +1,5 @@
+total 33068
+drwxr-xr-x 2 runner runner     4096 Nov  7 07:18 .
+drwxr-xr-x 4 runner runner     4096 Nov  7 07:18 ..
+-rw-r--r-- 1 runner runner 29003184 Nov  7 07:18 yks-pusula-debug.apk
+-rw-r--r-- 1 runner runner  4849005 Nov  7 07:18 yks-pusula-sideload.apk

@@ -1,0 +1,2 @@
+6e40308 Kalite kapısı denemesi: emülatör oluşturulamama durumu; kalan işler güncellendi
+run=42349762196 olay=workflow_dispatch dal=kapi-deneme kapi_denemesi=emulator
