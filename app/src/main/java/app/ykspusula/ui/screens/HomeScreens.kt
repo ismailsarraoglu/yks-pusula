@@ -261,7 +261,6 @@ fun HomeScreen() {
             }
         }
 
-        BirthDateCard()
         if (daysLeft != null && daysLeft in 1..app.ykspusula.domain.PlanGenerator.FINAL_DAYS) {
             InfoRow("Sınav öncesi modu", "Tekrar, eksik konu ve deneme odaklı liste", Icons.Rounded.Flag) { nav.navigate("priorities") }
         }
@@ -379,45 +378,3 @@ fun TaskRow(t: StudyTask, onToggle: (Boolean) -> Unit, onOpen: () -> Unit) {
     }
 }
 
-/**
- * Tarafsız yaş ekranı: doğum ayı ve yılı serbestçe girilir, hiçbir değer önceden doldurulmaz, belirli bir yaşa
- * yönlendiren metin yoktur. Cevap yalnızca cihazda saklanır ve bir kez sorulur.
- */
-@Composable
-fun BirthDateCard() {
-    val a = app()
-    val birth by a.monetize.birth.collectAsStateWithLifecycle()
-    val b = birth ?: return
-    if (b.first != app.ykspusula.domain.AgeGate.NOT_SET) return
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var month by rememberSaveable { mutableStateOf("") }
-    var year by rememberSaveable { mutableStateOf("") }
-    var error by remember { mutableStateOf(false) }
-    var confirm by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    fun done(y: Int, m: Int) = scope.launch {
-        a.monetize.saveBirth(y, m)
-        (context as? android.app.Activity)?.let { a.monetize.ads.onActivityStart(it) }
-    }
-    YCard {
-        Text("Doğum tarihin", style = MaterialTheme.typography.titleMedium, color = Yks.c.text)
-        Muted("Uygulamada gösterilecek içeriği yaşına uygun hâle getirmek için bir kez sorulur. Bilgi yalnızca bu cihazda saklanır.")
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            NumberField(month, { month = it; error = false }, "Ay (1-12)", Modifier.weight(1f), max = 2)
-            NumberField(year, { year = it; error = false }, "Yıl", Modifier.weight(1f), max = 4)
-        }
-        if (error) Text("Geçerli bir ay ve yıl gir.", color = Yks.c.error, style = MaterialTheme.typography.bodyMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            MainButton("Kaydet", Modifier.weight(1f)) {
-                val v = app.ykspusula.domain.AgeGate.validate(month, year, today())
-                if (v == null) error = true else confirm = v
-            }
-            TextButton({ done(app.ykspusula.domain.AgeGate.DECLINED, 0) }, Modifier.weight(1f)) { Text("Belirtmek istemiyorum", color = Yks.c.muted) }
-        }
-    }
-    confirm?.let { (y, m) ->
-        ConfirmDialog("Doğum tarihin ${"%02d".format(m)}/$y", "Bu bilgi daha sonra değiştirilemez. Doğru mu?", "Onayla", false, { confirm = null }) {
-            confirm = null; done(y, m)
-        }
-    }
-}

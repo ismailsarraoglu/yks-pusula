@@ -198,6 +198,7 @@ interface UserDao {
     @Query("SELECT * FROM RouteItem WHERE id = :id") suspend fun routeItem(id: String): RouteItem?
     @Query("DELETE FROM RouteItem WHERE date = :date AND status = 'SUGGESTED'") suspend fun clearSuggested(date: String)
     @Query("DELETE FROM RouteItem WHERE id = :id") suspend fun deleteRouteItem(id: String)
+    @Query("SELECT COUNT(*) FROM RouteItem WHERE movedTo = :date") suspend fun movedIntoCount(date: String): Int
     @Query("DELETE FROM RouteItem WHERE date < :before") suspend fun pruneRoute(before: String)
     @Query("SELECT topicId FROM RouteItem WHERE status = 'REJECTED' AND topicId IS NOT NULL AND date >= :since") suspend fun rejectedTopics(since: String): List<String>
     @Query("SELECT * FROM RouteItem") suspend fun routeNow(): List<RouteItem>

@@ -16,6 +16,8 @@ import app.ykspusula.notify.Notifier
 import app.ykspusula.report.ReportExporter
 import app.ykspusula.widget.Widgets
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Before
@@ -172,6 +174,50 @@ class DataFlowTest {
         r.moveRoute(a.id, d.plusDays(1))
         assertEquals(1, r.user.routeOnNow(d.plusDays(1).toString()).size)
     }
+
+    /**
+     * Yaşı bilinmeyen herkes için çocuk korumalı reklam: TFCD ve TFUA açık, içerik derecesi G, reklam kimliği izni yok.
+     * 2.1.1'in yaş ekranından kalan doğum bilgisi de silinmiş olmalı.
+     */
+    @Test fun adsAreChildSafeForEveryone() = runBlocking<Unit> {
+        app.monetize
+        val cfg = com.google.android.gms.ads.MobileAds.getRequestConfiguration()
+        assertEquals(com.google.android.gms.ads.RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE, cfg.tagForChildDirectedTreatment)
+        assertEquals(com.google.android.gms.ads.RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE, cfg.tagForUnderAgeOfConsent)
+        assertEquals(com.google.android.gms.ads.RequestConfiguration.MAX_AD_CONTENT_RATING_G, cfg.maxAdContentRating)
+        val perms = app.packageManager.getPackageInfo(app.packageName, android.content.pm.PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty()
+        assertFalse("Reklam kimliği izni olmamalı: ${perms.toList()}", "com.google.android.gms.permission.AD_ID" in perms)
+        val prefs = app.settingsStore.data.first { it[androidx.datastore.preferences.core.intPreferencesKey("birth_year")] == null }
+        assertNull(prefs[androidx.datastore.preferences.core.intPreferencesKey("birth_month")])
+    }
+
+    /** Günlük rota tekrarı: aynı anda çağrılan ensureRoute rotayı bir kez yazar; eski yinelenen öneriler temizlenir. */
+    @Test fun routeIsNotDuplicated() = runBlocking<Unit> {
+        val d = today()
+        // Ana sayfa, çalışma, koç ekranı ve ilk kurulum aynı anda çağırabilir.
+        coroutineScope { repeat(6) { launch(kotlinx.coroutines.Dispatchers.IO) { r.ensureRoute(d) } } }
+        val list = r.user.routeOnNow(d.toString())
+        assertTrue(list.isNotEmpty())
+        val keys = list.map { "${it.kind}|${it.topicId}|${it.sourceId}|${it.title}" }
+        assertEquals("Rota tekrarlandı: $keys", keys.size, keys.toSet().size)
+        // Eski sürümün yazmış olabileceği kopya bir sonraki açılışta silinir.
+        r.user.saveRouteItem(list[0].copy(id = "kopya", orderIndex = list.size))
+        r.ensureRoute(d)
+        val after = r.user.routeOnNow(d.toString())
+        assertEquals(list.size, after.size)
+        assertNull(r.user.routeItem("kopya"))
+        // Yarına taşınan tek öneri, yarının rotasının oluşturulmasını engellemez.
+        val t = d.plusDays(1)
+        r.moveRoute(list[0].id, t)
+        r.ensureRoute(t)
+        val tomorrow = r.user.routeOnNow(t.toString())
+        val tk = tomorrow.map { "${it.kind}|${it.topicId}|${it.sourceId}|${it.title}" }
+        assertEquals("Yarının rotasında tekrar: $tk", tk.size, tk.toSet().size)
+        assertTrue("Yarının rotası oluşturulmadı", tomorrow.size > 1 || kocTekOneriVerdi())
+    }
+
+    /** Koç tek öneri verirse taşınan öğe dışında yeni öneri gelmeyebilir. */
+    private fun kocTekOneriVerdi(): Boolean = runBlocking { r.user.routeOnNow(today().toString()).size <= 1 }
 
     @Test fun pomodoroSurvivesClosedAppAndRecordsPlan() = runBlocking {
         val start = System.currentTimeMillis() - 30 * 60_000

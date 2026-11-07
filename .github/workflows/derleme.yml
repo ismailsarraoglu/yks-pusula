@@ -4,7 +4,7 @@ name: derleme
 # ve böylece bütün çalıştırma başarısız olur. Raporlar ve loglar hata durumunda da artifact olarak ve ci-results dalında saklanır.
 on:
   push:
-    branches: [main, surum-2.1, duzeltme-2.1.1]
+    branches: [main, surum-2.1, duzeltme-2.1.1, surum-2.1.2]
   workflow_dispatch:
     inputs:
       tur:

@@ -12,7 +12,6 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import app.ykspusula.data.*
-import app.ykspusula.domain.AgeGate
 import androidx.datastore.preferences.core.edit
 import app.ykspusula.ui.DebugNav
 import kotlinx.coroutines.flow.first
@@ -102,7 +101,6 @@ class UiFlowTest {
     }
 
     private fun seedProfile() = runBlocking {
-        app.monetize.saveBirth(2008, 3)
         r.user.saveProfile(UserProfile(onboarded = true, name = "Elif", targetDepartment = "Bilgisayar Mühendisliği", targetUniversity = "ODTÜ", weakSubjects = "tyt-mat"))
         r.generatePlan()
     }
@@ -230,63 +228,6 @@ class UiFlowTest {
             "examHistory", "examCompare/${mocks[0].id}/${mocks[3].id}", "examAnalysis", "netGoals", "external", "examSettings", "obp", "reports", "motivation", "removeAds", "privacy", "terms", "about", "info",
             "profileEdit", "settings", "reminders", "backup", "targets", "packs", "badges", "topic/ayt-biy-evrim",
         )
-    }
-
-    private fun clearBirth() = runBlocking {
-        app.settingsStore.edit {
-            it.remove(androidx.datastore.preferences.core.intPreferencesKey("birth_year"))
-            it.remove(androidx.datastore.preferences.core.intPreferencesKey("birth_month"))
-        }
-        app.monetize.birth.first { it?.first == AgeGate.NOT_SET }
-    }
-
-    private fun enterBirth(month: String, year: String) {
-        waitText("Doğum tarihin")
-        val ay = rule.onNode(hasSetTextAction() and hasText("Ay (1-12)"))
-        val yil = rule.onNode(hasSetTextAction() and hasText("Yıl"))
-        // Tarafsız ekran: iki alan da boş gelir, varsayılan yaş yoktur.
-        listOf(ay, yil).forEach { f -> assertEquals("", f.fetchSemanticsNode().config.getOrNull(SemanticsProperties.EditableText)?.text ?: "") }
-        ay.performTextInput(month); yil.performTextInput(year); closeKeyboard()
-        clickText("Kaydet")
-        clickText("Onayla")
-    }
-
-    /**
-     * Tarafsız yaş ekranı: alanlar boş gelir; 18 yaş altı, "Belirtmek istemiyorum" ve henüz cevap vermeyen
-     * kullanıcı için reklam SDK'sı ve rıza akışı başlatılmaz. 18 yaşını dolduran kullanıcı doğrulanmış sayılır.
-     */
-    @Test fun neutralAgeScreenGatesAds() {
-        val m = app.monetize
-        val now = java.time.LocalDate.now()
-        runBlocking { r.user.saveProfile(UserProfile(onboarded = true, name = "Ece")) }
-        clearBirth()
-        launch()
-        waitText("Doğum tarihin")
-        assertFalse(m.verifiedAdult.value)
-        assertTrue(m.ads.debugState(), m.ads.debugState().contains("asama=yas dogrulanmadi") && m.ads.debugState().contains("basladi=false"))
-        shot("yas-ekrani")
-
-        enterBirth("5", "${now.year - 16}")
-        runBlocking { m.birth.first { it?.first == now.year - 16 } }
-        rule.waitUntil(5000) { rule.onAllNodesWithText("Doğum tarihin").fetchSemanticsNodes().isEmpty() }
-        assertFalse("16 yaşındaki kullanıcı yetişkin sayıldı", m.verifiedAdult.value)
-        assertFalse(m.ads.canRequestAds.value)
-        assertTrue(m.ads.debugState(), m.ads.debugState().contains("basladi=false"))
-        scenario!!.close(); scenario = null
-
-        clearBirth()
-        launch()
-        clickText("Belirtmek istemiyorum")
-        runBlocking { m.birth.first { it?.first == AgeGate.DECLINED } }
-        assertFalse(m.verifiedAdult.value)
-        assertTrue(m.ads.debugState(), m.ads.debugState().contains("basladi=false"))
-        scenario!!.close(); scenario = null
-
-        clearBirth()
-        launch()
-        enterBirth("1", "${now.year - 30}")
-        runBlocking { m.verifiedAdult.first { it } }
-        rule.waitUntil(5000) { rule.onAllNodesWithText("Doğum tarihin").fetchSemanticsNodes().isEmpty() }
     }
 
     /** Profil düzenleme: YDT dili yalnızca hedef alan Dil iken görünür; gizlemek kayıttaki dili değiştirmez. */

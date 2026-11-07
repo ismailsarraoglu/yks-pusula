@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -678,21 +679,46 @@ class Repository(private val context: Context, val db: AppDatabase) {
         )
     }
 
-    /** Günün rotası bir kez oluşturulur. Öğrencinin kararları kalıcıdır. */
-    suspend fun ensureRoute(date: LocalDate = today()) {
-        if (user.routeOnNow(date.toString()).isEmpty()) buildRoute(date)
+    /**
+     * Rotayı oluşturma ve yenileme tek kilit altında çalışır. Ana sayfa, çalışma ekranı, koç ekranı ve ilk kurulum
+     * aynı anda ensureRoute çağırabildiği için kilitsiz hâlde iki çağrı da "boş" görüp rotayı iki kez yazıyordu.
+     */
+    private val routeLock = kotlinx.coroutines.sync.Mutex()
+
+    /** Bir rota önerisinin kimliği: aynı tür, konu, kaynak ve başlık aynı öneridir. */
+    private fun routeKey(kind: String, topicId: String?, sourceId: String?, title: String) = "$kind|${topicId.orEmpty()}|${sourceId.orEmpty()}|${title.trim()}"
+
+    /**
+     * Günün rotası bir kez oluşturulur. Öğrencinin kararları kalıcıdır. Yalnızca başka günden taşınmış öneriler
+     * varsa gün henüz oluşturulmamış sayılır. Daha önce yazılmış yinelenen öneriler de temizlenir.
+     */
+    suspend fun ensureRoute(date: LocalDate = today()) = routeLock.withLock {
+        val d = date.toString()
+        removeDuplicateSuggestions(d)
+        if (user.routeOnNow(d).size <= user.movedIntoCount(d)) buildRoute(date)
     }
 
-    suspend fun rebuildRoute(date: LocalDate = today()) {
+    suspend fun rebuildRoute(date: LocalDate = today()) = routeLock.withLock {
         user.clearSuggested(date.toString())
         buildRoute(date)
+    }
+
+    private suspend fun removeDuplicateSuggestions(date: String) {
+        val seen = HashSet<String>()
+        // Kararı verilmiş öneriler (kabul, ret, tamamlandı, taşındı) önce gelir; aynı önerinin bekleyen kopyası silinir.
+        user.routeOnNow(date).sortedBy { if (it.status == "SUGGESTED") 1 else 0 }.forEach { r ->
+            if (!seen.add(routeKey(r.kind, r.topicId, r.sourceId, r.title)) && r.status == "SUGGESTED") user.deleteRouteItem(r.id)
+        }
     }
 
     private suspend fun buildRoute(date: LocalDate) {
         val keep = user.routeOnNow(date.toString())
         val keptTopics = keep.mapNotNull { it.topicId }.toSet()
+        val keptKeys = keep.map { routeKey(it.kind, it.topicId, it.sourceId, it.title) }.toSet()
         val now = System.currentTimeMillis()
-        val list = PusulaKoc.suggest(coachInput(date)).filter { it.topicId == null || it.topicId !in keptTopics }
+        val list = PusulaKoc.suggest(coachInput(date))
+            .filter { (it.topicId == null || it.topicId !in keptTopics) && routeKey(it.kind, it.topicId, it.sourceId, it.title) !in keptKeys }
+            .distinctBy { routeKey(it.kind, it.topicId, it.sourceId, it.title) }
         user.saveRoute(list.mapIndexed { i, s -> RouteItem(date = date.toString(), orderIndex = keep.size + i, kind = s.kind, title = s.title, subjectId = s.subjectId, topicId = s.topicId, sourceId = s.sourceId, minutes = s.minutes, priority = s.priority, reason = s.reason, createdAt = now, updatedAt = now) })
         user.pruneRoute(date.minusDays(30).toString())
     }

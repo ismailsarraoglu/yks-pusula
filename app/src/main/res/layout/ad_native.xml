@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.gms.ads.nativead.NativeAdView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
     <LinearLayout
@@ -18,8 +18,8 @@
             android:textColor="#F7F8FC" android:textSize="15sp" android:textStyle="bold" />
         <TextView android:id="@+id/ad_body" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp"
             android:maxLines="2" android:ellipsize="end" android:textColor="#A7B1C5" android:textSize="13sp" />
-        <com.google.android.libraries.ads.mobile.sdk.nativead.MediaView android:id="@+id/ad_media" android:layout_width="match_parent" android:layout_height="130dp" android:layout_marginTop="8dp" />
+        <com.google.android.gms.ads.nativead.MediaView android:id="@+id/ad_media" android:layout_width="match_parent" android:layout_height="130dp" android:layout_marginTop="8dp" />
         <Button android:id="@+id/ad_cta" style="?android:attr/borderlessButtonStyle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end"
             android:layout_marginTop="4dp" android:minHeight="40dp" android:textAllCaps="false" android:textColor="#A7B1C5" android:textSize="13sp" />
     </LinearLayout>
-</com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView>
+</com.google.android.gms.ads.nativead.NativeAdView>

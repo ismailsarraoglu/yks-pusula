@@ -42,8 +42,8 @@ android {
         applicationId = "app.ykspusula"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "2.1.1"
+        versionCode = 5
+        versionName = "2.1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Bu test internet ister; bağlantılı emülatörde ayrıca çalıştırılır.
         testInstrumentationRunnerArguments["notClass"] = "app.ykspusula.AdOnlineTest,app.ykspusula.StresTest,app.ykspusula.SystemIntegrationTest,app.ykspusula.NotificationDeniedTest,app.ykspusula.GateProbeTest"
@@ -166,7 +166,8 @@ dependencies {
     ksp("androidx.room:room-compiler:2.8.5")
 
     implementation("com.android.billingclient:billing:9.1.0")
-    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.6.0")
+    // Google Play Families Self-Certified Ads SDK listesindeki Google Mobile Ads SDK.
+    implementation("com.google.android.gms:play-services-ads:25.5.0")
     implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
     implementation("androidx.datastore:datastore-preferences:1.3.0")

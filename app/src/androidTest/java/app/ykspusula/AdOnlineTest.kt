@@ -100,8 +100,6 @@ class AdOnlineTest {
         val m = app.monetize
         // Önceki denemeden kalan reklamsız hak bu testi anlamsız kılar: hak varken reklam izni hiç gelmez.
         runBlocking { m.entitlement.apply(PurchaseQuery.None) }
-        // Reklam yalnızca tarafsız yaş ekranında 18 yaşını doldurduğu belirlenen kullanıcıya istenir.
-        runBlocking { m.saveBirth(1990, 1); m.verifiedAdult.first { it } }
         val scenario = ActivityScenario.launch(MainActivity::class.java)
         try {
             showAd(m)
@@ -123,6 +121,11 @@ class AdOnlineTest {
             }
             throw AssertionError("Reklam izni gelmedi: ${m.ads.lastError}; ${m.ads.debugState()}; ag: $net", e)
         }
+        // Her istek çocuk korumasıyla yapılır: TFCD ve TFUA açık, en yüksek içerik derecesi G.
+        val cfg = com.google.android.gms.ads.MobileAds.getRequestConfiguration()
+        assertEquals(com.google.android.gms.ads.RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE, cfg.tagForChildDirectedTreatment)
+        assertEquals(com.google.android.gms.ads.RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE, cfg.tagForUnderAgeOfConsent)
+        assertEquals(com.google.android.gms.ads.RequestConfiguration.MAX_AD_CONTENT_RATING_G, cfg.maxAdContentRating)
         val latch = CountDownLatch(1)
         var loaded = false
         rule.runOnUiThread { m.ads.nativeFor(AdPlacement.EXAMS) { loaded = it != null; latch.countDown() } }

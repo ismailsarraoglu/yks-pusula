@@ -17,9 +17,9 @@ import app.ykspusula.R
 import app.ykspusula.monetize.AdPlacement
 import app.ykspusula.monetize.AdTouchGuard
 import app.ykspusula.ui.app
-import com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
+import com.google.android.gms.ads.nativead.MediaView
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdView
 
 /**
  * Reklam alanı. Reklamsız hak varsa veya reklam yüklenemezse hiçbir şey çizilmez, boş kart kalmaz.
@@ -54,11 +54,13 @@ fun NativeAdContainer(ad: NativeAd, modifier: Modifier = Modifier) {
             v.bodyView = body
             v.callToActionView = cta
             v.advertiserView = advertiser
+            v.mediaView = media
             headline.text = ad.headline
             body.text = ad.body.orEmpty()
             cta.text = ad.callToAction ?: "Aç"
             advertiser.text = ad.advertiser.orEmpty()
-            v.registerNativeAd(ad, media)
+            ad.mediaContent?.let { media.mediaContent = it }
+            v.setNativeAd(ad)
         },
     )
 }

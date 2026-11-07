@@ -4,14 +4,14 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import app.ykspusula.BuildConfig
-import com.google.android.libraries.ads.mobile.sdk.MobileAds
-import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
-import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration
-import com.google.android.libraries.ads.mobile.sdk.initialization.InitializationConfig
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
+import com.google.android.gms.ads.AdListener
+import com.google.android.gms.ads.AdLoader
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
@@ -38,8 +38,16 @@ enum class AdPlacement { HOME, STUDY, EXAMS, STATS }
 /**
  * Rıza, reklam başlatma ve önbellek. Reklamsız hak açıldığında hiçbir istek yapılmaz.
  * Hata olursa uygulama çalışmaya devam eder; reklam alanı görünmez.
+ *
+ * Hedef kitle 18 yaş altını da içerir ve uygulama kullanıcının yaşını sormaz; bu yüzden her kullanıcı
+ * "yaşı bilinmeyen" sayılır ve her reklam isteği çocuk korumasıyla yapılır:
+ * - Google Play Families Self-Certified Ads SDK listesindeki Google Mobile Ads SDK (`play-services-ads`),
+ * - çocuğa yönelik işlem (TFCD) ve rıza yaşı altı (TFUA) etiketleri: kişiselleştirilmiş reklam ve yeniden pazarlama kapalı,
+ *   reklam kimliği gönderilmez,
+ * - en yüksek içerik derecesi G (genel izleyici),
+ * - reklam kimliği izni (AD_ID) manifestten kaldırılmıştır.
  */
-class AdsManager(private val context: Context, private val scope: CoroutineScope, private val entitlement: StateFlow<Boolean>, private val verifiedAdult: StateFlow<Boolean>) {
+class AdsManager(private val context: Context, private val scope: CoroutineScope, private val entitlement: StateFlow<Boolean>) {
     private val consent: ConsentInformation = UserMessagingPlatform.getConsentInformation(context.applicationContext)
     private val _can = MutableStateFlow(false)
     val canRequestAds: StateFlow<Boolean> = _can
@@ -54,26 +62,16 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         private set
     /** Rıza ve başlatma zincirinde gelinen son adım. Yalnızca teşhis için tutulur. */
     @Volatile private var stage = "baslamadi"
-    /** Yaş bilgisi etkinlik açıldıktan sonra yüklenirse rıza akışı bu etkinlikle başlatılır. */
-    @Volatile private var lastActivity: java.lang.ref.WeakReference<Activity>? = null
-    @Volatile private var consentRequested = false
 
-    /**
-     * Reklam yalnızca yaşı 18 ve üstü olduğu doğrulanan kullanıcıya istenir; bu yüzden yaş işlemi UNSPECIFIED açıkça belirtilir.
-     * İçerik düzeyi yine de PG ile sınırlı tutulur.
-     */
-    private fun requestConfiguration() = RequestConfiguration.Builder()
-        .setMaxAdContentRating(RequestConfiguration.MaxAdContentRating.MAX_AD_CONTENT_RATING_PG)
-        .setAgeRestrictedTreatment(com.google.android.libraries.ads.mobile.sdk.common.AgeRestrictedTreatment.UNSPECIFIED)
-        .build()
+    init {
+        // Yapılandırma SDK başlatılmadan önce verilir; ilk istekten itibaren geçerlidir.
+        runCatching { MobileAds.setRequestConfiguration(requestConfiguration()) }.onFailure { note("Reklam yapilandirmasi: $it") }
+    }
 
     fun onActivityStart(activity: Activity) {
-        lastActivity = java.lang.ref.WeakReference(activity)
         if (entitlement.value) { _can.value = false; return }
-        // Yaşı doğrulanmamış kullanıcı için rıza formu da açılmaz, reklam SDK'sı başlatılmaz.
-        if (!verifiedAdult.value) { step("yas dogrulanmadi"); _can.value = false; return }
-        val params = ConsentRequestParameters.Builder().build()
-        consentRequested = true
+        // Rıza formu da yaşı bilinmeyen kullanıcı için rıza yaşı altı kabulüyle istenir.
+        val params = ConsentRequestParameters.Builder().setTagForUnderAgeOfConsent(true).build()
         try {
             step("riza istendi")
             consent.requestConsentInfoUpdate(activity, params, {
@@ -103,7 +101,7 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
 
     private fun update() {
         _privacyRequired.value = consent.privacyOptionsRequirementStatus == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
-        val allowed = consent.canRequestAds() && !entitlement.value && verifiedAdult.value
+        val allowed = consent.canRequestAds() && !entitlement.value
         if (allowed) initialize()
         _can.value = allowed && initialized
     }
@@ -114,10 +112,11 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         scope.launch(Dispatchers.IO) {
             try {
                 step("reklam baslatma istendi")
-                MobileAds.initialize(context.applicationContext, InitializationConfig.Builder(AdsConfig.appId).setRequestConfiguration(requestConfiguration()).build()) {
+                MobileAds.setRequestConfiguration(requestConfiguration())
+                MobileAds.initialize(context.applicationContext) {
                     step("reklam baslatma bitti")
                     initialized = true
-                    update()
+                    scope.launch(Dispatchers.Main) { update() }
                 }
             } catch (e: Throwable) {
                 note("Reklam baslatilamadi: $e")
@@ -132,27 +131,28 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
     }
 
     fun nativeFor(placement: AdPlacement, onReady: (NativeAd?) -> Unit) {
-        if (entitlement.value || !verifiedAdult.value || !_can.value) { onReady(null); return }
+        if (entitlement.value || !_can.value) { onReady(null); return }
         val now = System.currentTimeMillis()
         cache[placement]?.let { (ad, at) -> if (now - at < AdsConfig.MIN_REFRESH_MS * 3) { onReady(ad); return } }
         if (now - (failedAt[placement] ?: 0L) < AdsConfig.MIN_REFRESH_MS) { onReady(null); return }
-        val request = NativeAdRequest.Builder(AdsConfig.nativeUnit, listOf(NativeAd.NativeAdType.NATIVE)).build()
         try {
-            NativeAdLoader.load(request, object : NativeAdLoaderCallback {
-                override fun onNativeAdLoaded(nativeAd: NativeAd) {
-                    scope.launch(Dispatchers.Main) {
-                        if (entitlement.value || !verifiedAdult.value) { nativeAd.destroy(); onReady(null); return@launch }
-                        cache.remove(placement)?.first?.destroy()
-                        cache[placement] = nativeAd to System.currentTimeMillis()
-                        onReady(nativeAd)
+            val loader = AdLoader.Builder(context.applicationContext, AdsConfig.nativeUnit)
+                .forNativeAd { nativeAd ->
+                    if (entitlement.value) { nativeAd.destroy(); onReady(null); return@forNativeAd }
+                    cache.remove(placement)?.first?.destroy()
+                    cache[placement] = nativeAd to System.currentTimeMillis()
+                    onReady(nativeAd)
+                }
+                .withAdListener(object : AdListener() {
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        note("Reklam yuklenemedi: $adError")
+                        failedAt[placement] = System.currentTimeMillis()
+                        onReady(null)
                     }
-                }
-                override fun onAdFailedToLoad(adError: LoadAdError) {
-                    note("Reklam yuklenemedi: $adError")
-                    failedAt[placement] = System.currentTimeMillis()
-                    scope.launch(Dispatchers.Main) { onReady(null) }
-                }
-            })
+                })
+                .withNativeAdOptions(NativeAdOptions.Builder().build())
+                .build()
+            loader.loadAd(AdRequest.Builder().build())
         } catch (e: Throwable) {
             lastError = e.toString()
             failedAt[placement] = now
@@ -167,13 +167,16 @@ class AdsManager(private val context: Context, private val scope: CoroutineScope
         _can.value = false
     }
 
-    /** Hak veya yaş bilgisi değişince çağrılır. Bu oturumda rıza hiç sorulmadıysa önce rıza akışı çalışır. */
-    fun recheck() {
-        val a = lastActivity?.get()
-        if (!consentRequested && verifiedAdult.value && !entitlement.value && a != null && !a.isFinishing && !a.isDestroyed) {
-            a.runOnUiThread { onActivityStart(a) }
-            return
-        }
-        update()
+    /** Hak değişince çağrılır. */
+    fun recheck() { update() }
+
+    companion object {
+        /** Bütün reklam istekleri için çocuk korumalı yapılandırma (bkz. sınıf açıklaması). */
+        @Suppress("DEPRECATION")
+        fun requestConfiguration(): RequestConfiguration = RequestConfiguration.Builder()
+            .setTagForChildDirectedTreatment(RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE)
+            .setTagForUnderAgeOfConsent(RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE)
+            .setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_G)
+            .build()
     }
 }
