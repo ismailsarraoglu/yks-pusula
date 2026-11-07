@@ -21,7 +21,7 @@ Bu tablo uygulamanın gerçek davranışından çıkarıldı. SDK davranışlar�
 
 ## Cihazda kalan veriler (toplanmıyor)
 
-Bu veriler cihazdan çıkmaz, Veri Güvenliği formunda "toplanıyor" sayılmaz: profil adı, sınıf, hedefler, çalışma kayıtları, deneme sonuçları, kaynaklar, yanlış kayıtları ve fotoğraflar, notlar, PDF dosyaları.
+Bu veriler cihazdan çıkmaz, Veri Güvenliği formunda "toplanıyor" sayılmaz: profil adı, doğum ayı ve yılı (yaş ekranı), sınıf, hedefler, çalışma kayıtları, deneme sonuçları, kaynaklar, yanlış kayıtları ve fotoğraflar, notlar, PDF dosyaları.
 
 ## İzinler (APK'dan okunan gerçek liste CI çıktısında `logs/izinler.txt`)
 
@@ -39,18 +39,23 @@ Geniş dosya izni, kamera izni veya konum izni istenmez. Fotoğraf ve PDF sistem
 
 ## Hedef kitle ve Families politikası
 
-Kaynak: [Hedef kitle ve uygulama içeriği ayarları](https://support.google.com/googleplay/android-developer/answer/9867159?hl=en), 6 Kasım 2026'da okundu.
+Kaynaklar: [Hedef kitle ve uygulama içeriği](https://support.google.com/googleplay/android-developer/answer/9867159?hl=en), [Families politikası](https://support.google.com/googleplay/android-developer/answer/9893335?hl=en), [Families Self-Certified Ads SDK listesi](https://support.google.com/googleplay/android-developer/answer/9283445?hl=en), [Next-Gen SDK yaş işlemi](https://developers.google.com/admob/android/next-gen/targeting). 7 Kasım 2026'da okundu. Ayrıntılı değerlendirme: `docs/gizlilik-ve-reklam-raporu.md`.
 
-- Google'a göre 5 yaş altı, 6-8 ve 9-12 grupları çoğu ülkede çocuk sayılır. 13-15 ve 16-17 grupları bazı ülkelerde çocuk sayılabilir.
-- Hedef kitlede çocuk yaş grubu varsa Families şartları uygulanır: reklamlar yalnızca Families sertifikalı reklam SDK'larından gelmelidir. Çocuk ve büyükler birlikte hedefleniyorsa tarafsız yaş ekranı gerekir.
-- **Öneri: hedef yaş grubu olarak 16-17 ve 18+ seçin.** YKS öğrencilerinin büyük kısmı bu gruptadır. Bu seçimle uygulama çocuklara yönelik sayılmaz, tarafsız yaş ekranı gerekmez ve uygulamaya yaş ekranı eklenmedi.
-- 13-15 grubunu da seçmek isterseniz (9. ve 10. sınıf öğrencileri), bazı ülkelerde bu grup çocuk sayılabileceği için AdMob'da "çocuklara yönelik işlem" ve "reşit olmayan kullanıcı" etiketlerini ve Families şartlarını yeniden değerlendirin. Bu durumda `AdsManager` yapılandırması değiştirilmelidir.
-- Mağaza görselleri ve metinleri çocuklara hitap eden çizgi karakter içermez.
-- Reklam içerik sınırı kodda PG (`MAX_AD_CONTENT_RATING_PG`) olarak ayarlı. AdMob panelinde de aynı sınırı seçin.
-- Uygulama yaş, kimlik, telefon veya e-posta istemez.
-- Bu beyanlar hukuki danışmanlık değildir; Türkiye'de reşit olmayanların verileriyle ilgili yükümlülükler için bir uzmana danışın.
+- 13-15 ve 16-17 grupları bazı bölgelerde çocuk sayılabilir. YKS kullanıcılarının önemli kısmı 18 yaşından küçük olduğu için hedef kitle karma kitledir. **2.1.0'daki "16-17 ve 18+ seçilirse yaş ekranı gerekmez" önerisi geri çekildi.**
+- **Play Console'da gerçek kitleyi seçin:** 16-17 ve 18+; 9. ve 10. sınıf kullanıcılar da hedefleniyorsa 13-15. Families politikası uygulanır.
+- Uygulama karma kitle şartları için şunları yapar: tarafsız yaş ekranı (boş ay ve yıl alanı, varsayılan yok, "Belirtmek istemiyorum" seçeneği); reklam ve rıza SDK'sı yalnızca 18 yaşını doldurmuş kullanıcı için başlatılır; 18 altındaki veya yaşını belirtmeyen kullanıcıdan reklam kimliği aktarılmaz.
+- Uygulamanın reklam SDK'sı (GMA Next-Gen) Families sertifikalı listede değildir; bu yüzden çocuk sayılabilecek kullanıcılara hiç reklam gösterilmez.
+- Yetişkin isteklerinde `AgeRestrictedTreatment.UNSPECIFIED` ve `MAX_AD_CONTENT_RATING_PG` kullanılır. AdMob panelinde de PG seçin.
+- Veri Güvenliği formu için: AdMob verileri yalnızca 18+ kullanıcılardan toplanır. Doğum ayı ve yılı cihazdan çıkmaz, "toplanıyor" sayılmaz.
+- Bu beyanlar hukuki danışmanlık değildir. Türkiye'de reşit olmayanların verileriyle ilgili yükümlülükler için bir uzmana danışın.
 
 ## Sürüm 2.1.0'da değişen
 
 - Yeni veri türü toplanmadı, yeni SDK veya izin eklenmedi. Saat ve saat dilimi değişikliğinde hatırlatıcıları yeniden kurmak için sistem yayını dinlenir; bu bir izin gerektirmez.
 - Satın alma doğrulaması artık Play açık anahtarı olmadan hak vermez. Satın alma kaydı (JSON ve imza) yalnızca cihazda saklanır.
+
+## Sürüm 2.1.1'de değişen
+
+- Tarafsız yaş ekranı: doğum ayı ve yılı yalnızca cihazda saklanır, yedeğe girmez. Reklam ve UMP rıza SDK'sı yalnızca 18 yaşını doldurmuş kullanıcı için başlatılır.
+- Satın alma doğrulaması kapalı varsayılanla çalışır: paket adı, satın alma durumu, ürün kimliği ve belirteç zorunludur ve tutarlı olmalıdır.
+- Yeni izin veya SDK eklenmedi.

@@ -213,7 +213,10 @@ class ProductLogicTest {
         fun chk(t: String) = EntitlementLogic.check(t, sign(t), pub)
         assertEquals(PurchaseCheck.OK, chk(play()))
         assertEquals(PurchaseCheck.WRONG_PRODUCT, chk(play(product = "x_remove_ads_lifetime")))
-        assertEquals(PurchaseCheck.WRONG_PRODUCT, chk("{\"productId\":\"baska\",\"note\":\"$REMOVE_ADS_PRODUCT\"}"))
+        // Ürün kimliği başka bir alanda geçse bile sayılmaz.
+        assertEquals(PurchaseCheck.WRONG_PRODUCT, chk("{\"packageName\":\"app.ykspusula\",\"productId\":\"baska\",\"note\":\"$REMOVE_ADS_PRODUCT\",\"purchaseState\":0,\"purchaseToken\":\"t\"}"))
+        // Zorunlu alanları olmayan kayıt, ürün yanlış olsa da önce bozuk kayıt olarak reddedilir.
+        assertEquals(PurchaseCheck.MALFORMED, chk("{\"productId\":\"baska\",\"note\":\"$REMOVE_ADS_PRODUCT\"}"))
         assertEquals(PurchaseCheck.NOT_PURCHASED, chk(play(state = 4)))
         assertEquals(PurchaseCheck.NOT_PURCHASED, chk(play(state = 1)))
         assertEquals(PurchaseCheck.WRONG_PACKAGE, chk(play(pkg = "com.baska")))
