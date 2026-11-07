@@ -11,7 +11,7 @@ mkdir -p "$D" ci/screens ci/screens-a15
 PLAN="test-kurulum ana-testler yasam-arka-plan yasam-surec-olumu yasam-bellek-baskisi yasam-cokme kalicilik-yaz kalicilik-zorla-durdurma kalicilik-yeniden-baslatma
 gezinme-hareket e2e-hareket-dikey e2e-hareket-dikey-yazi130 e2e-hareket-yatay kesik-etkin e2e-kesik-yatay gezinme-3dugme e2e-3dugme-yatay
 bildirim-goster hatirlatma-zamaninda saat-dilimi bildirim-izni-kaldirildi bildirim-izinsiz pdf-secici foto-secici yedek-secici osym-cevrimdisi
-cevrimici-ag osym-tarayici reklam billing release-kurulum release-cokme release-anr release-acik-kaldi"
+cevrimici-ag osym-tarayici reklam billing-baslatma release-kurulum release-cokme release-anr release-acik-kaldi"
 
 if ! emulator_ac a15 "$IMG" 4096; then
   kayit acilis FAIL "emülatör açılmadı ($IMG)"
@@ -152,11 +152,11 @@ else
     kayit reklam "$sonuc" "$aciklama"
     adb exec-out run-as $PKG cat files/reklam-yerel.png > ci/screens-a15/reklam-yerel.png 2>/dev/null
     echo "play-store: $(adb shell dumpsys package com.android.vending | grep -m1 versionName | tr -d '\r ')" | tee -a $O
-    testi_calistir billing $D/billing.txt "$S#billingClientStarts" || adb logcat -d 2>/dev/null | grep -iE 'BillingClient|BillingLogger|vending.*bill' | tail -25 | cut -c1-220
-    adb exec-out run-as $PKG cat files/sistem/billingClientStarts.txt > $D/sistem-billing.txt 2>/dev/null
+    testi_calistir billing-baslatma $D/billing.txt "$S#billingClientStarts" || adb logcat -d 2>/dev/null | grep -iE 'BillingClient|BillingLogger|vending.*bill' | tail -25 | cut -c1-220
+    adb exec-out run-as $PKG cat files/sistem/billingClientStarts.txt 2>/dev/null | tee $D/sistem-billing.txt | sed "s/^/billing: /"
     adb logcat -d 2>/dev/null | grep -iE 'BillingClient|BillingLogger' | tail -40 | cut -c1-220 > $D/billing-logcat.txt
   else
-    calismadi "emülatör internete çıkamadı" osym-tarayici reklam billing
+    calismadi "emülatör internete çıkamadı" osym-tarayici reklam billing-baslatma
   fi
   cevrimdisi
 fi
