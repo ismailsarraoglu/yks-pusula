@@ -234,7 +234,8 @@ class SystemIntegrationTest {
         assertTrue(copied.length() > 500)
         rule.runOnUiThread { DebugNav.nav!!.navigate("pdf/${f.id}") }
         rule.waitUntil("PDF sayfası", 15_000) { rule.onAllNodesWithText("1 / 2").fetchSemanticsNodes().isNotEmpty() }
-        assertTrue(rule.onAllNodes(hasContentDescription("Sayfa 1")).fetchSemanticsNodes().isNotEmpty())
+        // Sayfa görüntüsü arka planda çizilir; sayfa sayısı yazısından biraz sonra gelebilir.
+        rule.waitUntil("PDF sayfa görüntüsü", 15_000) { rule.onAllNodes(hasContentDescription("Sayfa 1")).fetchSemanticsNodes().isNotEmpty() }
         evidence("pdf-goruntu")
         note("pdf-acildi=1/2")
     }
