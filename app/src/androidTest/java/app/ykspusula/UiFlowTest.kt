@@ -289,6 +289,36 @@ class UiFlowTest {
         rule.waitUntil(5000) { rule.onAllNodesWithText("Doğum tarihin").fetchSemanticsNodes().isEmpty() }
     }
 
+    /** Profil düzenleme: YDT dili yalnızca hedef alan Dil iken görünür; gizlemek kayıttaki dili değiştirmez. */
+    @Test fun profileEditShowsYdtLanguageOnlyForDil() {
+        seedProfile()
+        runBlocking { r.user.saveProfile(r.user.profileNow()!!.copy(field = "SAY", ydtLanguage = "İngilizce")) }
+        launch()
+        waitText("Bugünkü Rotan")
+        rule.runOnUiThread { DebugNav.nav!!.navigate("profileEdit") }
+        waitText("Hedef alan")
+        fun ydtShown() = rule.onAllNodesWithText("YDT dili").fetchSemanticsNodes().isNotEmpty()
+        assertFalse("Sayısal alanda YDT dili görünmemeli", ydtShown())
+        assertTrue(rule.onAllNodesWithText("Almanca").fetchSemanticsNodes().isEmpty())
+
+        clickText("Dil")
+        assertTrue("Dil seçilince YDT dili hemen görünmeli", ydtShown())
+        clickText("Almanca")
+        clickText("Eşit Ağırlık")
+        assertFalse("Alan değişince YDT dili hemen gizlenmeli", ydtShown())
+        clickText("Kaydet")
+        rule.waitUntil(5000) { rule.onAllNodesWithText("Hedef alan").fetchSemanticsNodes().isEmpty() }
+        val saved = runBlocking { r.user.profileNow()!! }
+        assertEquals("EA", saved.field)
+        assertEquals("Gizli seçim kaybolmamalı", "Almanca", saved.ydtLanguage)
+
+        rule.runOnUiThread { DebugNav.nav!!.navigate("profileEdit") }
+        waitText("Hedef alan")
+        assertFalse(ydtShown())
+        clickText("Dil")
+        assertTrue(ydtShown())
+    }
+
     @Test fun allScreensOpenBothThemes() {
         val routes = seedAllAndRoutes()
         listOf("DARK", "LIGHT").forEach { theme ->

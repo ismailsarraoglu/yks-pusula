@@ -125,7 +125,10 @@ fun ProfileEditScreen() {
             Muted("Sınıf"); PillGroup(GRADES, u.grade) { p = u.copy(grade = it) }
             Muted("Sınav yılı"); PillGroup(listOf(2027, 2028, 2029, 2030).map { "$it" to "$it" }, "${u.examYear}") { p = u.copy(examYear = it.toInt()) }
             Muted("Hedef alan"); PillGroup(FIELD_LABELS, u.field) { p = u.copy(field = it) }
-            Muted("YDT dili"); PillGroup(LANGUAGES.map { it to it }, u.ydtLanguage) { p = u.copy(ydtLanguage = it) }; Muted(ydtSupportNote(u.ydtLanguage))
+            // YDT dili yalnızca Dil alanında anlamlıdır. Gizliyken kayıttaki dil değişmez; alan tekrar Dil olursa aynı seçim görünür.
+            if (u.field == "DIL") {
+                Muted("YDT dili"); PillGroup(LANGUAGES.map { it to it }, u.ydtLanguage) { p = u.copy(ydtLanguage = it) }; Muted(ydtSupportNote(u.ydtLanguage))
+            }
             Field(u.targetUniversity, { v -> p = u.copy(targetUniversity = v) }, "Hedef üniversite")
             Field(u.targetDepartment, { v -> p = u.copy(targetDepartment = v) }, "Hedef bölüm")
             Field(u.dailyMinutes.toString(), { v -> p = u.copy(dailyMinutes = v.filter(Char::isDigit).take(3).toIntOrNull() ?: 0) }, "Günlük çalışma (dakika)", keyboard = KeyboardOptions(keyboardType = KeyboardType.Number))
