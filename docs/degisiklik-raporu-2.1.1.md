@@ -1,6 +1,6 @@
 # Değişiklik raporu: 2.1.0 → 2.1.1
 
-Dal: `duzeltme-2.1.1` (2.1.0 `surum-2.1` dalında ve `d130d80` kaydında olduğu gibi duruyor). Yeni özellik eklenmedi; değişiklikler güvenilirlik, yayın kalitesi ve politika uyumu içindir. Test sonuçları: `docs/test-raporu.md`, Android 15: `docs/android15-test-raporu.md`.
+Dal: `duzeltme-2.1.1` (2.1.0 `surum-2.1` dalında ve `08a4f6b` kaydında olduğu gibi duruyor). Yeni özellik eklenmedi; değişiklikler güvenilirlik, yayın kalitesi ve politika uyumu içindir. Test sonuçları: `docs/test-raporu.md`, Android 15: `docs/android15-test-raporu.md`.
 
 ## 1. Test otomasyonu artık gerçek bir kalite kapısı
 
@@ -54,6 +54,26 @@ Gelir etkisi: 18 yaş altındaki kullanıcılar reklam görmez. Alternatif (sert
 | Uygulama geri yükleme sırasında kapanırsa yarım kalan işlem kalıyordu | Günlük varsa açılışta önceki hâle dönülür; Yedekleme ekranında bilgi gösterilir | `data/Backup.kt` `recoverIfInterrupted`, `YksApp.kt`, `ui/screens/ProfileScreens.kt` |
 
 Yeni testler (`BackupSecurityTest`): aynı adlı dosyanın güvenli değişimi, dosya taşıma hatası, veritabanı adımında hata, DataStore (ayarlar) yazma hatası, ayarlardan sonra hata, yarım kalan geri yüklemenin sonraki açılışta kurtarılması, başarılı tam değiştirme. Hatalar test sırasında belirli aşamalara kasıtlı olarak sokulur (`RestoreFaults`); uygulamada bu kanca boştur.
+
+## Depo güvenliği (7 Kasım 2026)
+
+GitHub Actions'ın ücretsiz dakikaları bittiği için depo testler süresince herkese açık yapıldı. Açılmadan önce temizlenmesi gerekiyordu; kısa bir süre temizlenmeden açık kaldı.
+
+- Bütün Git geçmişinden eski yan yükleme anahtarı (`app/signing/yks-pusula-sideload.p12`) ve parolası silindi; geçmiş yeniden yazıldı. Kod değişmedi.
+- GitHub'daki bütün dallar yeniden indirilip tarandı: anahtar dosyası, parola, özel anahtar veya API anahtarı bulunmadı.
+- Eski anahtar ele geçmiş sayılır ve kullanılmaz (`docs/kalan-manuel-isler.md`). Play yükleme anahtarı depoda hiç olmadı; Play sürümü etkilenmez.
+- Kayıt kimlikleri değişti: 2.0.0 `d6ef13c` (`gelistirme` dalı), 2.1.0 `08a4f6b` (`main` dalı). Eski geçmişin yedeği kullanıcıya ayrıca verildi.
+
+## Profil ekranı (ek talimat)
+
+- Profil düzenlemede "YDT dili" bölümü yalnızca hedef alan Dil iken görünür; alan değişince hemen açılır veya gizlenir. Seçim eskisi gibi isteğe bağlıdır (varsayılan İngilizce).
+- Bölüm gizliyken kayıttaki dil değişmez; veritabanı yapısı aynı. Dosya: `ui/screens/ProfileScreens.kt`. Test: `UiFlowTest.profileEditShowsYdtLanguageOnlyForDil`.
+
+## Android 15 testinde bulunup düzeltilenler
+
+- Yatay ekranda alt menü kamera kesiğinin altına giriyordu (hareketle gezinme, üç düğme ve kesik öykünmesinde). Alt menü artık gezinme çubuğu ile yatay ekran kesiği boşluğunu birlikte uygular. Dosya: `ui/AppRoot.kt`.
+- Sistem testleri (bildirim, hatırlatma, saat dilimi, dosya ve fotoğraf seçici, yedek) JUnit kuralına uymadığı için hiç başlamıyordu ("should be void"). Düzeltildi.
+- Çevrimiçi aşamadaki internet denetimi ping kullanıyordu; GitHub sunucuları ping geçirmediği için reklam ve Billing aşamaları çalışmıyordu. Android'in doğrulanmış ağ bilgisine geçildi.
 
 ## Sürüm numarası
 

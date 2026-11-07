@@ -1,6 +1,6 @@
 # YKS Pusula 2.1.0 teslim raporu
 
-Sürüm 2.1.0 (versionCode 3). Uygulama kodu: `035482b`, tam test turu `42304857639`, 6 Kasım 2026. Çalışma dalı `surum-2.1`; 2.0.0 hâli Git geçmişinde `7c24848` kaydında duruyor.
+Sürüm 2.1.0 (versionCode 3). Uygulama kodu: `83130c3`, tam test turu `42304857639`, 6 Kasım 2026. Çalışma dalı `surum-2.1`; 2.0.0 hâli Git geçmişinde `d6ef13c` kaydında duruyor.
 
 Durum etiketleri: **Tamamlandı** · **Kısmen tamamlandı** · **Test edilmesi gerekiyor** · **Kullanıcı işlemi gerekiyor** · **Bu sürüme alınmadı**
 
@@ -66,7 +66,7 @@ Kullanım: `docs/yeni-ozellikler-kullanim.md`.
 
 ## 5. Değiştirilen dosyalar
 
-Toplam 57 dosya (görseller hariç); 2.0.0'a göre ayrıntılı fark Git'te `7c24848..surum-2.1`.
+Toplam 57 dosya (görseller hariç); 2.0.0'a göre ayrıntılı fark Git'te `d6ef13c..surum-2.1`.
 
 | Alan | Dosyalar |
 |---|---|
@@ -108,7 +108,7 @@ Ayrıntı: `docs/gizlilik-ve-reklam-raporu.md`.
 
 ## 9. Çalıştırılan testler
 
-Ayrıntı: `docs/test-raporu.md`. Hepsi son turda (`035482b`) geçti:
+Ayrıntı: `docs/test-raporu.md`. Hepsi son turda (`83130c3`) geçti:
 
 - Birim testleri 70/70; bunların 19'u yeni plan süresi senaryoları.
 - Android 11 tam cihaz testleri 54/54; düğmeler 5/5; stres 3/3; 467 ekran görüntüsü; veri kalıcılığı.

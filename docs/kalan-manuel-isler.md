@@ -6,7 +6,7 @@ Bu işler hesabınıza, kimliğinize veya gerçek cihaza bağlı olduğu için t
 
 1. **Google Play Geliştirici hesabı** açın ve kimlik doğrulamasını tamamlayın.
 2. **Yükleme anahtarı** oluşturun ve iki ayrı yerde yedekleyin. Adımlar: `play/play-yayin-talimat.md`. 2.1.0'dan itibaren Play derlemesi bu anahtar olmadan üretilemez.
-   - İsteğe bağlı: size gönderilen `yks-pusula-sideload-YEDEK.p12` dosyasını güvenli bir yerde saklayın. Telefonunuzdaki eski test sürümünün üstüne kurulum için GitHub'a `SIDELOAD_P12_B64` ve `SIDELOAD_STORE_PASSWORD` gizli değerlerini ekleyebilirsiniz (aynı belgede).
+   - **Eski yan yükleme test anahtarı (`yks-pusula-sideload-YEDEK.p12`) artık kullanılmaz.** 7 Kasım 2026'da depo kısa süre herkese açıkken bu anahtar eski Git geçmişinde görünür durumdaydı. Geçmiş temizlendi, ama anahtarı ele geçmiş sayın: GitHub'a `SIDELOAD_P12_B64` olarak eklemeyin, test APK'larını onunla imzalamayın. Telefonunuzdaki eski test sürümünü güncellemek için yedek alıp kaldırın, yeni APK'yı kurun, yedeği geri yükleyin. Play sürümü bundan etkilenmez.
 3. **AdMob hesabı** açın; uygulama, yerel reklam birimi ve GDPR iletisi oluşturun. Adımlar: `play/admob-talimat.md`. Gerçek reklam kimlikleri bu teslimde yoktur.
 4. **Gizlilik politikası:** `play/gizlilik-politikasi.html` içindeki `[GELİŞTİRİCİ ADI]` ve `[GELİŞTİRİCİ E-POSTA ADRESİ]` alanlarını doldurun, herkese açık bir adreste yayımlayın, adresi Play Console'a girin.
 5. **Kendi anahtarınızla AAB üretin.** GitHub'daki `yayin-aab` işi veya kendi bilgisayarınız. Gereken yedi değer: yükleme anahtarı dosyası ve üç parola/ad, `ADMOB_APP_ID`, `ADMOB_NATIVE_ID`, `PLAY_PUBLIC_KEY`. Bu teslimde Play'e yüklenecek AAB yoktur; anahtarınız olmadan üretilemez.

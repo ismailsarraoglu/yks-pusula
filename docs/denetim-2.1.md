@@ -1,6 +1,6 @@
 # 2.1.0 başlangıç denetimi
 
-Tarih: 6 Kasım 2026. Başlangıç noktası: `main` dalı, `7c24848` (2.0.0 teslimi). Çalışma dalı: `surum-2.1`. 2.0.0 hâline dönmek gerekirse: `7c24848`.
+Tarih: 6 Kasım 2026. Başlangıç noktası: `main` dalı, `d6ef13c` (2.0.0 teslimi). Çalışma dalı: `surum-2.1`. 2.0.0 hâline dönmek gerekirse: `d6ef13c`.
 
 Prompttaki eski bulgular kod üzerinde yeniden kontrol edildi. "Doğrulandı" sorunun bugün kodda hâlâ olduğunu gösterir.
 

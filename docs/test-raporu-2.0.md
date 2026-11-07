@@ -1,6 +1,6 @@
 # Test raporu
 
-Sürüm 2.0.0 (versionCode 2). Test edilen uygulama kodu: `e6f4882`, tam tur `42242504720`, 6 Kasım 2026.
+Sürüm 2.0.0 (versionCode 2). Test edilen uygulama kodu: `de4b185`, tam tur `42242504720`, 6 Kasım 2026.
 Testler GitHub Actions üzerindeki Android emülatörlerinde çalıştı. **Gerçek telefonda ve gerçek Google Play bağlantısıyla hiçbir test yapılmadı.**
 
 İşaretler: ✅ otomatik test geçti · ⚠ kısmen denendi, sınırı yanında yazıyor · ❌ denenmedi

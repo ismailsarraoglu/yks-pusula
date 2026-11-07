@@ -1,6 +1,6 @@
 # Test raporu (2.1.0)
 
-Sürüm 2.1.0 (versionCode 3). Test edilen kod: `035482b`, tam tur `42304857639`, 6-7 Kasım 2026.
+Sürüm 2.1.0 (versionCode 3). Test edilen kod: `83130c3`, tam tur `42304857639`, 6-7 Kasım 2026.
 Testler GitHub Actions üzerindeki Android emülatörlerinde çalıştı. **Gerçek telefonda ve gerçek Google Play bağlantısıyla hiçbir test yapılmadı.** 2.0.0 raporu: `docs/test-raporu-2.0.md`.
 
 İşaretler: ✅ otomatik test geçti · ⚠ kısmen denendi, sınırı yanında yazıyor · ❌ denenmedi

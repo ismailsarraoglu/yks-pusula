@@ -9,7 +9,7 @@ Uygulamada iki ayrı anahtar vardır. İkisini karıştırmayın.
 | Anahtar | Ne işe yarar | Nerede |
 |---|---|---|
 | **Yükleme anahtarı** (sizin oluşturacağınız) | Google Play'e yüklenecek AAB'yi imzalar. Play, kullanıcıya giden APK'yı kendi uygulama imzalama anahtarıyla yeniden imzalar | Yalnızca sizde. Depoda yok |
-| **Yan yükleme test anahtarı** (`yks-pusula-sideload.p12`) | Telefona doğrudan kurulan test APK'sını imzalar. 1.0 ve 2.0 test sürümleri bununla imzalıydı | 2.1.0'da depodan çıkarıldı. Yedeği size ayrıca gönderildi |
+| **Yan yükleme test anahtarı** (`yks-pusula-sideload.p12`) | Telefona doğrudan kurulan test APK'sını imzalar. 1.0 ve 2.0 test sürümleri bununla imzalıydı | 2.1.0'da depodan çıkarıldı; 7 Kasım 2026'da Git geçmişinden de silindi. Depo kısa süre herkese açıkken geçmişte göründüğü için **artık kullanılmaz** |
 
 ### 2.1.0'daki güvenlik değişikliği
 
@@ -61,16 +61,9 @@ PLAY_PUBLIC_KEY=...
 
 `./gradlew bundleRelease` komutu AAB'yi yükleme anahtarıyla imzalar. Play Console'da **Play Uygulama İmzalama**yı açık tutun.
 
-### Yan yükleme test anahtarı (isteğe bağlı)
+### Yan yükleme test anahtarı
 
-Test APK'sının daha önce telefonunuza kurduğunuz 1.0 veya 2.0 sürümünün üstüne kurulabilmesi için aynı anahtarla imzalanması gerekir. GitHub gizli değerlerine şunları eklerseniz otomatik derleme bu anahtarı kullanır:
-
-| Gizli değer | İçerik |
-|---|---|
-| `SIDELOAD_P12_B64` | Size gönderilen `yks-pusula-sideload-YEDEK.p12` dosyasının Base64 hâli |
-| `SIDELOAD_STORE_PASSWORD` | Yan yükleme anahtarının parolası (depoda tutulmaz) |
-
-Eklemezseniz test APK'sı geçici bir anahtarla imzalanır. Bu durumda telefondaki eski sürümün üstüne kurulamaz: önce uygulamadan yedek alın, eski sürümü kaldırın, yeni APK'yı kurun, yedeği geri yükleyin.
+Eski yan yükleme anahtarı ele geçmiş sayılır ve kullanılmaz; `SIDELOAD_P12_B64` gizli değerini eklemeyin. Test APK'sı geçici bir anahtarla imzalanır. Telefondaki eski test sürümünün üstüne kurulamaz: önce uygulamadan yedek alın, eski sürümü kaldırın, yeni APK'yı kurun, yedeği geri yükleyin. İleride kalıcı bir test anahtarı isterseniz yeni bir anahtar oluşturup yalnızca GitHub gizli değerlerinde saklayın.
 
 Not: Play'den kurulan uygulama farklı imzalı olur. Dışarıdan kurulmuş sürüm Play sürümüyle güncellenemez. Önce yedek alın, kaldırın, Play'den kurun, yedeği geri yükleyin.
 
