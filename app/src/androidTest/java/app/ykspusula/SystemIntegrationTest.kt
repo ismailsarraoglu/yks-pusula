@@ -304,13 +304,15 @@ class SystemIntegrationTest {
     @Test fun billingClientStarts() = runBlocking<Unit> {
         val b = app.monetize.billing
         b.connect()
-        var waited = 0
-        while (b.lastSetupCode == null && waited < 60) { Thread.sleep(500); waited++ }
+        // Yeni açılan Play imajında Play Store kendini güncellerken bağlantı geç yanıt verebilir; 120 sn beklenir.
+        val start = System.currentTimeMillis()
+        while (b.lastSetupCode == null && System.currentTimeMillis() - start < 120_000) Thread.sleep(500)
         val code = b.lastSetupCode
+        note("billing-yanit-suresi-ms=${System.currentTimeMillis() - start}")
         Thread.sleep(8_000)
         val ui = b.ui.value
         note("billing-yanit-kodu=$code bagli=${ui.connected} fiyat=${ui.price} mesaj='${ui.message}' reklamsiz=${app.monetize.entitlement.hasAdsFreeEntitlement.value}")
-        assertNotNull("Play Billing bağlantısı 30 sn içinde yanıt vermedi", code)
+        assertNotNull("Play Billing bağlantısı 120 sn içinde yanıt vermedi", code)
         assertFalse("Doğrulanmış satın alma olmadan reklamsız hak açılmamalı", app.monetize.entitlement.hasAdsFreeEntitlement.value)
         if (code == 0) assertTrue(ui.connected) else assertEquals("Google Play satın alma servisine ulaşılamadı.", ui.message)
     }

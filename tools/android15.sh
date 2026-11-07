@@ -144,7 +144,8 @@ else
     DURUM=$ANA
     kayit reklam "$sonuc" "$aciklama"
     adb exec-out run-as $PKG cat files/reklam-yerel.png > ci/screens-a15/reklam-yerel.png 2>/dev/null
-    testi_calistir billing $D/billing.txt "$S#billingClientStarts"
+    echo "play-store: $(adb shell dumpsys package com.android.vending | grep -m1 versionName | tr -d '\r ')" | tee -a $O
+    testi_calistir billing $D/billing.txt "$S#billingClientStarts" || adb logcat -d 2>/dev/null | grep -iE 'BillingClient|BillingLogger|vending.*bill' | tail -25 | cut -c1-220
     adb exec-out run-as $PKG cat files/sistem/billingClientStarts.txt > $D/sistem-billing.txt 2>/dev/null
     adb logcat -d 2>/dev/null | grep -iE 'BillingClient|BillingLogger' | tail -40 | cut -c1-220 > $D/billing-logcat.txt
   else
