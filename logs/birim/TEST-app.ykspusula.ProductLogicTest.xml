@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.ykspusula.ProductLogicTest" tests="29" skipped="0" failures="0" errors="0" timestamp="2026-11-07T11:01:33.515Z" hostname="runnervm7aw5e" time="2.439">
+  <properties/>
+  <testcase name="wrongReviewChangesInterval" classname="app.ykspusula.ProductLogicTest" time="0.202"/>
+  <testcase name="dailyQuoteStableAndNoRepeatInCycle" classname="app.ykspusula.ProductLogicTest" time="0.135"/>
+  <testcase name="missingOrInconsistentFieldsRejected" classname="app.ykspusula.ProductLogicTest" time="0.112"/>
+  <testcase name="entitlementSurvivesOfflineAndRevokesOnNone" classname="app.ykspusula.ProductLogicTest" time="0.147"/>
+  <testcase name="purchaseChecksProductStateAndPackage" classname="app.ykspusula.ProductLogicTest" time="0.113"/>
+  <testcase name="restDayKeepsStreak" classname="app.ykspusula.ProductLogicTest" time="0.023"/>
+  <testcase name="oneMarkCannotMakeStrong" classname="app.ykspusula.ProductLogicTest" time="0.048"/>
+  <testcase name="backupRoundTripAndTamper" classname="app.ykspusula.ProductLogicTest" time="0.125"/>
+  <testcase name="coachUsesSourceAndHardTopics" classname="app.ykspusula.ProductLogicTest" time="0.176"/>
+  <testcase name="coachDoesNotClaimTrendWithFewExams" classname="app.ykspusula.ProductLogicTest" time="0.104"/>
+  <testcase name="planHonoursMaxCapacityAndEndHour" classname="app.ykspusula.ProductLogicTest" time="0.124"/>
+  <testcase name="contentPackValidation" classname="app.ykspusula.ProductLogicTest" time="0.074"/>
+  <testcase name="examAnalysisNeedsEnoughData" classname="app.ykspusula.ProductLogicTest" time="0.048"/>
+  <testcase name="seedHasNoQuestions" classname="app.ykspusula.ProductLogicTest" time="0.089"/>
+  <testcase name="overdueReviewDropsToNeedsReview" classname="app.ykspusula.ProductLogicTest" time="0.058"/>
+  <testcase name="replanReportsWhatDoesNotFit" classname="app.ykspusula.ProductLogicTest" time="0.148"/>
+  <testcase name="replanRespectsCapacityAndBreaks" classname="app.ykspusula.ProductLogicTest" time="0.09"/>
+  <testcase name="entitlementOnlyFromVerifiedPurchase" classname="app.ykspusula.ProductLogicTest" time="0.062"/>
+  <testcase name="weeklyReviewAvoidsConclusionsWithoutData" classname="app.ykspusula.ProductLogicTest" time="0.033"/>
+  <testcase name="coachExplainsEverySuggestion" classname="app.ykspusula.ProductLogicTest" time="0.059"/>
+  <testcase name="missingPublicKeyNeverGrants" classname="app.ykspusula.ProductLogicTest" time="0.044"/>
+  <testcase name="coachRespectsBudgetRejectionAndRest" classname="app.ykspusula.ProductLogicTest" time="0.066"/>
+  <testcase name="netHelpers" classname="app.ykspusula.ProductLogicTest" time="0.026"/>
+  <testcase name="cachedTokenMustMatchJson" classname="app.ykspusula.ProductLogicTest" time="0.057"/>
+  <testcase name="signatureMustMatch" classname="app.ykspusula.ProductLogicTest" time="0.02"/>
+  <testcase name="reminderFrequency" classname="app.ykspusula.ProductLogicTest" time="0.057"/>
+  <testcase name="masteryLevels" classname="app.ykspusula.ProductLogicTest" time="0.029"/>
+  <testcase name="oldBackupIsConverted" classname="app.ykspusula.ProductLogicTest" time="0.057"/>
+  <testcase name="exactlyHundredUniqueQuotes" classname="app.ykspusula.ProductLogicTest" time="0.11"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

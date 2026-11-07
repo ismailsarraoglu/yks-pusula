@@ -1,0 +1,2 @@
+4ff1afd 2.1.1 raporları: teslim, test, Android 15, değişiklik ve kalan işler
+run=42366278735 olay=push dal=duzeltme-2.1.1 kapi_denemesi=yok

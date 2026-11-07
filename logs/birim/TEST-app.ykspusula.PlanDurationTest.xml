@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.ykspusula.PlanDurationTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-11-07T11:01:33.469Z" hostname="runnervm7aw5e" time="0.039">
+  <properties/>
+  <testcase name="wrongReviewIsPartOfTarget" classname="app.ykspusula.PlanDurationTest" time="0.003"/>
+  <testcase name="keptTasksReduceTarget" classname="app.ykspusula.PlanDurationTest" time="0.002"/>
+  <testcase name="capAboveMaxIsExplained" classname="app.ykspusula.PlanDurationTest" time="0.002"/>
+  <testcase name="notEnoughHoursIsExplained" classname="app.ykspusula.PlanDurationTest" time="0.005"/>
+  <testcase name="targetGapRaisesSubjectAndExplains" classname="app.ykspusula.PlanDurationTest" time="0.006"/>
+  <testcase name="restDaysAndStudyDaysRespected" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <testcase name="weeklyGoalCapsTheWeek" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <testcase name="examVeryCloseFavoursReview" classname="app.ykspusula.PlanDurationTest" time="0.002"/>
+  <testcase name="noSameTopicTwiceInADay" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <testcase name="lastBlockUsesRemainder" classname="app.ykspusula.PlanDurationTest" time="0.0"/>
+  <testcase name="minutes30" classname="app.ykspusula.PlanDurationTest" time="0.003"/>
+  <testcase name="minutes45" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <testcase name="minutes60" classname="app.ykspusula.PlanDurationTest" time="0.0"/>
+  <testcase name="minutes90" classname="app.ykspusula.PlanDurationTest" time="0.0"/>
+  <testcase name="minutes120" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <testcase name="minutes180" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <testcase name="minutes240" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <testcase name="minutes300" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <testcase name="mockMistakesComeFirstWithReason" classname="app.ykspusula.PlanDurationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

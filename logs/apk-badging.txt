@@ -1,0 +1,2 @@
+package: name='app.ykspusula' versionCode='4' versionName='2.1.1' platformBuildVersionName='17' platformBuildVersionCode='37' compileSdkVersion='37' compileSdkVersionCodename='17'
+targetSdkVersion:'36'

@@ -1,0 +1,189 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :app:kspDebugKotlin UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:mergeDebugAndroidTestManifest
+> Task :app:processDebugAndroidTestManifest
+> Task :app:generateDebugAndroidTestBuildConfig FROM-CACHE
+> Task :app:generateDebugAndroidTestResources FROM-CACHE
+> Task :app:packageDebugAndroidTestResources FROM-CACHE
+> Task :app:processDebugAndroidTestNavigationResources FROM-CACHE
+> Task :app:parseDebugAndroidTestLocalResources FROM-CACHE
+> Task :app:generateDebugAndroidTestRFile FROM-CACHE
+> Task :app:kspDebugAndroidTestKotlin
+> Task :app:javaPreCompileDebugAndroidTest FROM-CACHE
+> Task :app:preSideloadBuild UP-TO-DATE
+> Task :app:generateSideloadBuildConfig
+> Task :app:generateSideloadResources FROM-CACHE
+> Task :app:packageSideloadResources FROM-CACHE
+> Task :app:processSideloadNavigationResources FROM-CACHE
+> Task :app:parseSideloadLocalResources FROM-CACHE
+> Task :app:generateSideloadRFile FROM-CACHE
+> Task :app:javaPreCompileSideload FROM-CACHE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:compressDebugAssets FROM-CACHE
+> Task :app:generateDebugGlobalSynthetics FROM-CACHE
+> Task :app:compressDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource
+> Task :app:desugarDebugFileDependencies FROM-CACHE
+> Task :app:checkDebugDuplicateClasses
+> Task :app:dexBuilderDebug
+> Task :app:mergeExtDexDebug FROM-CACHE
+> Task :app:mergeLibDexDebug FROM-CACHE
+> Task :app:mergeDebugJniLibFolders
+> Task :app:mergeDebugNativeLibs
+
+> Task :app:stripDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:mergeProjectDexDebug
+
+> Task :app:compileDebugAndroidTestKotlin
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/androidTest/java/app/ykspusula/AdOnlineTest.kt:41:26 'fun createEmptyComposeRule(effectContext: CoroutineContext = ...): ComposeTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createEmptyComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/androidTest/java/app/ykspusula/NotificationDeniedTest.kt:27:26 'fun createEmptyComposeRule(effectContext: CoroutineContext = ...): ComposeTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createEmptyComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/androidTest/java/app/ykspusula/StresTest.kt:23:26 'fun createEmptyComposeRule(effectContext: CoroutineContext = ...): ComposeTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createEmptyComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/androidTest/java/app/ykspusula/SystemIntegrationTest.kt:54:26 'fun createEmptyComposeRule(effectContext: CoroutineContext = ...): ComposeTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createEmptyComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/androidTest/java/app/ykspusula/UiFlowTest.kt:42:75 'val id: Long' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/androidTest/java/app/ykspusula/UiFlowTest.kt:46:26 'fun createEmptyComposeRule(effectContext: CoroutineContext = ...): ComposeTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createEmptyComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:mergeSideloadJniLibFolders
+> Task :app:mergeSideloadNativeLibs
+
+> Task :app:stripSideloadDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:extractSideloadNativeSymbolTables FROM-CACHE
+> Task :app:mergeSideloadNativeDebugMetadata NO-SOURCE
+> Task :app:checkSideloadDuplicateClasses
+> Task :app:mergeSideloadArtProfile
+> Task :app:checkSideloadAarMetadata
+> Task :app:mapSideloadSourceSetPaths
+> Task :app:compileSideloadNavigationResources FROM-CACHE
+> Task :app:mergeSideloadResources FROM-CACHE
+> Task :app:kspSideloadKotlin
+> Task :app:compileDebugAndroidTestJavaWithJavac
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+> Task :app:createSideloadCompatibleScreenManifests
+> Task :app:extractDeepLinksSideload FROM-CACHE
+> Task :app:processSideloadMainManifest
+> Task :app:processSideloadManifest
+> Task :app:extractProguardFiles
+> Task :app:mergeSideloadStartupProfile
+> Task :app:generateSideloadAssets UP-TO-DATE
+> Task :app:mergeSideloadAssets
+> Task :app:compressSideloadAssets FROM-CACHE
+> Task :app:extractSideloadVersionControlInfo
+> Task :app:collectSideloadDependencies
+> Task :app:processSideloadManifestForPackage
+> Task :app:sdkSideloadDependencyData
+> Task :app:validateSigningSideload
+> Task :app:writeSideloadAppMetadata
+> Task :app:writeSideloadSigningConfigVersions
+> Task :app:copyRoomSchemasToAndroidTestAssetsDebugAndroidTest
+> Task :app:generateDebugAndroidTestAssets UP-TO-DATE
+> Task :app:mergeDebugAndroidTestAssets
+> Task :app:compressDebugAndroidTestAssets FROM-CACHE
+> Task :app:generateDebugAndroidTestGlobalSynthetics FROM-CACHE
+> Task :app:compressDebugAndroidTestJavaRes FROM-CACHE
+> Task :app:mergeDebugAndroidTestJavaResource
+> Task :app:checkDebugAndroidTestDuplicateClasses
+> Task :app:desugarDebugAndroidTestFileDependencies FROM-CACHE
+> Task :app:mergeExtDexDebugAndroidTest FROM-CACHE
+> Task :app:mergeLibDexDebugAndroidTest FROM-CACHE
+> Task :app:processSideloadResources
+> Task :app:checkDebugAndroidTestAarMetadata
+> Task :app:mapDebugAndroidTestSourceSetPaths
+> Task :app:compileDebugAndroidTestNavigationResources FROM-CACHE
+> Task :app:mergeDebugAndroidTestResources FROM-CACHE
+> Task :app:processDebugAndroidTestResources FROM-CACHE
+> Task :app:dexBuilderDebugAndroidTest
+> Task :app:mergeDebugAndroidTestJniLibFolders
+> Task :app:mergeDebugAndroidTestNativeLibs NO-SOURCE
+> Task :app:stripDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :app:validateSigningDebugAndroidTest
+> Task :app:writeDebugAndroidTestSigningConfigVersions
+> Task :app:mergeProjectDexDebugAndroidTest
+> Task :app:packageDebugAndroidTest
+> Task :app:createDebugAndroidTestApkListingFileRedirect
+> Task :app:assembleDebugAndroidTest
+
+> Task :app:compileSideloadKotlin
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/report/ReportExporter.kt:29:66 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/AppRoot.kt:76:45 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/AppRoot.kt:263:127 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/AppRoot.kt:264:141 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/CoachScreens.kt:92:80 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/CoachScreens.kt:116:101 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:92:50 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:132:224 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:542:127 'val Icons.Rounded.CompareArrows: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.CompareArrows.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:606:42 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:734:64 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Double'.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ExamScreens.kt:734:140 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Double'.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/HomeScreens.kt:249:40 Condition is always 'true'.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/HomeScreens.kt:303:114 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/HomeScreens.kt:310:118 'val Icons.Rounded.Assignment: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.Assignment.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/LibraryScreens.kt:299:61 'val Icons.Rounded.StickyNote2: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.StickyNote2.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/ProfileScreens.kt:88:79 'val Icons.Rounded.EventNote: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.EventNote.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/SourceScreens.kt:61:76 'val Icons.Rounded.CompareArrows: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.CompareArrows.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/SourceScreens.kt:240:62 'val Icons.Rounded.CompareArrows: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.CompareArrows.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/StatsScreens.kt:32:58 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/StatsScreens.kt:100:126 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/yks-pusula/yks-pusula/app/src/main/java/app/ykspusula/ui/screens/StatsScreens.kt:105:106 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+
+> Task :app:compileSideloadJavaWithJavac
+> Task :app:copyRoomSchemas NO-SOURCE
+> Task :app:mergeSideloadGeneratedProguardFiles
+> Task :app:compressSideloadJavaRes FROM-CACHE
+> Task :app:mergeSideloadJavaResource
+> Task :app:generateSideloadLintVitalReportModel
+> Task :app:expandSideloadArtProfileWildcards
+> Task :app:produceSideloadComposeMapping
+> Task :app:reportSideloadComposeMappingErrors
+> Task :app:lintVitalAnalyzeSideload
+> Task :app:minifySideloadWithR8
+> Task :app:lintVitalReportSideload
+> Task :app:lintVitalSideload
+> Task :app:mergeSideloadComposeMapping
+> Task :app:convertShrunkResourcesToBinarySideload
+> Task :app:optimizeSideloadResources
+> Task :app:compileSideloadArtProfile
+> Task :app:packageSideload
+> Task :app:createSideloadApkListingFileRedirect
+> Task :app:assembleSideload
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1794049298930.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/yks-pusula/yks-pusula/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 3m 15s
+127 actionable tasks: 72 executed, 33 from cache, 22 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.6.0/userguide/configuration_cache_enabling.html

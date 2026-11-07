@@ -1,0 +1,17 @@
+# CI kalite kapısı: PASS
+
+| İş | Sonuç | Neden |
+|---|---|---|
+| derle | PASS | 7 aşama geçti |
+
+### derle: PASS
+
+| Aşama | Sonuç | Açıklama |
+|---|---|---|
+| plan | PASS | cihazlar: yok (yalnız derleme) |
+| birim-testleri | PASS | 76 test, 0 başarısız, 0 hata, 1 atlandı |
+| derleme | PASS | debug, sideload, androidTest APK |
+| release-denetimi | PASS | beklenen hatayla durdu |
+| manifest-debuggable-degil | PASS | sideload APK hata ayıklanabilir değil |
+| manifest-hedef-sdk | PASS | targetSdkVersion:'36' |
+| apk-imza | PASS | Verifies |
