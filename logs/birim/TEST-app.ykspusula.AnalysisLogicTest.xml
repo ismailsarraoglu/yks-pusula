@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.ykspusula.AnalysisLogicTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-07T16:33:05.500Z" hostname="runnervm7aw5e" time="0.044">
+  <properties/>
+  <testcase name="priorityUsesOnlyRealSignals" classname="app.ykspusula.AnalysisLogicTest" time="0.027"/>
+  <testcase name="learnedTopicReturnsWhenWrongAgain" classname="app.ykspusula.AnalysisLogicTest" time="0.001"/>
+  <testcase name="mockMissesParseAndKeepOldFormat" classname="app.ykspusula.AnalysisLogicTest" time="0.011"/>
+  <testcase name="gapReasonShown" classname="app.ykspusula.AnalysisLogicTest" time="0.002"/>
+  <testcase name="unstartedAloneIsNotAPriority" classname="app.ykspusula.AnalysisLogicTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

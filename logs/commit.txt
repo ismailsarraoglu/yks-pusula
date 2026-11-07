@@ -1,0 +1,2 @@
+744150a 2.1.2 raporları: teslim, test, değişiklik, Android 15 notu
+run=42391711066 olay=push dal=surum-2.1.2 kapi_denemesi=yok
